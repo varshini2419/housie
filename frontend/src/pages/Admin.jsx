@@ -117,6 +117,24 @@ const Admin = () => {
     }
   };
 
+  const handleAssignName = async (ticketCode, newName) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/${liveSession._id}/tickets/${ticketCode}/name`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ playerName: newName })
+      });
+      if (!res.ok) throw new Error('Failed to save name');
+      
+      setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, playerName: newName } : t));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     alert(`Copied: ${text}`);
@@ -196,16 +214,9 @@ const Admin = () => {
     }
   };
 
-  // Group winners by ticket code
-  const getTicketSummaries = () => {
-    if (!adminStats || !adminStats.winners) return [];
-    const summary = {};
-    Object.entries(adminStats.winners).forEach(([prize, code]) => {
-      if (!summary[code]) summary[code] = [];
-      summary[code].push(prize);
-    });
-    return Object.entries(summary);
-  };
+  // Winners will now have { ticketCode, playerName }
+  const prizesList = ['Jaldi 5', 'First Line', 'Second Line', 'Third Line', 'Full House'];
+
 
   if (!token) {
     return (
@@ -306,6 +317,7 @@ const Admin = () => {
                 <tr className="bg-slate-900 print:bg-gray-200">
                   <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:text-black">S.No</th>
                   <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:text-black">Ticket Code</th>
+                  <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:text-black">Player Name</th>
                   <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:text-black">Ticket Status</th>
                   <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:text-black">Player Status</th>
                   <th className="p-4 border-b border-slate-700 font-semibold text-slate-300 print:hidden">Actions</th>
@@ -316,6 +328,17 @@ const Admin = () => {
                   <tr key={ticket.ticketCode} className="hover:bg-slate-750 transition-colors">
                     <td className="p-4 border-b border-slate-700 text-slate-400 print:text-black">{index + 1}</td>
                     <td className="p-4 border-b border-slate-700 font-mono text-emerald-400 font-bold text-lg print:text-black">{ticket.ticketCode}</td>
+                    <td className="p-4 border-b border-slate-700 print:text-black">
+                      <input 
+                        type="text" 
+                        placeholder="Enter Name..."
+                        defaultValue={ticket.playerName || ''}
+                        onBlur={(e) => {
+                           if(e.target.value !== ticket.playerName) handleAssignName(ticket.ticketCode, e.target.value);
+                        }}
+                        className="bg-slate-800 text-white p-2 rounded border border-slate-600 focus:border-emerald-500 outline-none w-full print:bg-transparent print:border-none print:text-black"
+                      />
+                    </td>
                     <td className="p-4 border-b border-slate-700 text-slate-300 print:text-black">Active</td>
                     <td className="p-4 border-b border-slate-700">
                       {ticket.playerStatus === 'PLAYING' 
@@ -378,24 +401,28 @@ const Admin = () => {
                 <p className="text-slate-400 uppercase tracking-wider text-sm mb-2">Remaining Nums</p>
                 <p className="text-5xl font-black text-amber-500">{adminStats.remainingNumbers !== undefined ? adminStats.remainingNumbers : 90}</p>
               </div>
-              <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex flex-col shadow-lg overflow-y-auto max-h-48">
-                <p className="text-slate-400 uppercase tracking-wider text-sm mb-4 text-center sticky top-0 bg-slate-800">Prize Summary by Ticket</p>
-                {getTicketSummaries().length > 0 ? (
-                  <div className="space-y-4">
-                    {getTicketSummaries().map(([code, wonPrizes]) => (
-                      <div key={code} className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                        <span className="text-emerald-400 font-mono font-bold block mb-1">Ticket {code}</span>
-                        {wonPrizes.map(p => (
-                          <div key={p} className="text-slate-300 text-sm flex items-center">
-                            <span className="text-emerald-500 mr-2">✔</span>{p}
-                          </div>
-                        ))}
+              <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex flex-col shadow-lg overflow-y-auto max-h-64">
+                <p className="text-slate-400 uppercase tracking-wider text-sm mb-4 text-center sticky top-0 bg-slate-800 pb-2 z-10">Current Winners</p>
+                <div className="space-y-4">
+                  {prizesList.map(prize => {
+                    const w = adminStats?.winners?.[prize];
+                    const name = w ? (w.playerName || 'Player') : '';
+                    const code = w ? w.ticketCode : '';
+                    return (
+                      <div key={prize} className="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <span className="text-emerald-400 font-bold block mb-1">{prize}</span>
+                        {w ? (
+                           <div className="text-sm text-slate-300">
+                             <p>Winner: <strong className="text-white">{name}</strong></p>
+                             <p>Ticket: {code}</p>
+                           </div>
+                        ) : (
+                           <p className="text-slate-500 italic text-sm">Waiting...</p>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center mt-4">No prizes claimed yet</p>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : (

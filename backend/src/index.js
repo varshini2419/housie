@@ -57,6 +57,15 @@ io.on('connection', (socket) => {
         
         if (activeGames[sessionId]) {
             const game = await GameSession.findById(sessionId);
+            const totalPlayers = game ? game.totalPlayers : 0;
+            io.to(sessionId).emit('player_count_update', {
+                onlineCount: activeGames[sessionId].onlinePlayers.size,
+                totalPlayers: totalPlayers
+            });
+        }
+        
+        if (activeGames[sessionId]) {
+            const game = await GameSession.findById(sessionId);
             const status = game ? game.gameStatus : 'WAITING';
             
             let markedNums = [];
@@ -114,14 +123,17 @@ io.on('connection', (socket) => {
             if (isValid) {
                 if (state.winners[prizeType]) return socket.emit('claim_rejected', { message: 'Prize already claimed' });
                 
-                state.winners[prizeType] = ticketCode;
+                state.winners[prizeType] = {
+                    ticketCode,
+                    playerName: ticket.playerName
+                };
 
                 const newWinner = new Winner({ sessionId, prizeType, ticketCode });
                 await newWinner.save();
                 
                 // Live Activity Feed for Admin
                 io.to(sessionId).emit('activity_feed', {
-                    message: `Player (Ticket ${ticketCode}) won ${prizeType}.`,
+                    message: `${ticket.playerName || 'Player'} (${ticketCode}) won ${prizeType}.`,
                     ticketCode,
                     prizeType
                 });
@@ -158,9 +170,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         if (socket.sessionId && activeGames[socket.sessionId] && socket.ticketCode) {
             activeGames[socket.sessionId].onlinePlayers.delete(socket.ticketCode);
+            
+            const game = await GameSession.findById(socket.sessionId);
+            const totalPlayers = game ? game.totalPlayers : 0;
+            
+            io.to(socket.sessionId).emit('player_count_update', {
+                onlineCount: activeGames[socket.sessionId].onlinePlayers.size,
+                totalPlayers: totalPlayers
+            });
         }
         console.log(`Client disconnected: ${socket.id}`);
     });

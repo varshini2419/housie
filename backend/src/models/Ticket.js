@@ -5,7 +5,9 @@ const TicketSchema = new mongoose.Schema({
     ticketCode: { type: String, required: true, index: true },
     ticketMatrix: { type: [[Number]], required: true },
     markedNumbers: { type: [Number], default: [] },
-    playerStatus: { type: String, enum: ['WAITING', 'PLAYING', 'DISCONNECTED'], default: 'WAITING' }
+    playerStatus: { type: String, enum: ['WAITING', 'PLAYING', 'DISCONNECTED'], default: 'WAITING' },
+    playerName: { type: String, default: '' },
+    joinedAt: { type: Date }
 }, { timestamps: true });
 
 // Ensure unique ticket codes within a session

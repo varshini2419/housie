@@ -23,6 +23,7 @@ exports.joinGame = async (req, res) => {
 
         if (ticket.playerStatus === 'WAITING') {
             ticket.playerStatus = 'PLAYING';
+            ticket.joinedAt = new Date();
             await ticket.save();
         }
 
@@ -30,6 +31,7 @@ exports.joinGame = async (req, res) => {
             message: 'Joined successfully',
             ticket: {
                 ticketCode: ticket.ticketCode,
+                playerName: ticket.playerName,
                 ticketMatrix: ticket.ticketMatrix,
                 markedNumbers: ticket.markedNumbers,
                 status: ticket.playerStatus
@@ -37,6 +39,7 @@ exports.joinGame = async (req, res) => {
             session: {
                 id: session._id,
                 sessionName: session.sessionName,
+                totalPlayers: session.totalPlayers,
                 startTime: session.startTime,
                 gameStatus: session.gameStatus,
                 currentNumber: session.currentNumber,

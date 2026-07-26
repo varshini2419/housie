@@ -55,11 +55,31 @@ exports.getAllSessions = async (req, res) => {
 exports.getSessionTickets = async (req, res) => {
     try {
         const tickets = await Ticket.find({ sessionId: req.params.id })
-            .select('ticketCode playerStatus createdAt')
+            .select('ticketCode playerStatus playerName createdAt')
             .sort({ createdAt: 1 });
         res.json(tickets);
     } catch (err) {
         res.status(500).json({ message: 'Server error fetching tickets' });
+    }
+};
+
+exports.assignPlayerName = async (req, res) => {
+    const { id, ticketCode } = req.params;
+    const { playerName } = req.body;
+
+    try {
+        const ticket = await Ticket.findOne({ sessionId: id, ticketCode });
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        ticket.playerName = playerName;
+        await ticket.save();
+
+        res.json({ message: 'Player name assigned', ticket });
+    } catch (err) {
+        console.error('Error assigning player name:', err);
+        res.status(500).json({ message: 'Server error assigning name' });
     }
 };
 

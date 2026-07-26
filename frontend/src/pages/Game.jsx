@@ -23,6 +23,8 @@ const Game = () => {
   const [markedNumbers, setMarkedNumbers] = useState([]);
   const [winners, setWinners] = useState({});
   const [toastMsg, setToastMsg] = useState('');
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [totalJoined, setTotalJoined] = useState(session?.totalPlayers || 0);
 
   useEffect(() => {
     if (!session || !ticket) {
@@ -57,6 +59,11 @@ const Game = () => {
       setWinners(data.winners);
       setToastMsg(`🎉 Ticket ${data.ticketCode} won ${data.prizeType}!`);
       setTimeout(() => setToastMsg(''), 5000);
+    });
+
+    socket.on('player_count_update', (data) => {
+        if (data.onlineCount !== undefined) setOnlineCount(data.onlineCount);
+        if (data.totalPlayers !== undefined) setTotalJoined(data.totalPlayers);
     });
 
     socket.on('claim_rejected', (data) => {
@@ -104,10 +111,15 @@ const Game = () => {
         </div>
       )}
 
-      <div className="flex justify-between items-center w-full max-w-6xl mb-8">
+      <div className="flex justify-between items-start w-full max-w-6xl mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-blue-400 mb-2">{session.sessionName}</h1>
-          <p className="text-slate-400 font-mono">Ticket Code: {ticket.ticketCode}</p>
+          <h1 className="text-3xl font-bold text-blue-400 mb-1">Welcome {ticket.playerName ? ticket.playerName : ''}</h1>
+          <p className="text-slate-300 font-semibold mb-1">Session: {session.sessionName}</p>
+          <p className="text-slate-400 font-mono text-sm mb-3">Ticket Code: {ticket.ticketCode}</p>
+          <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 inline-block">
+            <span className="text-slate-400 text-sm block uppercase tracking-wider mb-1">Players Joined</span>
+            <span className="text-xl font-bold text-emerald-400">{onlineCount} <span className="text-slate-500 text-base">/ {totalJoined}</span></span>
+          </div>
         </div>
         <button 
           onClick={toggleVoice}
@@ -237,6 +249,30 @@ const Game = () => {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <div className="w-full max-w-6xl mt-12 mb-8">
+        <h2 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">🏆 Winners Leaderboard</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          {prizes.map(prize => {
+             const w = winners[prize];
+             const name = w ? (w.playerName || 'Player') : '';
+             const code = w ? w.ticketCode : '';
+             return (
+               <div key={prize} className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+                 <span className="text-emerald-400 font-bold block mb-2">{prize}</span>
+                 {w ? (
+                    <div className="text-sm text-slate-300">
+                      <p>Winner: <strong className="text-white text-base">{name}</strong></p>
+                      <p className="text-slate-400 text-xs mt-1">Ticket: {code}</p>
+                    </div>
+                 ) : (
+                    <p className="text-slate-500 italic text-sm">Waiting...</p>
+                 )}
+               </div>
+             );
+          })}
         </div>
       </div>
     </div>
