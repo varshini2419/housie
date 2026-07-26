@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import useGameStore from '../store/useGameStore';
+import useSpeech from '../hooks/useSpeech';
 
 let socket;
 
@@ -9,6 +10,12 @@ const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
+  const { isVoiceEnabled, toggleVoice, announceNumber } = useSpeech();
+
+  const announceNumberRef = useRef(announceNumber);
+  useEffect(() => {
+    announceNumberRef.current = announceNumber;
+  }, [announceNumber]);
 
   const [gameState, setGameState] = useState(session?.gameStatus || 'WAITING');
   const [currentNumber, setCurrentNumber] = useState(session?.currentNumber || null);
@@ -35,6 +42,7 @@ const Game = () => {
     socket.on('number_drawn', (data) => {
       setCurrentNumber(data.number);
       setDrawnNumbers(data.history);
+      announceNumberRef.current(data.number);
     });
 
     socket.on('game_sync', (data) => {
@@ -96,8 +104,18 @@ const Game = () => {
         </div>
       )}
 
-      <h1 className="text-4xl font-bold text-blue-400 mb-2">{session.sessionName}</h1>
-      <p className="text-slate-400 mb-8 font-mono">Ticket Code: {ticket.ticketCode}</p>
+      <div className="flex justify-between items-center w-full max-w-6xl mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-blue-400 mb-2">{session.sessionName}</h1>
+          <p className="text-slate-400 font-mono">Ticket Code: {ticket.ticketCode}</p>
+        </div>
+        <button 
+          onClick={toggleVoice}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border ${isVoiceEnabled ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
+        >
+          {isVoiceEnabled ? '🔊 Voice ON' : '🔈 Voice OFF'}
+        </button>
+      </div>
 
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8">
         

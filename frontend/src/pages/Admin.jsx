@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import useSpeech from '../hooks/useSpeech';
 
 const Admin = () => {
   const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -21,6 +22,12 @@ const Admin = () => {
   const [ticketSearch, setTicketSearch] = useState('');
   
   const [activityFeed, setActivityFeed] = useState([]);
+  const { isVoiceEnabled, toggleVoice, announceNumber } = useSpeech();
+
+  const announceNumberRef = useRef(announceNumber);
+  useEffect(() => {
+    announceNumberRef.current = announceNumber;
+  }, [announceNumber]);
 
   useEffect(() => {
     if (token) fetchActiveSessions();
@@ -148,6 +155,7 @@ const Admin = () => {
     });
     newSocket.on('number_drawn', (data) => {
         setAdminStats(prev => ({ ...prev, currentNumber: data.number, drawnNumbers: data.history, remainingNumbers: 90 - data.history.length }));
+        announceNumberRef.current(data.number);
     });
     newSocket.on('winner_announced', (data) => {
         setAdminStats(prev => ({ ...prev, winners: data.winners }));
@@ -331,6 +339,12 @@ const Admin = () => {
           <div className="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700">
             <button onClick={returnToDashboard} className="text-slate-400 hover:text-white transition-colors flex items-center">← Back to Dashboard</button>
             <div className="flex gap-4">
+              <button 
+                onClick={toggleVoice}
+                className={`flex items-center gap-2 px-4 py-2 rounded font-bold transition-all border ${isVoiceEnabled ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
+              >
+                {isVoiceEnabled ? '🔊 Voice ON' : '🔈 Voice OFF'}
+              </button>
               {adminStats?.gameStatus === 'WAITING' && (
                 <button onClick={() => executeControl('start')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded font-bold transition-colors shadow-lg shadow-emerald-500/20">Start Game</button>
               )}
