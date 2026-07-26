@@ -10,16 +10,31 @@ const Winner = require('./models/Winner');
 const GameSession = require('./models/GameSession');
 const { validateClaim } = require('./utils/prizeValidator');
 
+if (!process.env.JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+    process.exit(1);
+}
+
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors());
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
+    cors: { 
+        origin: process.env.FRONTEND_URL || '*', 
+        methods: ["GET", "POST"],
+        credentials: true
+    }
 });
 app.set('io', io);
 
