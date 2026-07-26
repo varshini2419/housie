@@ -27,7 +27,7 @@ const Game = () => {
   const [totalJoined, setTotalJoined] = useState(session?.totalPlayers || 0);
 
   useEffect(() => {
-    if (!session || !ticket) {
+    if (!session || !ticket || (session.id !== sessionId && session._id !== sessionId)) {
       navigate('/');
       return;
     }
@@ -163,11 +163,11 @@ const Game = () => {
             <div className="flex flex-col gap-3">
               {prizes.map(prize => {
                 const isWon = winners[prize];
-                const wonByMe = isWon === ticket.ticketCode;
+                const wonByMe = isWon && isWon.ticketCode === ticket.ticketCode;
                 return (
                   <button 
                     key={prize}
-                    disabled={isWon || gameState !== 'LIVE'}
+                    disabled={!!isWon || gameState !== 'LIVE'}
                     onClick={() => claimPrize(prize)}
                     className={`
                       w-full py-3 px-4 rounded-xl font-bold flex justify-between items-center transition-all
@@ -178,7 +178,7 @@ const Game = () => {
                     `}
                   >
                     <span>{prize}</span>
-                    {isWon && <span className="text-xs font-mono">{isWon}</span>}
+                    {isWon && <span className="text-xs font-mono">{isWon.ticketCode}</span>}
                   </button>
                 )
               })}
