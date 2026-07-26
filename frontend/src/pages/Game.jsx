@@ -23,7 +23,7 @@ const Game = () => {
       return;
     }
 
-    socket = io('http://localhost:5000');
+    socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
     socket.emit('join_game', { sessionId, ticketCode: ticket.ticketCode, role: 'player' });
 
     socket.on('game_started', (data) => setGameState(data.status));

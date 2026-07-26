@@ -28,7 +28,7 @@ const Admin = () => {
 
   const fetchActiveSessions = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/game/all', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/all`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -42,7 +42,7 @@ const Admin = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/admin/login', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -61,7 +61,7 @@ const Admin = () => {
     setError('');
     setSuccessMsg('');
     try {
-      const res = await fetch('http://localhost:5000/api/game/create', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/create`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ const Admin = () => {
 
   const viewSessionTickets = async (session) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/game/${session._id}/tickets`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/${session._id}/tickets`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -99,7 +99,7 @@ const Admin = () => {
       setViewMode('tickets');
       setTicketSearch('');
       
-      const newSocket = io('http://localhost:5000');
+      const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
       newSocket.emit('join_game', { sessionId: session._id, role: 'admin' });
       newSocket.on('player_joined_status', (data) => {
           setSessionTickets(prev => prev.map(t => t.ticketCode === data.ticketCode ? { ...t, playerStatus: data.status } : t));
@@ -139,7 +139,7 @@ const Admin = () => {
     setViewMode('monitor');
     setActivityFeed([]);
     
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
     newSocket.emit('join_game', { sessionId: session._id, role: 'admin' });
     
     newSocket.on('admin_stats', (stats) => setAdminStats(prev => ({ ...prev, ...stats })));
@@ -177,7 +177,7 @@ const Admin = () => {
 
   const executeControl = async (action) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/game/${liveSession._id}/${action}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/${liveSession._id}/${action}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
