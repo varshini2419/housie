@@ -45,7 +45,13 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to fetch sessions');
+      if (!res.ok) {
+          if (res.status === 401) {
+              handleLogout();
+              return;
+          }
+          throw new Error(data.message || 'Failed to fetch sessions');
+      }
       setActiveSessions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -88,7 +94,13 @@ const Admin = () => {
         body: JSON.stringify({ sessionName, totalPlayers: Number(totalPlayers), startTime })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) {
+          if (res.status === 401) {
+              handleLogout();
+              return;
+          }
+          throw new Error(data.message);
+      }
       
       setSuccessMsg(`Success! Created ${data.ticketsGenerated} tickets for session "${data.session.sessionName}".`);
       setSessionName('');
@@ -118,7 +130,13 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to fetch tickets');
+      if (!res.ok) {
+          if (res.status === 401) {
+              handleLogout();
+              return;
+          }
+          throw new Error(data.message || 'Failed to fetch tickets');
+      }
       setSessionTickets(Array.isArray(data) ? data : []);
       
       const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
@@ -145,7 +163,13 @@ const Admin = () => {
         },
         body: JSON.stringify({ playerName: newName })
       });
-      if (!res.ok) throw new Error('Failed to save name');
+      if (!res.ok) {
+          if (res.status === 401) {
+              handleLogout();
+              return;
+          }
+          throw new Error('Failed to save name');
+      }
       
       setSessionTickets(prev => Array.isArray(prev) ? prev.map(t => t.ticketCode === ticketCode ? { ...t, playerName: newName } : t) : []);
     } catch (err) {
@@ -230,7 +254,13 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) {
+          if (res.status === 401) {
+              handleLogout();
+              return;
+          }
+          throw new Error(data.message);
+      }
     } catch (err) {
       alert(err.message);
     }
