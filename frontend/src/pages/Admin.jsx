@@ -22,6 +22,10 @@ const Admin = () => {
   const [ticketSearch, setTicketSearch] = useState('');
   
   const [activityFeed, setActivityFeed] = useState([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [sessionError, setSessionError] = useState('');
+  const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+  const [ticketError, setTicketError] = useState('');
   const { isVoiceEnabled, toggleVoice, announceNumber } = useSpeech();
 
   const announceNumberRef = useRef(announceNumber);
@@ -34,6 +38,8 @@ const Admin = () => {
   }, [token]);
 
   const fetchActiveSessions = async () => {
+    setIsLoadingSessions(true);
+    setSessionError('');
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/all`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -43,7 +49,10 @@ const Admin = () => {
       setActiveSessions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setSessionError(err.message || 'Error fetching sessions');
       setActiveSessions([]);
+    } finally {
+      setIsLoadingSessions(false);
     }
   };
 
@@ -98,6 +107,12 @@ const Admin = () => {
   };
 
   const viewSessionTickets = async (session) => {
+    setLiveSession(session);
+    setViewMode('tickets');
+    setTicketSearch('');
+    setIsLoadingTickets(true);
+    setTicketError('');
+    setSessionTickets([]);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/game/${session._id}/tickets`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -105,18 +120,18 @@ const Admin = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to fetch tickets');
       setSessionTickets(Array.isArray(data) ? data : []);
-      setLiveSession(session);
-      setViewMode('tickets');
-      setTicketSearch('');
       
       const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
       newSocket.emit('join_game', { sessionId: session._id, role: 'admin' });
       newSocket.on('player_joined_status', (data) => {
-          setSessionTickets(prev => prev.map(t => t.ticketCode === data.ticketCode ? { ...t, playerStatus: data.status } : t));
+          setSessionTickets(prev => Array.isArray(prev) ? prev.map(t => t.ticketCode === data.ticketCode ? { ...t, playerStatus: data.status } : t) : []);
       });
       setSocket(newSocket);
     } catch (err) {
-      alert('Error fetching tickets: ' + err.message);
+      setTicketError('Error fetching tickets: ' + err.message);
+      setSessionTickets([]);
+    } finally {
+      setIsLoadingTickets(false);
     }
   };
 
@@ -132,7 +147,7 @@ const Admin = () => {
       });
       if (!res.ok) throw new Error('Failed to save name');
       
-      setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, playerName: newName } : t));
+      setSessionTickets(prev => Array.isArray(prev) ? prev.map(t => t.ticketCode === ticketCode ? { ...t, playerName: newName } : t) : []);
     } catch (err) {
       alert(err.message);
     }
@@ -144,14 +159,16 @@ const Admin = () => {
   };
 
   const copyAllTickets = () => {
-    const codes = sessionTickets.map(t => t.ticketCode).join('\n');
+    const safeTickets = Array.isArray(sessionTickets) ? sessionTickets : [];
+    const codes = safeTickets.map(t => t.ticketCode).join('\n');
     navigator.clipboard.writeText(codes);
     alert('Copied all tickets to clipboard!');
   };
 
   const exportCSV = () => {
+    const safeTickets = Array.isArray(sessionTickets) ? sessionTickets : [];
     const csvContent = "data:text/csv;charset=utf-8,Serial,Ticket Code,Ticket Status,Player Status\n" 
-      + sessionTickets.map((t, index) => `${index + 1},${t.ticketCode},Active,${t.playerStatus === 'PLAYING' ? 'Joined' : 'Not Joined'}`).join("\n");
+      + safeTickets.map((t, index) => `${index + 1},${t.ticketCode},Active,${t.playerStatus === 'PLAYING' ? 'Joined' : 'Not Joined'}`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -200,6 +217,8 @@ const Admin = () => {
     setAdminStats(null);
     setSessionTickets([]);
     setActivityFeed([]);
+    setTicketError('');
+    setSessionError('');
     setViewMode('dashboard');
     fetchActiveSessions();
   };
@@ -260,8 +279,12 @@ const Admin = () => {
 
           <div className="bg-slate-800 rounded-2xl p-8 shadow-xl border border-slate-700">
             <h2 className="text-xl font-bold mb-6 text-white">All Sessions</h2>
+            {sessionError && <div className="bg-red-500/20 border border-red-500 text-red-300 p-4 rounded mb-6">{sessionError}</div>}
+            {isLoadingSessions ? (
+               <p className="text-slate-400">Loading sessions...</p>
+            ) : (
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-              {activeSessions.map(session => (
+              {(Array.isArray(activeSessions) ? activeSessions : []).map(session => (
                 <div key={session._id} className="p-4 bg-slate-950 rounded-xl border border-slate-700 flex justify-between items-center">
                   <div>
                     <h3 className="font-bold text-emerald-400">{session.sessionName}</h3>
@@ -274,8 +297,9 @@ const Admin = () => {
                   </div>
                 </div>
               ))}
-              {activeSessions.length === 0 && <p className="text-slate-400">No sessions found.</p>}
+              {(Array.isArray(activeSessions) ? activeSessions : []).length === 0 && <p className="text-slate-400">No sessions found.</p>}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -285,7 +309,7 @@ const Admin = () => {
           <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
             <div>
               <button onClick={returnToDashboard} className="text-slate-400 hover:text-white transition-colors mb-2 flex items-center">← Back to Dashboard</button>
-              <h2 className="text-2xl font-bold text-emerald-400">Tickets: {liveSession.sessionName}</h2>
+              <h2 className="text-2xl font-bold text-emerald-400">Tickets: {liveSession?.sessionName}</h2>
             </div>
             <div className="flex gap-4">
               <button onClick={() => window.print()} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition-colors">Print</button>
@@ -314,6 +338,10 @@ const Admin = () => {
             />
           </div>
 
+          {ticketError && <div className="bg-red-500/20 border border-red-500 text-red-300 p-4 rounded mb-6">{ticketError}</div>}
+          {isLoadingTickets ? (
+             <p className="text-slate-400 text-center py-8">Loading tickets...</p>
+          ) : (
           <div className="overflow-x-auto print:bg-white print:text-black">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -327,7 +355,7 @@ const Admin = () => {
                 </tr>
               </thead>
               <tbody>
-                {sessionTickets.filter(t => t.ticketCode.includes(ticketSearch.toUpperCase())).map((ticket, index) => (
+                {(Array.isArray(sessionTickets) ? sessionTickets : []).filter(t => t.ticketCode.includes(ticketSearch.toUpperCase())).map((ticket, index) => (
                   <tr key={ticket.ticketCode} className="hover:bg-slate-750 transition-colors">
                     <td className="p-4 border-b border-slate-700 text-slate-400 print:text-black">{index + 1}</td>
                     <td className="p-4 border-b border-slate-700 font-mono text-emerald-400 font-bold text-lg print:text-black">{ticket.ticketCode}</td>
@@ -357,6 +385,7 @@ const Admin = () => {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 
@@ -458,8 +487,8 @@ const Admin = () => {
                  Live Activity Feed
                </h2>
                <div className="flex-1 overflow-y-auto space-y-3 pr-2 max-h-[400px]">
-                 {activityFeed.length > 0 ? (
-                   activityFeed.map((feed, idx) => (
+                 {(Array.isArray(activityFeed) ? activityFeed : []).length > 0 ? (
+                   (Array.isArray(activityFeed) ? activityFeed : []).map((feed, idx) => (
                      <div key={idx} className="bg-slate-900 p-3 rounded-xl border border-slate-700 shadow-sm animate-fade-in-up">
                        <span className="text-xs text-slate-500 font-mono block mb-1">
                          {feed.time.toLocaleTimeString()}
