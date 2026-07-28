@@ -39,9 +39,11 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setActiveSessions(data);
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch sessions');
+      setActiveSessions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setActiveSessions([]);
     }
   };
 
@@ -101,7 +103,8 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setSessionTickets(data);
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch tickets');
+      setSessionTickets(Array.isArray(data) ? data : []);
       setLiveSession(session);
       setViewMode('tickets');
       setTicketSearch('');
