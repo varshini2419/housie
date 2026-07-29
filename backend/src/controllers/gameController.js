@@ -12,10 +12,10 @@ exports.createSession = async (req, res) => {
 
     if (ticketCodeMode === 'PATTERN') {
         if (!startingRegisterNumber) {
-            return res.status(400).json({ message: 'Starting Register Number is required' });
+            return res.status(400).json({ message: 'Starting Ticket Code is required' });
         }
         if (!/.*?\d+$/.test(startingRegisterNumber)) {
-            return res.status(400).json({ message: 'Starting Register Number must end with a numeric sequence' });
+            return res.status(400).json({ message: 'Starting Ticket Code must end with a numeric sequence' });
         }
     }
 

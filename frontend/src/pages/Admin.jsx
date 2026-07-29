@@ -322,7 +322,7 @@ const Admin = () => {
                 </div>
               </div>
               {ticketCodeMode === 'PATTERN' && (
-                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Starting Register Number (e.g. 24B91A0701)" />
+                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Starting Ticket Code (e.g. A1, 24B91A0701)" />
               )}
               
               <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/30">Create Session</button>
