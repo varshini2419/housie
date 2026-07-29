@@ -4,10 +4,19 @@ const { generateBatch } = require('../utils/ticketGenerator');
 const { startGame, pauseGame, resumeGame, endGame } = require('../utils/gameEngine');
 
 exports.createSession = async (req, res) => {
-    const { sessionName, startTime, totalPlayers } = req.body;
+    const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber } = req.body;
 
     if (!sessionName || !startTime || !totalPlayers) {
         return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    if (ticketCodeMode === 'PATTERN') {
+        if (!startingRegisterNumber) {
+            return res.status(400).json({ message: 'Starting Register Number is required' });
+        }
+        if (!/.*?\d+$/.test(startingRegisterNumber)) {
+            return res.status(400).json({ message: 'Starting Register Number must end with a numeric sequence' });
+        }
     }
 
     try {
@@ -20,7 +29,7 @@ exports.createSession = async (req, res) => {
 
         const savedSession = await newSession.save();
 
-        const generatedTickets = generateBatch(totalPlayers);
+        const generatedTickets = generateBatch(totalPlayers, { ticketCodeMode, startingRegisterNumber });
         
         const ticketDocs = generatedTickets.map(t => ({
             sessionId: savedSession._id,

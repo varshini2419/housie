@@ -11,6 +11,8 @@ const Admin = () => {
   const [sessionName, setSessionName] = useState('');
   const [totalPlayers, setTotalPlayers] = useState(50);
   const [startTime, setStartTime] = useState('');
+  const [ticketCodeMode, setTicketCodeMode] = useState('RANDOM');
+  const [startingRegisterNumber, setStartingRegisterNumber] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [activeSessions, setActiveSessions] = useState([]);
   
@@ -91,7 +93,7 @@ const Admin = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ sessionName, totalPlayers: Number(totalPlayers), startTime })
+        body: JSON.stringify({ sessionName, totalPlayers: Number(totalPlayers), startTime, ticketCodeMode, startingRegisterNumber: ticketCodeMode === 'PATTERN' ? startingRegisterNumber : undefined })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -105,6 +107,8 @@ const Admin = () => {
       setSuccessMsg(`Success! Created ${data.ticketsGenerated} tickets for session "${data.session.sessionName}".`);
       setSessionName('');
       setStartTime('');
+      setTicketCodeMode('RANDOM');
+      setStartingRegisterNumber('');
       fetchActiveSessions();
       viewSessionTickets(data.session);
     } catch (err) {
@@ -303,6 +307,24 @@ const Admin = () => {
               <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Session Name" />
               <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Total Players" />
               <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" />
+              
+              <div className="space-y-2">
+                <p className="text-slate-400 text-sm font-semibold">Ticket Code Mode</p>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-slate-300">
+                    <input type="radio" name="ticketCodeMode" value="RANDOM" checked={ticketCodeMode === 'RANDOM'} onChange={() => setTicketCodeMode('RANDOM')} className="accent-emerald-500" />
+                    Random Code
+                  </label>
+                  <label className="flex items-center gap-2 text-slate-300">
+                    <input type="radio" name="ticketCodeMode" value="PATTERN" checked={ticketCodeMode === 'PATTERN'} onChange={() => setTicketCodeMode('PATTERN')} className="accent-emerald-500" />
+                    Specific Number Pattern
+                  </label>
+                </div>
+              </div>
+              {ticketCodeMode === 'PATTERN' && (
+                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Starting Register Number (e.g. 24B91A0701)" />
+              )}
+              
               <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/30">Create Session</button>
             </form>
           </div>

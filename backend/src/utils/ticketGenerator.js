@@ -76,22 +76,53 @@ const generateUniqueCode = (existingCodes) => {
     }
 };
 
-const generateBatch = (count) => {
+const generatePatternCodes = (baseCode, count) => {
+    const match = baseCode.match(/^(.*?)(\d+)$/);
+    if (!match) throw new Error("Invalid base code pattern");
+    const prefix = match[1];
+    const numStr = match[2];
+    const numLength = numStr.length;
+    let currentNum = parseInt(numStr, 10);
+
+    const codes = [];
+    for (let i = 0; i < count; i++) {
+        codes.push(`${prefix}${currentNum.toString().padStart(numLength, '0')}`);
+        currentNum++;
+    }
+    return codes;
+};
+
+const generateBatch = (count, options = {}) => {
     const tickets = [];
     const signatures = new Set();
     const codes = new Set();
+    
+    let patternCodes = [];
+    if (options.ticketCodeMode === 'PATTERN' && options.startingRegisterNumber) {
+        patternCodes = generatePatternCodes(options.startingRegisterNumber, count);
+    }
 
+    let i = 0;
     while (tickets.length < count) {
         const matrix = generateTicket();
         const signature = matrix.map(row => row.join(',')).join('|');
         
         if (!signatures.has(signature)) {
             signatures.add(signature);
-            const code = generateUniqueCode(codes);
+            
+            let code;
+            if (options.ticketCodeMode === 'PATTERN') {
+                code = patternCodes[i];
+            } else {
+                code = generateUniqueCode(codes);
+            }
+            codes.add(code);
+            
             tickets.push({
                 ticketCode: code,
                 ticketMatrix: matrix
             });
+            i++;
         }
     }
     return tickets;
