@@ -4,7 +4,7 @@ const { generateBatch } = require('../utils/ticketGenerator');
 const { startGame, pauseGame, resumeGame, endGame } = require('../utils/gameEngine');
 
 exports.createSession = async (req, res) => {
-    const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber } = req.body;
+    const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber, prizes } = req.body;
 
     if (!sessionName || !startTime || !totalPlayers) {
         return res.status(400).json({ message: 'Missing required fields' });
@@ -19,12 +19,31 @@ exports.createSession = async (req, res) => {
         }
     }
 
+    const defaultPrizes = [
+        { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true },
+        { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true },
+        { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true },
+        { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true },
+        { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true }
+    ];
+
+    const sessionPrizes = prizes && prizes.length > 0 ? prizes : defaultPrizes;
+
+    const initializedPrizes = sessionPrizes.map(p => ({
+        ...p,
+        status: p.sequence === 1 ? 'AVAILABLE' : 'LOCKED',
+        winner: null,
+        winnerTicket: null,
+        claimedAt: null
+    }));
+
     try {
         const newSession = new GameSession({
             sessionName,
             startTime,
             totalPlayers,
-            gameStatus: 'WAITING'
+            gameStatus: 'WAITING',
+            prizes: initializedPrizes
         });
 
         const savedSession = await newSession.save();

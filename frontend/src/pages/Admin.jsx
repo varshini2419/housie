@@ -16,6 +16,24 @@ const Admin = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [activeSessions, setActiveSessions] = useState([]);
   
+  const defaultPrizesList = [
+    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true },
+    { id: 'p2', name: 'Jaldi 5 - 2', type: 'Jaldi5', sequence: 2, enabled: true },
+    { id: 'p3', name: 'Jaldi 5 - 3', type: 'Jaldi5', sequence: 3, enabled: true },
+    { id: 'p4', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true },
+    { id: 'p5', name: 'First Line - 2', type: 'FirstLine', sequence: 2, enabled: true },
+    { id: 'p6', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true },
+    { id: 'p7', name: 'Second Line - 2', type: 'SecondLine', sequence: 2, enabled: true },
+    { id: 'p8', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true },
+    { id: 'p9', name: 'Third Line - 2', type: 'ThirdLine', sequence: 2, enabled: true },
+    { id: 'p10', name: 'Full House 1', type: 'FullHouse', sequence: 1, enabled: true },
+    { id: 'p11', name: 'Full House 2', type: 'FullHouse', sequence: 2, enabled: true },
+    { id: 'p12', name: 'Full House 3', type: 'FullHouse', sequence: 3, enabled: true }
+  ];
+  const [prizes, setPrizes] = useState(defaultPrizesList);
+  const [customPrizeName, setCustomPrizeName] = useState('');
+  const [customPrizeType, setCustomPrizeType] = useState('FullHouse');
+  
   const [viewMode, setViewMode] = useState('dashboard');
   const [liveSession, setLiveSession] = useState(null);
   const [socket, setSocket] = useState(null);
@@ -93,7 +111,14 @@ const Admin = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ sessionName, totalPlayers: Number(totalPlayers), startTime, ticketCodeMode, startingRegisterNumber: ticketCodeMode === 'PATTERN' ? startingRegisterNumber : undefined })
+        body: JSON.stringify({ 
+          sessionName, 
+          totalPlayers: Number(totalPlayers), 
+          startTime, 
+          ticketCodeMode, 
+          startingRegisterNumber: ticketCodeMode === 'PATTERN' ? startingRegisterNumber : undefined,
+          prizes: prizes.filter(p => p.enabled)
+        })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -109,6 +134,7 @@ const Admin = () => {
       setStartTime('');
       setTicketCodeMode('RANDOM');
       setStartingRegisterNumber('');
+      setPrizes(defaultPrizesList);
       fetchActiveSessions();
       viewSessionTickets(data.session);
     } catch (err) {
@@ -270,8 +296,7 @@ const Admin = () => {
     }
   };
 
-  // Winners will now have { ticketCode, playerName }
-  const prizesList = ['Jaldi 5', 'First Line', 'Second Line', 'Third Line', 'Full House'];
+  // Hardcoded prizesList removed, using session configuration dynamically
 
 
   if (!token) {
@@ -324,6 +349,46 @@ const Admin = () => {
               {ticketCodeMode === 'PATTERN' && (
                   <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full p-3 rounded bg-slate-950 border border-slate-700 text-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Starting Ticket Code (e.g. A1, 24B91A0701)" />
               )}
+              
+              <div className="space-y-4 border-t border-slate-700 pt-4">
+                <p className="text-slate-400 font-semibold mb-2">Prize Configuration</p>
+                <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2">
+                  {prizes.map((prize, idx) => (
+                    <label key={prize.id} className="flex items-center gap-2 text-slate-300 bg-slate-900 p-2 rounded border border-slate-700">
+                      <input 
+                        type="checkbox" 
+                        checked={prize.enabled} 
+                        onChange={(e) => {
+                          const newPrizes = [...prizes];
+                          newPrizes[idx].enabled = e.target.checked;
+                          setPrizes(newPrizes);
+                        }} 
+                        className="accent-emerald-500" 
+                      />
+                      {prize.name}
+                    </label>
+                  ))}
+                </div>
+                <div className="bg-slate-900 p-4 rounded border border-slate-700 flex flex-col sm:flex-row gap-2 mt-4">
+                  <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2 rounded bg-slate-950 border border-slate-700 text-white text-sm outline-none" />
+                  <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="p-2 rounded bg-slate-950 border border-slate-700 text-white text-sm outline-none">
+                    <option value="Jaldi5">Jaldi 5</option>
+                    <option value="FirstLine">First Line</option>
+                    <option value="SecondLine">Second Line</option>
+                    <option value="ThirdLine">Third Line</option>
+                    <option value="FullHouse">Full House</option>
+                    <option value="FourCorners">Four Corners</option>
+                    <option value="EarlySeven">Early Seven</option>
+                  </select>
+                  <button type="button" onClick={() => {
+                    if(!customPrizeName.trim()) return;
+                    const sameType = prizes.filter(p => p.type === customPrizeType);
+                    const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
+                    setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true }]);
+                    setCustomPrizeName('');
+                  }} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold text-white transition-colors">Add</button>
+                </div>
+              </div>
               
               <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/30">Create Session</button>
             </form>
@@ -486,19 +551,19 @@ const Admin = () => {
                 <p className="text-5xl font-black text-amber-500">{adminStats.remainingNumbers !== undefined ? adminStats.remainingNumbers : 90}</p>
               </div>
               <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 flex flex-col shadow-lg overflow-y-auto max-h-64">
-                <p className="text-slate-400 uppercase tracking-wider text-sm mb-4 text-center sticky top-0 bg-slate-800 pb-2 z-10">Current Winners</p>
+                <p className="text-slate-400 uppercase tracking-wider text-sm mb-4 text-center sticky top-0 bg-slate-800 pb-2 z-10">Configured Prizes</p>
                 <div className="space-y-4">
-                  {prizesList.map(prize => {
-                    const w = adminStats?.winners?.[prize];
-                    const name = w ? (w.playerName || 'Player') : '';
-                    const code = w ? w.ticketCode : '';
+                  {(adminStats?.prizes || []).map(prize => {
                     return (
-                      <div key={prize} className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                        <span className="text-emerald-400 font-bold block mb-1">{prize}</span>
-                        {w ? (
+                      <div key={prize.id} className="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className={`font-bold ${prize.status === 'COMPLETED' ? 'text-emerald-400' : prize.status === 'AVAILABLE' ? 'text-blue-400' : 'text-slate-500'}`}>{prize.name}</span>
+                          <span className="text-[10px] text-slate-500 font-mono uppercase bg-slate-800 px-1 py-0.5 rounded">{prize.status}</span>
+                        </div>
+                        {prize.status === 'COMPLETED' ? (
                            <div className="text-sm text-slate-300">
-                             <p>Winner: <strong className="text-white">{name}</strong></p>
-                             <p>Ticket: {code}</p>
+                             <p>Winner: <strong className="text-white">{prize.winner}</strong></p>
+                             <p className="text-xs text-slate-400">Ticket: {prize.winnerTicket}</p>
                            </div>
                         ) : (
                            <p className="text-slate-500 italic text-sm">Waiting...</p>
@@ -506,6 +571,9 @@ const Admin = () => {
                       </div>
                     );
                   })}
+                  {(!adminStats?.prizes || adminStats.prizes.length === 0) && (
+                      <p className="text-slate-500 text-sm text-center">No prizes configured.</p>
+                  )}
                 </div>
               </div>
             </div>

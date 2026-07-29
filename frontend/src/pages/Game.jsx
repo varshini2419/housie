@@ -21,7 +21,7 @@ const Game = () => {
   const [currentNumber, setCurrentNumber] = useState(session?.currentNumber || null);
   const [drawnNumbers, setDrawnNumbers] = useState(session?.drawnNumbers || []);
   const [markedNumbers, setMarkedNumbers] = useState([]);
-  const [winners, setWinners] = useState({});
+  const [prizes, setPrizes] = useState(session?.prizes || []);
   const [toastMsg, setToastMsg] = useState('');
   const [onlineCount, setOnlineCount] = useState(0);
   const [totalJoined, setTotalJoined] = useState(session?.totalPlayers || 0);
@@ -51,13 +51,13 @@ const Game = () => {
       setGameState(data.status);
       setCurrentNumber(data.currentNumber);
       setDrawnNumbers(data.drawnNumbers);
-      if (data.winners) setWinners(data.winners);
+      if (data.prizes) setPrizes(data.prizes);
       if (data.markedNumbers) setMarkedNumbers(data.markedNumbers);
     });
 
     socket.on('winner_announced', (data) => {
-      setWinners(data.winners);
-      setToastMsg(`🎉 Ticket ${data.ticketCode} won ${data.prizeType}!`);
+      if (data.prizes) setPrizes(data.prizes);
+      setToastMsg(`🎉 Ticket ${data.ticketCode} won ${data.prizeName}!`);
       setTimeout(() => setToastMsg(''), 5000);
     });
 
@@ -83,9 +83,9 @@ const Game = () => {
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
 
-  const claimPrize = (prizeType) => {
+  const claimPrize = (prizeId) => {
     if (gameState !== 'LIVE') return;
-    socket.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeType });
+    socket.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
   };
 
   const handleMarkNumber = (num) => {
@@ -101,7 +101,7 @@ const Game = () => {
       socket.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
-  const prizes = ['Jaldi 5', 'First Line', 'Second Line', 'Third Line', 'Full House'];
+  // Removed hardcoded prizes array
 
   return (
     <div className="min-h-screen bg-slate-900 p-8 flex flex-col items-center">
@@ -162,23 +162,26 @@ const Game = () => {
             <h2 className="text-sm text-slate-400 mb-4 font-semibold uppercase tracking-widest">Prizes</h2>
             <div className="flex flex-col gap-3">
               {prizes.map(prize => {
-                const isWon = winners[prize];
-                const wonByMe = isWon && isWon.ticketCode === ticket.ticketCode;
+                const isWon = prize.status === 'COMPLETED';
+                const isLocked = prize.status === 'LOCKED';
+                const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
                 return (
                   <button 
-                    key={prize}
-                    disabled={!!isWon || gameState !== 'LIVE'}
-                    onClick={() => claimPrize(prize)}
+                    key={prize.id}
+                    disabled={isWon || isLocked || gameState !== 'LIVE'}
+                    onClick={() => claimPrize(prize.id)}
                     className={`
                       w-full py-3 px-4 rounded-xl font-bold flex justify-between items-center transition-all
                       ${isWon 
                         ? (wonByMe ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-slate-700 text-slate-500 line-through') 
-                        : (gameState !== 'LIVE' ? 'bg-slate-700 text-slate-400' : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]')}
+                        : (isLocked ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
+                        : (gameState !== 'LIVE' ? 'bg-slate-700 text-slate-400' : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]'))}
                       disabled:cursor-not-allowed border border-transparent
                     `}
                   >
-                    <span>{prize}</span>
-                    {isWon && <span className="text-xs font-mono">{isWon.ticketCode}</span>}
+                    <span>{prize.name}</span>
+                    {isWon && <span className="text-xs font-mono">{prize.winnerTicket}</span>}
+                    {isLocked && <span className="text-xs font-mono uppercase">Locked 🔒</span>}
                   </button>
                 )
               })}
@@ -256,19 +259,19 @@ const Game = () => {
         <h2 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">🏆 Winners Leaderboard</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {prizes.map(prize => {
-             const w = winners[prize];
-             const name = w ? (w.playerName || 'Player') : '';
-             const code = w ? w.ticketCode : '';
+             const isWon = prize.status === 'COMPLETED';
+             const name = prize.winner || '';
+             const code = prize.winnerTicket || '';
              return (
-               <div key={prize} className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-                 <span className="text-emerald-400 font-bold block mb-2">{prize}</span>
-                 {w ? (
+               <div key={prize.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+                 <span className="text-emerald-400 font-bold block mb-2">{prize.name}</span>
+                 {isWon ? (
                     <div className="text-sm text-slate-300">
                       <p>Winner: <strong className="text-white text-base">{name}</strong></p>
                       <p className="text-slate-400 text-xs mt-1">Ticket: {code}</p>
                     </div>
                  ) : (
-                    <p className="text-slate-500 italic text-sm">Waiting...</p>
+                    <p className="text-slate-500 italic text-sm">{prize.status === 'LOCKED' ? 'Locked 🔒' : 'Waiting...'}</p>
                  )}
                </div>
              );
