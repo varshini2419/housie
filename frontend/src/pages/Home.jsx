@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGameStore from '../store/useGameStore';
 
 const Home = () => {
+  const [sessions, setSessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState('');
   const [ticketCode, setTicketCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setSession, setTicket } = useGameStore();
 
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/player/sessions`);
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch sessions', err);
+    }
+  };
+
   const handleJoin = async () => {
-    if (!ticketCode || ticketCode.length !== 6) {
-      setError('Please enter a valid 6-digit code');
+    if (!selectedSessionId) {
+      setError('Please select a session.');
+      return;
+    }
+    if (!ticketCode) {
+      setError('Please enter your Ticket Code.');
       return;
     }
     
@@ -22,7 +44,7 @@ const Home = () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/player/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketCode: ticketCode.toUpperCase() })
+        body: JSON.stringify({ sessionId: selectedSessionId, ticketCode: ticketCode.toUpperCase() })
       });
 
       const data = await res.json();
@@ -52,13 +74,25 @@ const Home = () => {
         
         {error && <div className="bg-red-500/20 border border-red-500 text-red-300 p-3 rounded mb-4 text-sm text-center">{error}</div>}
         
+        <select
+          value={selectedSessionId}
+          onChange={(e) => setSelectedSessionId(e.target.value)}
+          className="w-full p-4 rounded-xl bg-slate-950 border border-slate-700 text-white mb-4 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+        >
+          <option value="">-- Select Session --</option>
+          {sessions.map(session => (
+            <option key={session._id} value={session._id}>
+              {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
+            </option>
+          ))}
+        </select>
+        
         <input 
           type="text" 
           value={ticketCode}
           onChange={(e) => setTicketCode(e.target.value.toUpperCase())}
-          placeholder="Enter 6-digit Code" 
-          maxLength={6}
-          className="w-full p-4 rounded-xl bg-slate-950 border border-slate-700 text-white mb-6 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-center tracking-[0.5em] text-xl uppercase transition-all"
+          placeholder="Enter your Ticket Code" 
+          className="w-full p-4 rounded-xl bg-slate-950 border border-slate-700 text-white mb-6 outline-none focus:ring-2 focus:ring-blue-500 font-mono text-center text-xl uppercase transition-all"
         />
         <button 
           onClick={handleJoin}
