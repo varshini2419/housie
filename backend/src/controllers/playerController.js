@@ -45,6 +45,16 @@ exports.joinGame = async (req, res) => {
             await ticket.save();
         }
 
+        const defaultPrizes = [
+            { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
+            { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
+            { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
+            { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
+            { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null }
+        ];
+
+        const sessionPrizes = session.prizes && session.prizes.length > 0 ? session.prizes : defaultPrizes;
+
         res.json({
             message: 'Joined successfully',
             ticket: {
@@ -61,7 +71,8 @@ exports.joinGame = async (req, res) => {
                 startTime: session.startTime,
                 gameStatus: session.gameStatus,
                 currentNumber: session.currentNumber,
-                drawnNumbers: session.drawnNumbers
+                drawnNumbers: session.drawnNumbers,
+                prizes: sessionPrizes
             }
         });
 

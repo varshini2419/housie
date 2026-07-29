@@ -161,7 +161,7 @@ const Game = () => {
             )}
             <h2 className="text-sm text-slate-400 mb-4 font-semibold uppercase tracking-widest">Prizes</h2>
             <div className="flex flex-col gap-3">
-              {prizes.map(prize => {
+              {prizes.filter(p => p.enabled).map(prize => {
                 const isWon = prize.status === 'COMPLETED';
                 const isLocked = prize.status === 'LOCKED';
                 const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
@@ -258,7 +258,7 @@ const Game = () => {
       <div className="w-full max-w-6xl mt-12 mb-8">
         <h2 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">🏆 Winners Leaderboard</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-          {prizes.map(prize => {
+          {prizes.filter(p => p.enabled).map(prize => {
              const isWon = prize.status === 'COMPLETED';
              const name = prize.winner || '';
              const code = prize.winnerTicket || '';
