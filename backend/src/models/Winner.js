@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const WinnerSchema = new mongoose.Schema({
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'GameSession', required: true, index: true },
-    prizeType: { type: String, required: true, enum: ['Jaldi 5', 'First Line', 'Second Line', 'Third Line', 'Full House'] },
+    prizeType: { type: String, required: true },
     ticketCode: { type: String, required: true },
     claimedAt: { type: Date, default: Date.now }
 }, { timestamps: true });

@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
                 }
 
             } else {
-                socket.emit('claim_rejected', { message: 'Invalid claim' });
+                socket.emit('claim_rejected', { message: `Invalid ${prize.name} claim. Please verify your marked numbers.` });
             }
         } catch (err) {
             console.error(err);
