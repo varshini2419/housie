@@ -52,7 +52,7 @@ const Admin = () => {
 
   useEffect(() => {
     if (viewMode === 'monitor' && liveSession) {
-      socketRef.current = io(import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000');
+      socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
       socketRef.current.emit('join_game', {
         sessionId: liveSession._id,
@@ -122,7 +122,7 @@ const Admin = () => {
     setIsLoadingSessions(true);
     setSessionError('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/all`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/all`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -143,7 +143,7 @@ const Admin = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/admin/login`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -155,7 +155,12 @@ const Admin = () => {
       localStorage.setItem('adminToken', data.token);
       setToken(data.token);
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        setError('Cannot connect to server. The backend might be unavailable or blocked by CORS.');
+      } else {
+        setError(err.message || 'Login failed');
+      }
     }
   };
 
@@ -171,7 +176,7 @@ const Admin = () => {
     setSuccessMsg('');
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/create`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/create`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -206,7 +211,7 @@ const Admin = () => {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/${sessionId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${sessionId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -226,7 +231,7 @@ const Admin = () => {
     setIsLoadingTickets(true);
     setTicketError('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/${session._id}/tickets`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${session._id}/tickets`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -241,7 +246,7 @@ const Admin = () => {
 
   const handleAssignName = async (ticketCode, name) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/${liveSession._id}/assign-name`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${liveSession._id}/assign-name`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +276,7 @@ const Admin = () => {
 
   const executeControl = async (action) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/api/game/${liveSession._id}/control`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${liveSession._id}/control`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
