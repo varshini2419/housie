@@ -246,16 +246,24 @@ const Admin = () => {
 
   const handleAssignName = async (ticketCode, name) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${liveSession._id}/assign-name`, {
-        method: 'POST',
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/tickets/${ticketCode}/name`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ticketCode, playerName: name })
+        body: JSON.stringify({ playerName: name })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error('Server returned an invalid response. The endpoint might not exist.');
+      }
+      
+      if (!res.ok) throw new Error(data.message || 'Failed to assign name');
       setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, playerName: name } : t));
     } catch (err) {
       alert(err.message);
@@ -276,16 +284,23 @@ const Admin = () => {
 
   const executeControl = async (action) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${liveSession._id}/control`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action })
+        }
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch(err) {
+        throw new Error('Server returned an invalid response. The endpoint might not exist.');
+      }
+
+      if (!res.ok) throw new Error(data.message || `Failed to ${action} game`);
     } catch (err) {
       alert(err.message);
     }
