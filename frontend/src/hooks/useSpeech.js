@@ -73,10 +73,10 @@ const useSpeech = () => {
     
     let textToSpeak = '';
     if (number < 10) {
-      textToSpeak = `Single number, ${number}`;
+      textToSpeak = String(number);
     } else {
       const digits = String(number).split('').join(' ');
-      textToSpeak = `${digits}... ${number}`;
+      textToSpeak = `${digits}, ${number}`;
     }
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);

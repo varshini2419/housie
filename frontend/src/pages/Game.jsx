@@ -5,12 +5,13 @@ import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
 
-let socket;
+
 
 const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
+  const socketRef = useRef(null);
 
   const [gameState, setGameState] = useState('WAITING');
   const [currentNumber, setCurrentNumber] = useState(null);
@@ -30,20 +31,20 @@ const Game = () => {
       return;
     }
 
-    socket = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
+    socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
-    socket.emit('join_game', {
+    socketRef.current.emit('join_game', {
       sessionId,
       ticketCode: ticket.ticketCode,
       role: 'player'
     });
 
-    socket.on('player_count_update', ({ onlineCount, totalPlayers }) => {
+    socketRef.current.on('player_count_update', ({ onlineCount, totalPlayers }) => {
       setOnlineCount(onlineCount);
       if (totalPlayers) setTotalJoined(totalPlayers);
     });
 
-    socket.on('game_sync', (data) => {
+    socketRef.current.on('game_sync', (data) => {
       setGameState(data.status);
       setCurrentNumber(data.currentNumber);
       setDrawnNumbers(data.drawnNumbers);
@@ -53,32 +54,32 @@ const Game = () => {
       }
     });
 
-    socket.on('number_drawn', ({ number, drawnNumbers }) => {
+    socketRef.current.on('number_drawn', ({ number, drawnNumbers }) => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
       announceNumber(number);
     });
 
-    socket.on('game_started', () => setGameState('LIVE'));
+    socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    socket.on('game_paused', ({ winners, countdown }) => {
+    socketRef.current.on('game_paused', ({ winners, countdown }) => {
       setGameState('PAUSED');
       if (countdown !== undefined) setPauseCountdown(countdown);
     });
 
-    socket.on('pause_countdown_tick', ({ countdown }) => {
+    socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
       setPauseCountdown(countdown);
     });
 
-    socket.on('game_resumed', () => setGameState('LIVE'));
-    socket.on('game_ended', () => setGameState('COMPLETED'));
+    socketRef.current.on('game_resumed', () => setGameState('LIVE'));
+    socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
-    socket.on('game_deleted', () => {
+    socketRef.current.on('game_deleted', () => {
       alert('The session was deleted by the host.');
       navigate('/');
     });
 
-    socket.on('claim_result', ({ success, message, prizeId, winnerTicket, winnerName }) => {
+    socketRef.current.on('claim_result', ({ success, message, prizeId, winnerTicket, winnerName }) => {
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
@@ -93,7 +94,7 @@ const Game = () => {
     });
 
     return () => {
-      socket.disconnect();
+      if (socketRef.current) socketRef.current.disconnect();
     };
   }, [sessionId, ticket, navigate]);
 
@@ -104,17 +105,17 @@ const Game = () => {
 
   const claimPrize = (prizeId) => {
     if (gameState !== 'LIVE') return;
-    socket.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
+    socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
   };
 
   const handleMarkNumber = (num) => {
     if (gameState !== 'LIVE') return;
     if (num === 0) return;
-    if (isMarked(num)) return;
     if (!isDrawn(num)) return;
+    if (isMarked(num)) return;
     
     setMarkedNumbers(prev => [...prev, num]);
-    socket.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
+    socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
   if (!ticket || !session) {
@@ -204,7 +205,7 @@ const Game = () => {
               <div className="absolute inset-0 bg-brand-card/95 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-3xl p-6 text-center">
                 <span className="text-2xl mb-1 animate-bounce">🏆</span>
                 <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Winner Announced!</span>
-                <span className="text-brand-text-muted text-xs mb-3">Validating prize claim...</span>
+                <span className="text-brand-text-muted text-xs mb-3">Prize verification in progress...</span>
                 {pauseCountdown > 0 ? (
                   <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">Resuming in {pauseCountdown}s</span>
                 ) : (

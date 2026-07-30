@@ -212,10 +212,24 @@ io.on('connection', (socket) => {
                     remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
 
-                // 2-Second Pause Logic
+                // 7-Second Synchronized Pause Logic
                 try {
                     await pauseGame(sessionId, io);
+                    
+                    let countdown = 7;
+                    io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                    
+                    const intervalId = setInterval(() => {
+                        countdown--;
+                        if (countdown > 0) {
+                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                        } else {
+                            clearInterval(intervalId);
+                        }
+                    }, 1000);
+
                     setTimeout(async () => {
+                        clearInterval(intervalId);
                         const checkGame = await GameSession.findById(sessionId);
                         if (checkGame && checkGame.gameStatus === 'PAUSED') {
                             try {
@@ -224,7 +238,7 @@ io.on('connection', (socket) => {
                                 console.error('Failed to auto-resume:', e);
                             }
                         }
-                    }, 10000);
+                    }, 7000);
                 } catch (e) {
                     console.error('Pause error during claim:', e);
                 }

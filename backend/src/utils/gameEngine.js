@@ -138,7 +138,7 @@ const startGame = async (sessionId, io) => {
         clearInterval(state.timerId);
     }
 
-    state.timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+    state.timerId = setInterval(() => drawIntervalLogic(game, io), 4000);
     io.to(sessionId.toString()).emit('game_started');
     return game;
 };

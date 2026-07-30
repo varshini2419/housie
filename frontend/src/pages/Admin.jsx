@@ -39,6 +39,7 @@ const Admin = () => {
 
   const [adminStats, setAdminStats] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
+  const [pauseCountdown, setPauseCountdown] = useState(0);
   const socketRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
@@ -75,8 +76,13 @@ const Admin = () => {
         setAdminStats(prev => prev ? { ...prev, gameStatus: 'LIVE' } : prev);
       });
 
-      socketRef.current.on('game_paused', () => {
+      socketRef.current.on('game_paused', ({ countdown }) => {
         setAdminStats(prev => prev ? { ...prev, gameStatus: 'PAUSED' } : prev);
+        if (countdown !== undefined) setPauseCountdown(countdown);
+      });
+
+      socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
+        setPauseCountdown(countdown);
       });
 
       socketRef.current.on('game_resumed', () => {
@@ -683,7 +689,14 @@ const Admin = () => {
           </div>
           
           {adminStats ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+              {adminStats?.gameStatus === 'PAUSED' && pauseCountdown > 0 && (
+                <div className="absolute inset-0 z-20 backdrop-blur-md bg-brand-bg/80 flex flex-col items-center justify-center p-6 text-center animate-fade-in border border-brand-border/50 rounded-3xl">
+                  <span className="text-2xl mb-1 animate-bounce">🏆</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Prize Verification</span>
+                  <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mt-2">Resuming in {pauseCountdown}s</span>
+                </div>
+              )}
               <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col items-center justify-center text-center shadow-premium">
                 <p className="text-brand-text-muted text-xs uppercase font-bold tracking-wider mb-2">Current Drawn Number</p>
                 <p className="text-5xl font-black text-brand-blue">{adminStats.currentNumber || '-'}</p>
