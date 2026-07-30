@@ -14,6 +14,7 @@ const useSpeech = () => {
   const isSpeaking = useRef(false);
   const initialized = useRef(false);
   const currentSpokenNumber = useRef(null);
+  const lastAnnouncedNumber = useRef(null); // CRITICAL: Global tracker to prevent duplicate announcements
   const timeoutRefs = useRef([]); // To track and clear failsafe timeouts
   const activeUtterances = useRef(new Set()); // CRITICAL: Prevent Garbage Collection of utterances
 
@@ -203,12 +204,20 @@ const useSpeech = () => {
         console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
         return;
     }
+
+    // STRICT GLOBAL DEDUPLICATION: Never announce the same number consecutively
+    if (lastAnnouncedNumber.current === number) {
+        console.log(`[VOICE TRACE] Blocked duplicate incoming number globally: ${number}`);
+        return;
+    }
     
     // STRICT Deduplication: Prevent multiple identical queue entries or re-queuing the currently speaking number
     if (speechQueue.current.includes(number) || currentSpokenNumber.current === number) {
-        console.log(`[VOICE TRACE] Skipped duplicate number: ${number}`);
+        console.log(`[VOICE TRACE] Skipped duplicate number in queue: ${number}`);
         return;
     }
+    
+    lastAnnouncedNumber.current = number; // Update global tracker
     
     console.log(`[VOICE TRACE] Queued number: ${number}`);
     speechQueue.current.push(number);
