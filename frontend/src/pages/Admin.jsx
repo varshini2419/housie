@@ -342,8 +342,8 @@ const Admin = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
         {/* Background Ambient Orbs */}
-        <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+        <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
 
         <div className="absolute top-8 right-8 z-20">
           <ThemeToggle />
@@ -370,7 +370,7 @@ const Admin = () => {
                 placeholder="Admin username" 
                 value={username} 
                 onChange={e => setUsername(e.target.value)} 
-                className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald transition-all shadow-sm font-medium" 
+                className="w-full premium-input" 
               />
             </div>
             <div>
@@ -380,12 +380,12 @@ const Admin = () => {
                 placeholder="••••••••" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
-                className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald transition-all shadow-sm font-medium" 
+                className="w-full premium-input" 
               />
             </div>
             <button 
               type="submit" 
-              className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-2xl transition-all shadow-md shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer text-base tracking-wide"
+              className="w-full mt-2 premium-btn-success w-full mt-2 text-lg"
             >
               Sign In to Dashboard →
             </button>
@@ -398,7 +398,7 @@ const Admin = () => {
   return (
     <div className="p-4 sm:p-8 max-w-6xl mx-auto min-h-screen bg-brand-bg text-brand-text relative">
       {/* Top Header */}
-      <div className="glass-panel p-6 rounded-3xl shadow-premium border border-brand-border flex justify-between items-center mb-8">
+      <div className="glass-panel p-6 flex justify-between items-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
           Admin Dashboard
         </h1>
@@ -406,7 +406,7 @@ const Admin = () => {
           <ThemeToggle />
           <button 
             onClick={handleLogout} 
-            className="px-4 py-2 rounded-2xl bg-brand-bg border border-brand-border hover:border-red-500/50 hover:text-red-500 text-brand-text-muted transition-all font-semibold text-sm cursor-pointer shadow-sm"
+            className="px-4 py-2 rounded-2xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all font-semibold text-sm cursor-pointer shadow-sm rounded-xl"
           >
             Logout 🚪
           </button>
@@ -416,7 +416,7 @@ const Admin = () => {
       {viewMode === 'dashboard' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Create Session Card */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border relative">
+          <div className="glass-panel p-6 sm:p-8 relative">
             <div className="absolute top-0 left-8 right-8 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-b-full"></div>
 
             <h2 className="text-xl font-bold mb-6 text-brand-text flex items-center gap-2">
@@ -429,17 +429,17 @@ const Admin = () => {
             <form onSubmit={handleCreateGame} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Session Title</label>
-                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald font-medium shadow-sm" placeholder="E.G. Friday Evening Tambola" />
+                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full premium-input" placeholder="E.G. Friday Evening Tambola" />
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Total Players</label>
-                  <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald font-medium shadow-sm" placeholder="10" />
+                  <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full premium-input" placeholder="10" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Start Time</label>
-                  <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald font-medium shadow-sm cursor-pointer" />
+                  <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full premium-input cursor-pointer" />
                 </div>
               </div>
 
@@ -467,7 +467,7 @@ const Admin = () => {
               {ticketCodeMode === 'PATTERN' && (
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Starting Register Code</label>
-                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full p-3.5 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald font-mono shadow-sm" placeholder="E.G. A1 OR 24B91A0701" />
+                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full premium-input font-mono" placeholder="E.G. A1 OR 24B91A0701" />
                 </div>
               )}
 
@@ -476,7 +476,7 @@ const Admin = () => {
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Configured Prizes</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
                   {prizes.map((prize, idx) => (
-                    <div key={prize.id} className="flex items-center justify-between gap-2 bg-brand-bg p-2.5 rounded-xl border border-brand-border hover:border-emerald-500/30 transition-all">
+                    <div key={prize.id} className="flex items-center justify-between gap-2 glass-panel-secondary p-3 border border-brand-border hover:border-emerald-500/30 transition-all">
                       <label className="flex items-center gap-2.5 cursor-pointer select-none truncate">
                         <input 
                           type="checkbox" 
@@ -502,7 +502,7 @@ const Admin = () => {
                   ))}
                 </div>
 
-                <div className="bg-brand-bg p-3.5 rounded-2xl border border-brand-border flex flex-col sm:flex-row gap-2 mt-3">
+                <div className="glass-panel-secondary p-4 border border-brand-border flex flex-col sm:flex-row gap-2 mt-3">
                   <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
                   <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
                     <option value="Jaldi5">Jaldi 5</option>
@@ -528,7 +528,7 @@ const Admin = () => {
           </div>
 
           {/* All Sessions Card */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border">
+          <div className="glass-panel p-6 sm:p-8">
             <h2 className="text-xl font-bold mb-6 text-brand-text flex items-center gap-2">
               <span>📋</span> All Sessions ({activeSessions.length})
             </h2>
@@ -572,7 +572,7 @@ const Admin = () => {
 
       {/* Tickets View */}
       {viewMode === 'tickets' && (
-        <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border">
+        <div className="glass-panel p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-brand-border pb-6 gap-4">
             <div>
               <button onClick={returnToDashboard} className="text-brand-text-muted hover:text-brand-text text-sm font-semibold transition-colors mb-2 flex items-center gap-1 cursor-pointer">← Back to Dashboard</button>
@@ -672,16 +672,16 @@ const Admin = () => {
               </button>
 
               {adminStats?.gameStatus === 'WAITING' && (
-                <button onClick={() => executeControl('start')} className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-md cursor-pointer hover:shadow-lg">Start Game ▶</button>
+                <button onClick={() => executeControl('start')} className="premium-btn-success shadow-sm px-6 py-2">Start Game ▶</button>
               )}
               {adminStats?.gameStatus === 'LIVE' && (
-                <button onClick={() => executeControl('pause')} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-md cursor-pointer">Pause Game ⏸</button>
+                <button onClick={() => executeControl('pause')} className="bg-amber-500 hover:bg-amber-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer">Pause Game ⏸</button>
               )}
               {adminStats?.gameStatus === 'PAUSED' && (
-                <button onClick={() => executeControl('resume')} className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-md cursor-pointer">Resume Game ▶</button>
+                <button onClick={() => executeControl('resume')} className="premium-btn-success shadow-sm px-6 py-2">Resume Game ▶</button>
               )}
               {(adminStats?.gameStatus === 'LIVE' || adminStats?.gameStatus === 'PAUSED') && (
-                <button onClick={() => { if(window.confirm('Are you sure you want to end this game?')) executeControl('end') }} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-md cursor-pointer">End Game 🛑</button>
+                <button onClick={() => { if(window.confirm('Are you sure you want to end this game?')) executeControl('end') }} className="bg-red-500 hover:bg-red-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer">End Game 🛑</button>
               )}
               {adminStats?.gameStatus === 'COMPLETED' && (
                 <>
@@ -703,7 +703,7 @@ const Admin = () => {
                   <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mt-2">Resuming in {pauseCountdown}s</span>
                 </div>
               )}
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
+              <div className="glass-panel-secondary p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">Current Drawn</p>
                 <p className="text-5xl font-black text-brand-blue">{adminStats.currentNumber || '-'}</p>
                 {adminStats?.gameStatus === 'LIVE' && nextDrawCountdown !== null && (
@@ -723,6 +723,15 @@ const Admin = () => {
                 <p className="text-4xl font-black text-amber-500">{adminStats.remainingNumbers !== undefined ? adminStats.remainingNumbers : 90}</p>
               </div>
               <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col shadow-premium max-h-64 overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-brand-text flex items-center gap-2">🕹️ Live Dashboard</h3>
+                <div className="flex gap-2">
+                  {adminStats?.gameStatus === 'WAITING' && <span className="status-badge-amber">Waiting to Start</span>}
+                  {adminStats?.gameStatus === 'LIVE' && <span className="status-badge-emerald">Live & Active</span>}
+                  {adminStats?.gameStatus === 'PAUSED' && <span className="status-badge-blue">Prize Verification</span>}
+                  {adminStats?.gameStatus === 'COMPLETED' && <span className="status-badge-blue">Game Over</span>}
+                </div>
+              </div>
                 <p className="text-brand-text-muted text-xs uppercase font-bold tracking-wider mb-3 text-center sticky top-0 bg-brand-card pb-1">Configured Prizes</p>
                 <div className="space-y-2.5">
                   {(adminStats?.prizes || []).map(prize => (
@@ -748,7 +757,7 @@ const Admin = () => {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border">
+            <div className="lg:col-span-2 glass-panel p-6 sm:p-8">
               <h2 className="text-xs text-brand-text-muted mb-6 font-bold uppercase tracking-wider">Master Draw History</h2>
               <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
                 {Array.from({length: 90}, (_, i) => i + 1).map(num => {
@@ -767,7 +776,7 @@ const Admin = () => {
               </div>
             </div>
 
-            <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border flex flex-col">
+            <div className="glass-panel p-6 sm:p-8 flex flex-col">
               <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider flex items-center">
                 <span className="w-2 h-2 rounded-full bg-red-500 mr-2.5 animate-pulse"></span>
                 Live Activity Feed
@@ -775,7 +784,7 @@ const Admin = () => {
               <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[380px]">
                 {(Array.isArray(activityFeed) ? activityFeed : []).length > 0 ? (
                   (Array.isArray(activityFeed) ? activityFeed : []).map((feed, idx) => (
-                    <div key={idx} className="bg-brand-bg p-3.5 rounded-2xl border border-brand-border shadow-sm text-xs">
+                    <div key={idx} className="glass-panel-secondary p-4 border border-brand-border shadow-sm text-xs">
                       <span className="text-brand-text-muted font-mono block mb-1">
                         {feed.time.toLocaleTimeString()}
                       </span>

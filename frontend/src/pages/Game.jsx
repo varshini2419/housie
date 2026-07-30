@@ -136,8 +136,8 @@ const Game = () => {
   return (
     <div className="min-h-screen bg-brand-bg p-4 sm:p-8 flex flex-col items-center relative overflow-hidden" onClick={unlockAudio}>
       {/* Background Orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
 
       {toastMsg && (
         <div className="fixed top-8 right-8 bg-brand-card border-l-4 border-brand-emerald text-brand-text p-4 rounded-2xl shadow-premium-lg z-50 animate-bounce flex items-center gap-3">
@@ -147,7 +147,7 @@ const Game = () => {
       )}
 
       {/* Header Bar */}
-      <div className="glass-panel p-6 rounded-3xl shadow-premium border border-brand-border flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mb-8 gap-4 relative z-10">
+      <div className="glass-panel p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mb-8 gap-4 relative z-10">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
@@ -252,7 +252,7 @@ const Game = () => {
         <div className="lg:col-span-2 flex flex-col gap-8">
           
           {/* Ticket Card */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border overflow-hidden relative">
+          <div className="glass-panel p-6 sm:p-8 overflow-hidden relative">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl sm:text-2xl text-brand-text font-bold tracking-tight">
                 Your Tambola Ticket
@@ -301,7 +301,7 @@ const Game = () => {
           </div>
 
           {/* History Card */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border">
+          <div className="glass-panel p-6 sm:p-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Draw History</h2>
               <span className="text-xs font-semibold text-brand-text-muted bg-brand-bg px-3 py-1 rounded-full border border-brand-border">
