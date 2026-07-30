@@ -15,6 +15,7 @@ const useSpeech = () => {
   const initialized = useRef(false);
   const currentSpokenNumber = useRef(null);
   const timeoutRefs = useRef([]); // To track and clear failsafe timeouts
+  const activeUtterances = useRef(new Set()); // CRITICAL: Prevent Garbage Collection of utterances
 
   // Initialize and load voices robustly (especially for Safari/iOS)
   useEffect(() => {
@@ -27,6 +28,7 @@ const useSpeech = () => {
     };
     
     if (window.speechSynthesis) {
+      window.speechSynthesis.cancel(); // Clear any zombie native queues from previous page loads
       loadVoices();
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -79,28 +81,46 @@ const useSpeech = () => {
 
   const speakUtterance = (text) => {
     return new Promise((resolve) => {
+      console.log(`[VOICE TRACE] Creating utterance for text: "${text}"`);
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
       utterance.pitch = 1;
       utterance.volume = 1;
       
       const preferredVoice = getBestVoice();
-      if (preferredVoice) utterance.voice = preferredVoice;
+      if (preferredVoice) {
+          console.log(`[VOICE TRACE] Selected voice: ${preferredVoice.name}`);
+          utterance.voice = preferredVoice;
+      } else {
+          console.log(`[VOICE TRACE] No preferred voice found, using default`);
+      }
 
       let finished = false;
       
+      activeUtterances.current.add(utterance); // Keep alive to prevent GC bug where onend never fires
+      
       const finish = () => {
+          activeUtterances.current.delete(utterance); // Release for GC
           if (finished) return;
           finished = true;
           resolve();
       };
 
-      utterance.onend = finish;
+      utterance.onstart = () => {
+          console.log(`[VOICE TRACE] onstart fired for text: "${text}"`);
+      };
+
+      utterance.onend = () => {
+          console.log(`[VOICE TRACE] onend fired for text: "${text}"`);
+          finish();
+      };
+      
       utterance.onerror = (e) => {
-          console.error('[Voice Engine] Utterance error:', e);
+          console.error(`[VOICE TRACE] onerror fired for text: "${text}"`, e);
           finish();
       };
 
+      console.log(`[VOICE TRACE] Calling window.speechSynthesis.speak() for text: "${text}"`);
       window.speechSynthesis.speak(utterance);
       
       // Failsafe for Safari where onend might not fire
@@ -124,12 +144,17 @@ const useSpeech = () => {
   };
 
   const processQueue = useCallback(async () => {
+    console.log(`[VOICE TRACE] processQueue started`);
     if (!isVoiceEnabled.current || !window.speechSynthesis || speechQueue.current.length === 0) {
+      console.log(`[VOICE TRACE] processQueue returned early. enabled: ${isVoiceEnabled.current}, queue: ${speechQueue.current.length}`);
       isSpeaking.current = false;
       return;
     }
 
-    if (isSpeaking.current) return; // Prevent concurrent processing
+    if (isSpeaking.current) {
+      console.log(`[VOICE TRACE] processQueue blocked by isSpeaking.current = true`);
+      return; // Prevent concurrent processing
+    }
     
     isSpeaking.current = true;
     
@@ -138,7 +163,7 @@ const useSpeech = () => {
     const number = speechQueue.current.shift();
     currentSpokenNumber.current = number;
     
-    console.log(`[Voice Engine] Processing number: ${number}`);
+    console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
 
     try {
         if (number < 10) {
@@ -173,20 +198,23 @@ const useSpeech = () => {
   }, []);
 
   const announceNumber = useCallback((number) => {
+    console.log(`[VOICE TRACE] announceNumber called for: ${number}`);
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
+        console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
         return;
     }
     
     // STRICT Deduplication: Prevent multiple identical queue entries or re-queuing the currently speaking number
     if (speechQueue.current.includes(number) || currentSpokenNumber.current === number) {
-        console.log(`[Voice Engine] Skipped duplicate number: ${number}`);
+        console.log(`[VOICE TRACE] Skipped duplicate number: ${number}`);
         return;
     }
     
-    console.log(`[Voice Engine] Queued number: ${number}`);
+    console.log(`[VOICE TRACE] Queued number: ${number}`);
     speechQueue.current.push(number);
     
     if (!isSpeaking.current) {
+      console.log(`[VOICE TRACE] Scheduling processQueue (queue length: ${speechQueue.current.length})`);
       // In JS event loop, multiple sync calls to announceNumber will queue numbers first.
       // setTimeout ensures processQueue checks the fully populated queue on the next tick.
       const id = setTimeout(processQueue, 50);
