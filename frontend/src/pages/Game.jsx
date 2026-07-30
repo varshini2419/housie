@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
+import ThemeToggle from '../components/ThemeToggle';
 
 let socket;
 
@@ -10,75 +11,98 @@ const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
-  const { isVoiceEnabled, toggleVoice, announceNumber } = useSpeech();
 
-  const announceNumberRef = useRef(announceNumber);
-  useEffect(() => {
-    announceNumberRef.current = announceNumber;
-  }, [announceNumber]);
-
-  const [gameState, setGameState] = useState(session?.gameStatus || 'WAITING');
-  const [currentNumber, setCurrentNumber] = useState(session?.currentNumber || null);
-  const [drawnNumbers, setDrawnNumbers] = useState(session?.drawnNumbers || []);
+  const [gameState, setGameState] = useState('WAITING');
+  const [currentNumber, setCurrentNumber] = useState(null);
+  const [drawnNumbers, setDrawnNumbers] = useState([]);
   const [markedNumbers, setMarkedNumbers] = useState([]);
-  const [prizes, setPrizes] = useState(session?.prizes || []);
-  const [toastMsg, setToastMsg] = useState('');
-  const [onlineCount, setOnlineCount] = useState(0);
-  const [totalJoined, setTotalJoined] = useState(session?.totalPlayers || 0);
+  const [onlineCount, setOnlineCount] = useState(1);
+  const [totalJoined, setTotalJoined] = useState(1);
+  const [prizes, setPrizes] = useState([]);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [pauseCountdown, setPauseCountdown] = useState(0);
+
+  const { speak } = useSpeech();
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
 
   useEffect(() => {
-    if (!session || !ticket || (session.id !== sessionId && session._id !== sessionId)) {
+    if (!ticket || !ticket.ticketCode) {
       navigate('/');
       return;
     }
 
-    socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
-    socket.emit('join_game', { sessionId, ticketCode: ticket.ticketCode, role: 'player' });
+    socket = io(import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000');
 
-    socket.on('game_started', (data) => setGameState(data.status));
-    socket.on('game_paused', (data) => setGameState(data.status));
-    socket.on('game_resumed', (data) => setGameState(data.status));
-    socket.on('game_ended', (data) => setGameState(data.status));
-    socket.on('game_finished', (data) => setGameState(data.status || 'COMPLETED'));
-    
-    socket.on('number_drawn', (data) => {
-      setCurrentNumber(data.number);
-      setDrawnNumbers(data.history);
-      announceNumberRef.current(data.number);
+    socket.emit('join_game', {
+      sessionId,
+      ticketCode: ticket.ticketCode,
+      role: 'player'
+    });
+
+    socket.on('player_count_update', ({ onlineCount, totalPlayers }) => {
+      setOnlineCount(onlineCount);
+      if (totalPlayers) setTotalJoined(totalPlayers);
     });
 
     socket.on('game_sync', (data) => {
       setGameState(data.status);
       setCurrentNumber(data.currentNumber);
       setDrawnNumbers(data.drawnNumbers);
-      if (data.prizes) setPrizes(data.prizes);
-      if (data.markedNumbers) setMarkedNumbers(data.markedNumbers);
+      setPrizes(data.prizes);
+      if (data.markedNumbers) {
+        setMarkedNumbers(data.markedNumbers);
+      }
     });
 
-    socket.on('winner_announced', (data) => {
-      if (data.prizes) setPrizes(data.prizes);
-      setToastMsg(`🎉 Ticket ${data.ticketCode} won ${data.prizeName}!`);
-      setTimeout(() => setToastMsg(''), 5000);
+    socket.on('number_drawn', ({ number, drawnNumbers }) => {
+      setCurrentNumber(number);
+      setDrawnNumbers(drawnNumbers);
+      if (isVoiceEnabled) {
+        speak(number);
+      }
     });
 
-    socket.on('player_count_update', (data) => {
-        if (data.onlineCount !== undefined) setOnlineCount(data.onlineCount);
-        if (data.totalPlayers !== undefined) setTotalJoined(data.totalPlayers);
+    socket.on('game_started', () => setGameState('LIVE'));
+
+    socket.on('game_paused', ({ winners, countdown }) => {
+      setGameState('PAUSED');
+      if (countdown !== undefined) setPauseCountdown(countdown);
     });
 
-    socket.on('claim_rejected', (data) => {
-      setToastMsg(`❌ Claim Rejected: ${data.message}`);
-      setTimeout(() => setToastMsg(''), 4000);
+    socket.on('pause_countdown_tick', ({ countdown }) => {
+      setPauseCountdown(countdown);
     });
 
-    socket.on('number_marked', (data) => {
-        setMarkedNumbers(prev => prev.includes(data.number) ? prev : [...prev, data.number]);
+    socket.on('game_resumed', () => setGameState('LIVE'));
+    socket.on('game_ended', () => setGameState('COMPLETED'));
+
+    socket.on('game_deleted', () => {
+      alert('The session was deleted by the host.');
+      navigate('/');
     });
 
-    return () => socket.disconnect();
-  }, [sessionId, session, ticket, navigate]);
+    socket.on('claim_result', ({ success, message, prizeId, winnerTicket, winnerName }) => {
+      setToastMsg(message);
+      setTimeout(() => setToastMsg(null), 4000);
 
-  if (!session || !ticket) return null;
+      if (success) {
+        setPrizes(prevPrizes => prevPrizes.map(p => {
+          if (p.id === prizeId) {
+            return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName };
+          }
+          return p;
+        }));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [sessionId, ticket, navigate]);
+
+  const toggleVoice = () => {
+    setIsVoiceEnabled(!isVoiceEnabled);
+  };
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -89,77 +113,101 @@ const Game = () => {
   };
 
   const handleMarkNumber = (num) => {
-      if (gameState !== 'LIVE') return;
-      if (num === 0) return;
-      if (isMarked(num)) return; // Cannot unmark
-      if (!isDrawn(num)) return; // Cannot mark undrawn
-      
-      // Optimistic update
-      setMarkedNumbers(prev => [...prev, num]);
-      
-      // Send to server
-      socket.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
+    if (gameState !== 'LIVE') return;
+    if (num === 0) return;
+    if (isMarked(num)) return;
+    if (!isDrawn(num)) return;
+    
+    setMarkedNumbers(prev => [...prev, num]);
+    socket.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
-  // Removed hardcoded prizes array
-
   return (
-    <div className="min-h-screen bg-slate-900 p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-brand-bg p-4 sm:p-8 flex flex-col items-center relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
       {toastMsg && (
-        <div className="fixed top-8 right-8 bg-slate-800 border-l-4 border-emerald-500 text-white p-4 rounded shadow-2xl z-50 animate-bounce">
-          {toastMsg}
+        <div className="fixed top-8 right-8 bg-brand-card border-l-4 border-brand-emerald text-brand-text p-4 rounded-2xl shadow-premium-lg z-50 animate-bounce flex items-center gap-3">
+          <span className="text-xl">🎉</span>
+          <span className="font-semibold text-sm">{toastMsg}</span>
         </div>
       )}
 
-      <div className="flex justify-between items-start w-full max-w-6xl mb-8">
+      {/* Header Bar */}
+      <div className="glass-panel p-6 rounded-3xl shadow-premium border border-brand-border flex flex-col sm:flex-row justify-between items-start sm:items-center w-full max-w-6xl mb-8 gap-4 relative z-10">
         <div>
-          <h1 className="text-3xl font-bold text-blue-400 mb-1">Welcome {ticket.playerName ? ticket.playerName : ''}</h1>
-          <p className="text-slate-300 font-semibold mb-1">Session: {session.sessionName}</p>
-          <p className="text-slate-400 font-mono text-sm mb-3">Ticket Code: {ticket.ticketCode}</p>
-          <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 inline-block">
-            <span className="text-slate-400 text-sm block uppercase tracking-wider mb-1">Players Joined</span>
-            <span className="text-xl font-bold text-emerald-400">{onlineCount} <span className="text-slate-500 text-base">/ {totalJoined}</span></span>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+              Welcome, {ticket.playerName || 'Player'}
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-brand-blue text-xs font-mono font-bold">
+              #{ticket.ticketCode}
+            </span>
+          </div>
+          <p className="text-brand-text-sec text-sm font-medium">Session: <strong className="text-brand-text">{session.sessionName}</strong></p>
+        </div>
+
+        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              {onlineCount} / {totalJoined} Players Online
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button 
+              onClick={toggleVoice}
+              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-semibold text-sm transition-all border cursor-pointer ${isVoiceEnabled ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'bg-brand-card border-brand-border text-brand-text-muted hover:bg-brand-bg'}`}
+            >
+              {isVoiceEnabled ? '🔊 Voice ON' : '🔈 Voice OFF'}
+            </button>
           </div>
         </div>
-        <button 
-          onClick={toggleVoice}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border ${isVoiceEnabled ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
-        >
-          {isVoiceEnabled ? '🔊 Voice ON' : '🔈 Voice OFF'}
-        </button>
       </div>
 
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-8 z-10">
         
-        {/* Left Column: Game Status, Current Number & Claims */}
+        {/* Left Column: Status, Current Number & Claims */}
         <div className="flex flex-col gap-6">
-          <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700 flex flex-col items-center relative overflow-hidden">
-            {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-500/20 animate-pulse pointer-events-none"></div>}
-            <h2 className="text-sm text-slate-400 mb-2 font-semibold uppercase tracking-widest">Status</h2>
-            {gameState === 'WAITING' && <div className="text-amber-400 font-bold animate-pulse text-lg">Waiting Room...</div>}
-            {gameState === 'LIVE' && <div className="text-emerald-400 font-bold text-lg">Game Live</div>}
-            {gameState === 'PAUSED' && <div className="text-amber-500 font-bold text-lg">Game Paused</div>}
-            {gameState === 'COMPLETED' && <div className="text-blue-400 font-bold text-lg">Game Completed</div>}
+          {/* Status Card */}
+          <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border flex flex-col items-center relative overflow-hidden text-center">
+            {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-500/10 animate-pulse pointer-events-none"></div>}
+            <h2 className="text-xs text-brand-text-muted mb-2 font-bold uppercase tracking-wider">Game Status</h2>
+            {gameState === 'WAITING' && <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-sm font-bold animate-pulse">⏳ Waiting Room...</div>}
+            {gameState === 'LIVE' && <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-sm font-bold">🟢 Game Live</div>}
+            {gameState === 'PAUSED' && <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-sm font-bold">⏸️ Game Paused</div>}
+            {gameState === 'COMPLETED' && <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-sm font-bold">🏁 Game Completed</div>}
           </div>
 
-          <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700 flex flex-col items-center">
-            <h2 className="text-sm text-slate-400 mb-4 font-semibold uppercase tracking-widest">Current Number</h2>
-            <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 border-slate-900 transition-all ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-[0_0_30px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`}>
-              <span className="text-6xl font-black text-white shadow-sm">
+          {/* Current Number Card */}
+          <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border flex flex-col items-center text-center relative">
+            <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Current Drawn Number</h2>
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/30 shadow-2xl border-blue-400/40' : 'bg-slate-100 dark:bg-slate-800 text-brand-text-muted border-brand-border'}`}>
+              <span className="text-6xl font-extrabold tracking-tight">
                 {currentNumber || '-'}
               </span>
             </div>
           </div>
 
-          {/* Claim Buttons */}
-          <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700 relative">
+          {/* Claim Buttons Card */}
+          <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border relative">
             {gameState === 'PAUSED' && (
-                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-2xl">
-                    <span className="text-amber-400 font-bold text-xl mb-2 animate-bounce">Winner Announced!</span>
-                    <span className="text-slate-300 text-sm">Validating claims...</span>
-                </div>
+              <div className="absolute inset-0 bg-brand-card/95 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-3xl p-6 text-center">
+                <span className="text-2xl mb-1 animate-bounce">🏆</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Winner Announced!</span>
+                <span className="text-brand-text-muted text-xs mb-3">Validating prize claim...</span>
+                {pauseCountdown > 0 ? (
+                  <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">Resuming in {pauseCountdown}s</span>
+                ) : (
+                  <span className="text-brand-text-muted text-xs italic">Waiting for host resume...</span>
+                )}
+              </div>
             )}
-            <h2 className="text-sm text-slate-400 mb-4 font-semibold uppercase tracking-widest">Prizes</h2>
+            <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Claimable Prizes</h2>
             <div className="flex flex-col gap-3">
               {prizes.filter(p => p.enabled).map(prize => {
                 const isWon = prize.status === 'COMPLETED';
@@ -171,17 +219,17 @@ const Game = () => {
                     disabled={isWon || isLocked || gameState !== 'LIVE'}
                     onClick={() => claimPrize(prize.id)}
                     className={`
-                      w-full py-3 px-4 rounded-xl font-bold flex justify-between items-center transition-all
+                      w-full py-3.5 px-4 rounded-2xl font-bold flex justify-between items-center transition-all duration-200 text-sm border shadow-sm
                       ${isWon 
-                        ? (wonByMe ? 'bg-emerald-600 border-emerald-400 text-white' : 'bg-slate-700 text-slate-500 line-through') 
-                        : (isLocked ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed'
-                        : (gameState !== 'LIVE' ? 'bg-slate-700 text-slate-400' : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]'))}
-                      disabled:cursor-not-allowed border border-transparent
+                        ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 dark:border-slate-700/60 line-through opacity-75') 
+                        : (isLocked ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                        : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-blue-400/30 hover:shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-[0.98]'))}
+                      disabled:cursor-not-allowed cursor-pointer
                     `}
                   >
                     <span>{prize.name}</span>
-                    {isWon && <span className="text-xs font-mono">{prize.winnerTicket}</span>}
-                    {isLocked && <span className="text-xs font-mono uppercase">Locked 🔒</span>}
+                    {isWon && <span className="text-xs font-mono px-2 py-0.5 rounded bg-black/10">{prize.winnerTicket}</span>}
+                    {isLocked && <span className="text-xs font-mono uppercase opacity-75">Locked 🔒</span>}
                   </button>
                 )
               })}
@@ -189,16 +237,21 @@ const Game = () => {
           </div>
         </div>
 
-        {/* Center/Right Column: Ticket & History */}
+        {/* Center & Right Column: Ticket & History */}
         <div className="lg:col-span-2 flex flex-col gap-8">
           
-          <div className="bg-slate-800 rounded-2xl p-8 shadow-xl border border-slate-700 overflow-hidden relative">
-            <h2 className="text-2xl text-white mb-6 font-bold flex justify-between">
-              <span>Your Tambola Ticket</span>
-              <span className="text-emerald-400"># {ticket.ticketCode}</span>
-            </h2>
+          {/* Ticket Card */}
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border overflow-hidden relative">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl sm:text-2xl text-brand-text font-bold tracking-tight">
+                Your Tambola Ticket
+              </h2>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-sm font-bold">
+                Ticket #{ticket.ticketCode}
+              </span>
+            </div>
             
-            <div className="grid grid-cols-9 gap-1 bg-slate-900 p-2 rounded-xl border border-slate-700">
+            <div className="grid grid-cols-9 gap-1.5 bg-slate-100 dark:bg-slate-950 p-3 rounded-2xl border border-brand-border shadow-inner">
               {ticket.ticketMatrix.map((row, rIndex) => (
                 row.map((num, cIndex) => {
                   const marked = num !== 0 && isMarked(num);
@@ -209,19 +262,18 @@ const Game = () => {
                       key={`r${rIndex}-c${cIndex}`} 
                       onClick={() => handleMarkNumber(num)}
                       className={`
-                        aspect-square flex items-center justify-center text-xl font-bold rounded-lg border transition-all duration-300 relative
-                        ${num === 0 ? 'bg-slate-900/50 border-transparent' : 'bg-slate-700 border-slate-800 shadow-inner'}
-                        ${marked ? 'text-slate-400' : 'text-white'}
-                        ${canMark ? 'cursor-pointer hover:bg-slate-600 hover:border-slate-500' : ''}
+                        aspect-square flex items-center justify-center text-lg sm:text-xl font-extrabold rounded-xl border transition-all duration-200 relative select-none
+                        ${num === 0 ? 'bg-transparent border-transparent' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'}
+                        ${marked ? 'text-brand-text-muted/40 opacity-70' : 'text-brand-text'}
+                        ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}
                       `}
                     >
                       {num === 0 ? '' : num}
                       
-                      {/* Strike-through visualization for marked numbers */}
                       {marked && (
-                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-[120%] h-1 bg-red-500 rotate-[-45deg] rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
-                         </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-[120%] h-1 bg-red-500 rotate-[-45deg] rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+                        </div>
                       )}
                     </div>
                   );
@@ -230,20 +282,21 @@ const Game = () => {
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-2xl p-8 shadow-xl border border-slate-700">
-            <div className="flex justify-between items-end mb-6">
-                <h2 className="text-xl text-slate-300 font-semibold uppercase tracking-widest">Draw History</h2>
-                <div className="text-slate-400 text-sm font-bold">
-                    Drawn: <span className="text-white">{drawnNumbers.length}</span> / 90
-                </div>
+          {/* History Card */}
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-premium border border-brand-border">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Draw History</h2>
+              <span className="text-xs font-semibold text-brand-text-muted bg-brand-bg px-3 py-1 rounded-full border border-brand-border">
+                Drawn: <strong className="text-brand-text">{drawnNumbers.length}</strong> / 90
+              </span>
             </div>
-            <div className="grid grid-cols-10 gap-2 sm:gap-3">
+            <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
               {Array.from({length: 90}, (_, i) => i + 1).map(num => (
                 <div 
                   key={num}
                   className={`
-                    flex items-center justify-center p-2 rounded text-sm sm:text-base font-bold transition-all duration-500
-                    ${isDrawn(num) ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(37,99,235,0.8)] border border-blue-400' : 'bg-slate-900 text-slate-600 border border-slate-800'}
+                    flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
+                    ${isDrawn(num) ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/60'}
                   `}
                 >
                   {num}
@@ -255,26 +308,29 @@ const Game = () => {
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mt-12 mb-8">
-        <h2 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">🏆 Winners Leaderboard</h2>
+      {/* Leaderboard Cards */}
+      <div className="w-full max-w-6xl mt-10 mb-8 z-10">
+        <h2 className="text-lg font-bold text-brand-text mb-4 flex items-center gap-2">
+          <span>🏆</span> Winners Leaderboard
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {prizes.filter(p => p.enabled).map(prize => {
-             const isWon = prize.status === 'COMPLETED';
-             const name = prize.winner || '';
-             const code = prize.winnerTicket || '';
-             return (
-               <div key={prize.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-                 <span className="text-emerald-400 font-bold block mb-2">{prize.name}</span>
-                 {isWon ? (
-                    <div className="text-sm text-slate-300">
-                      <p>Winner: <strong className="text-white text-base">{name}</strong></p>
-                      <p className="text-slate-400 text-xs mt-1">Ticket: {code}</p>
-                    </div>
-                 ) : (
-                    <p className="text-slate-500 italic text-sm">{prize.status === 'LOCKED' ? 'Locked 🔒' : 'Waiting...'}</p>
-                 )}
-               </div>
-             );
+            const isWon = prize.status === 'COMPLETED';
+            const name = prize.winner || '';
+            const code = prize.winnerTicket || '';
+            return (
+              <div key={prize.id} className="glass-panel p-4 rounded-2xl border-l-4 border-l-brand-emerald border-y border-r border-brand-border shadow-sm hover:shadow-md transition-all">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm block mb-1.5">{prize.name}</span>
+                {isWon ? (
+                  <div className="text-xs text-brand-text-sec">
+                    <p>Winner: <strong className="text-brand-text font-bold">{name}</strong></p>
+                    <p className="text-brand-text-muted text-[11px] font-mono mt-0.5">Ticket #{code}</p>
+                  </div>
+                ) : (
+                  <p className="text-brand-text-muted text-xs italic">{prize.status === 'LOCKED' ? 'Locked 🔒' : 'Waiting...'}</p>
+                )}
+              </div>
+            );
           })}
         </div>
       </div>

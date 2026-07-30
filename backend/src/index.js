@@ -20,8 +20,14 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 };
@@ -31,19 +37,20 @@ app.use(express.json());
 
 const io = new Server(server, {
     cors: { 
-        origin: process.env.FRONTEND_URL || '*', 
+        origin: allowedOrigins, 
         methods: ["GET", "POST"],
         credentials: true
     }
 });
 app.set('io', io);
 
-const { activeGames, pauseGame, resumeGame } = require('./utils/gameEngine');
+const { activeGames, ensureActiveGame, pauseGame, resumeGame } = require('./utils/gameEngine');
 
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
     
     socket.on('join_game', async ({ sessionId, ticketCode, role }) => {
+        const state = await ensureActiveGame(sessionId, io);
         socket.join(sessionId);
         socket.sessionId = sessionId;
         socket.ticketCode = ticketCode;
@@ -95,7 +102,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('mark_number', async ({ sessionId, ticketCode, number }) => {
-        const state = activeGames[sessionId];
+        const state = await ensureActiveGame(sessionId, io);
         if (!state) return;
         if (!state.drawnNumbers.includes(number)) return;
 
@@ -112,7 +119,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }) => {
-        const state = activeGames[sessionId];
+        const state = await ensureActiveGame(sessionId, io);
         if (!state) return socket.emit('claim_rejected', { message: 'Game not active' });
 
         const game = await GameSession.findById(sessionId);
@@ -189,7 +196,7 @@ io.on('connection', (socket) => {
                     prizes: sessionPrizes
                 });
 
-                // 2-Second Pause Logic
+                // 10-Second Pause Logic
                 try {
                     await pauseGame(sessionId, io);
                     setTimeout(async () => {
@@ -201,7 +208,7 @@ io.on('connection', (socket) => {
                                 console.error('Failed to auto-resume:', e);
                             }
                         }
-                    }, 2000);
+                    }, 10000);
                 } catch (e) {
                     console.error('Pause error during claim:', e);
                 }

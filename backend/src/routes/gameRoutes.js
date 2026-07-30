@@ -8,7 +8,8 @@ const {
     pauseGameSession,
     resumeGameSession,
     endGameSession,
-    assignPlayerName
+    assignPlayerName,
+    deleteGameSession
 } = require('../controllers/gameController');
 const auth = require('../middlewares/auth');
 
@@ -21,5 +22,6 @@ router.post('/:id/start', auth, startGameSession);
 router.post('/:id/pause', auth, pauseGameSession);
 router.post('/:id/resume', auth, resumeGameSession);
 router.post('/:id/end', auth, endGameSession);
+router.delete('/:id', auth, deleteGameSession);
 
 module.exports = router;

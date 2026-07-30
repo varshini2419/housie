@@ -1,6 +1,7 @@
 const GameSession = require('../models/GameSession');
 const DrawHistory = require('../models/DrawHistory');
 const Ticket = require('../models/Ticket');
+const Winner = require('../models/Winner');
 
 const activeGames = {};
 
@@ -15,7 +16,8 @@ const fisherYatesShuffle = (array) => {
 };
 
 const drawIntervalLogic = async (game, io) => {
-    const state = activeGames[game._id];
+    const sId = game._id.toString();
+    const state = activeGames[sId];
     if (!state) return;
 
     if (state.availableNumbers.length === 0 || state.winners['Full House']) {
@@ -40,7 +42,7 @@ const drawIntervalLogic = async (game, io) => {
         await GameSession.findByIdAndUpdate(game._id, { currentNumber: nextNum });
     }
 
-    io.to(game._id.toString()).emit('number_drawn', {
+    io.to(sId).emit('number_drawn', {
         number: nextNum,
         history: state.drawnNumbers
     });
@@ -57,12 +59,61 @@ const drawIntervalLogic = async (game, io) => {
     
     const sessionPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
 
-    io.to(game._id.toString()).emit('admin_stats', {
+    io.to(sId).emit('admin_stats', {
         totalJoined: await Ticket.countDocuments({ sessionId: game._id }),
         onlineCount: state.onlinePlayers.size,
         remainingNumbers: state.availableNumbers.length,
         prizes: sessionPrizes
     });
+};
+
+const ensureActiveGame = async (sessionId, io) => {
+    if (!sessionId) return null;
+    const sIdStr = sessionId.toString();
+    
+    if (activeGames[sIdStr]) {
+        if (io) {
+            const game = await GameSession.findById(sIdStr);
+            if (game && game.gameStatus === 'LIVE' && !activeGames[sIdStr].timerId) {
+                activeGames[sIdStr].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+            }
+        }
+        return activeGames[sIdStr];
+    }
+
+    const game = await GameSession.findById(sIdStr);
+    if (!game) return null;
+
+    const drawnNumbers = game.drawnNumbers || [];
+    const allNums = Array.from({length: 90}, (_, i) => i + 1);
+    const remainingNums = allNums.filter(n => !drawnNumbers.includes(n));
+    const shuffled = fisherYatesShuffle(remainingNums);
+
+    const winners = {};
+    if (game.prizes && game.prizes.length > 0) {
+        game.prizes.forEach(prize => {
+            if (prize.status === 'COMPLETED') {
+                winners[prize.name] = {
+                    ticketCode: prize.winnerTicket,
+                    playerName: prize.winner
+                };
+            }
+        });
+    }
+
+    activeGames[sIdStr] = {
+        availableNumbers: shuffled,
+        drawnNumbers: drawnNumbers,
+        timerId: null,
+        winners: winners,
+        onlinePlayers: new Set()
+    };
+
+    if (game.gameStatus === 'LIVE' && io) {
+        activeGames[sIdStr].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+    }
+
+    return activeGames[sIdStr];
 };
 
 const startGame = async (sessionId, io) => {
@@ -81,29 +132,12 @@ const startGame = async (sessionId, io) => {
     game.gameStatus = 'LIVE';
     await game.save();
 
-    if (!activeGames[sessionId]) {
-        const nums = Array.from({length: 90}, (_, i) => i + 1);
-        const shuffled = fisherYatesShuffle(nums);
-
-        activeGames[sessionId] = {
-            availableNumbers: shuffled,
-            drawnNumbers: [],
-            timerId: null,
-            winners: {},
-            onlinePlayers: new Set()
-        };
+    const state = await ensureActiveGame(sessionId, null);
+    if (state.timerId) {
+        clearInterval(state.timerId);
     }
 
-    io.to(sessionId.toString()).emit('game_started', {
-        sessionId: sessionId,
-        status: 'LIVE'
-    });
-
-    if (activeGames[sessionId].timerId) {
-        clearInterval(activeGames[sessionId].timerId);
-    }
-
-    activeGames[sessionId].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+    state.timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
     return game;
 };
 
@@ -114,9 +148,10 @@ const pauseGame = async (sessionId, io) => {
     game.gameStatus = 'PAUSED';
     await game.save();
 
-    if (activeGames[sessionId] && activeGames[sessionId].timerId) {
-        clearInterval(activeGames[sessionId].timerId);
-        activeGames[sessionId].timerId = null;
+    const state = await ensureActiveGame(sessionId, null);
+    if (state && state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
     }
 
     io.to(sessionId.toString()).emit('game_paused', { status: 'PAUSED' });
@@ -135,8 +170,12 @@ const resumeGame = async (sessionId, io) => {
 
     io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });
 
-    if (activeGames[sessionId]) {
-        activeGames[sessionId].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+    const state = await ensureActiveGame(sessionId, null);
+    if (state) {
+        if (state.timerId) {
+            clearInterval(state.timerId);
+        }
+        state.timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
     }
     return game;
 };
@@ -147,31 +186,55 @@ const endGame = async (sessionId, io) => {
 
     game.gameStatus = 'COMPLETED';
     
-    if (activeGames[sessionId]) {
-        game.currentNumber = activeGames[sessionId].drawnNumbers.slice(-1)[0] || null;
-        game.drawnNumbers = activeGames[sessionId].drawnNumbers;
+    const state = await ensureActiveGame(sessionId, null);
+    if (state) {
+        game.currentNumber = state.drawnNumbers.slice(-1)[0] || null;
+        game.drawnNumbers = state.drawnNumbers;
         
         await DrawHistory.findOneAndUpdate(
             { sessionId: game._id },
-            { numbersCalled: activeGames[sessionId].drawnNumbers },
+            { numbersCalled: state.drawnNumbers },
             { upsert: true }
         );
     }
     await game.save();
 
-    if (activeGames[sessionId] && activeGames[sessionId].timerId) {
-        clearInterval(activeGames[sessionId].timerId);
-        activeGames[sessionId].timerId = null;
+    if (state && state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
     }
 
     io.to(sessionId.toString()).emit('game_ended', { status: 'COMPLETED' });
     return game;
 };
 
+const deleteGame = async (sessionId, io) => {
+    if (!sessionId) return;
+    const sIdStr = sessionId.toString();
+    
+    if (activeGames[sIdStr]) {
+        if (activeGames[sIdStr].timerId) {
+            clearInterval(activeGames[sIdStr].timerId);
+        }
+        delete activeGames[sIdStr];
+    }
+    
+    await GameSession.findByIdAndDelete(sIdStr);
+    await Ticket.deleteMany({ sessionId: sIdStr });
+    await DrawHistory.deleteMany({ sessionId: sIdStr });
+    await Winner.deleteMany({ sessionId: sIdStr });
+    
+    if (io) {
+        io.to(sIdStr).emit('game_deleted');
+    }
+};
+
 module.exports = { 
     activeGames,
+    ensureActiveGame,
     startGame,
     pauseGame,
     resumeGame,
-    endGame
+    endGame,
+    deleteGame
 };

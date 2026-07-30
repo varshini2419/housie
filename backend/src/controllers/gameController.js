@@ -1,7 +1,7 @@
 const GameSession = require('../models/GameSession');
 const Ticket = require('../models/Ticket');
 const { generateBatch } = require('../utils/ticketGenerator');
-const { startGame, pauseGame, resumeGame, endGame } = require('../utils/gameEngine');
+const { startGame, pauseGame, resumeGame, endGame, deleteGame } = require('../utils/gameEngine');
 
 exports.createSession = async (req, res) => {
     const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber, prizes } = req.body;
@@ -149,5 +149,15 @@ exports.endGameSession = async (req, res) => {
         res.json({ message: 'Game ended successfully', game });
     } catch (err) {
         res.status(400).json({ message: err.message });
+    }
+};
+
+exports.deleteGameSession = async (req, res) => {
+    try {
+        const io = req.app.get('io');
+        await deleteGame(req.params.id, io);
+        res.json({ message: 'Game session deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message || 'Server error deleting session' });
     }
 };
