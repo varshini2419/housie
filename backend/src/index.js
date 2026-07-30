@@ -74,6 +74,7 @@ io.on('connection', (socket) => {
         if (activeGames[sessionId]) {
             const game = await GameSession.findById(sessionId);
             const status = game ? game.gameStatus : 'WAITING';
+            const state = activeGames[sessionId];
             
             let markedNums = [];
             if (role === 'player' && ticketCode) {
@@ -119,12 +120,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }) => {
-        const state = await ensureActiveGame(sessionId, io);
-        if (!state) return socket.emit('claim_rejected', { message: 'Game not active' });
+        const state = activeGames[sessionId];
+        if (!state) return socket.emit('claim_result', { success: false, message: 'Game not active' });
 
         const game = await GameSession.findById(sessionId);
         if (!game || game.gameStatus !== 'LIVE') {
-            return socket.emit('claim_rejected', { message: 'Game is not LIVE' });
+            return socket.emit('claim_result', { success: false, message: 'Game is not LIVE' });
         }
 
         const defaultPrizes = [
@@ -138,23 +139,23 @@ io.on('connection', (socket) => {
         const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
 
         const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
-        if (prizeIndex === -1) return socket.emit('claim_rejected', { message: 'Prize not found' });
+        if (prizeIndex === -1) return socket.emit('claim_result', { success: false, message: 'Prize not found' });
         
         const prize = sessionPrizes[prizeIndex];
         
         if (prize.status !== 'AVAILABLE') {
-            return socket.emit('claim_rejected', { message: 'Prize is not available' });
+            return socket.emit('claim_result', { success: false, message: 'Prize is not available' });
         }
 
         // Duplicate winner validation for same category
-        const hasWonSameCategory = game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
+        const hasWonSameCategory = game.prizes && game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
         if (hasWonSameCategory) {
-            return socket.emit('claim_rejected', { message: 'You have already claimed a prize in this category' });
+            return socket.emit('claim_result', { success: false, message: 'You have already claimed a prize in this category' });
         }
 
         try {
             const ticket = await Ticket.findOne({ ticketCode, sessionId });
-            if (!ticket) return socket.emit('claim_rejected', { message: 'Ticket not found' });
+            if (!ticket) return socket.emit('claim_result', { success: false, message: 'Ticket not found' });
 
             const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
 
@@ -182,21 +183,22 @@ io.on('connection', (socket) => {
                 const newWinner = new Winner({ sessionId, prizeType: prize.name, ticketCode });
                 await newWinner.save();
                 
-                // Live Activity Feed for Admin
-                io.to(sessionId).emit('activity_feed', {
-                    message: `${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}.`,
-                    ticketCode,
-                    prizeType: prize.name
+                io.to(sessionId).emit('claim_result', {
+                    success: true,
+                    message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
+                    prizeId: prize.id,
+                    winnerTicket: ticketCode,
+                    winnerName: ticket.playerName || 'Player'
                 });
 
-                io.to(sessionId).emit('winner_announced', {
-                    prizeId,
-                    prizeName: prize.name,
-                    ticketCode,
+                io.to(sessionId).emit('game_sync', {
+                    status: game.gameStatus,
+                    currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
+                    drawnNumbers: activeGames[sessionId].drawnNumbers,
                     prizes: sessionPrizes
                 });
 
-                // 10-Second Pause Logic
+                // 2-Second Pause Logic
                 try {
                     await pauseGame(sessionId, io);
                     setTimeout(async () => {
@@ -214,11 +216,11 @@ io.on('connection', (socket) => {
                 }
 
             } else {
-                socket.emit('claim_rejected', { message: `Invalid ${prize.name} claim. Please verify your marked numbers.` });
+                socket.emit('claim_result', { success: false, message: `Invalid ${prize.name} claim. Please verify your marked numbers.` });
             }
         } catch (err) {
             console.error(err);
-            socket.emit('claim_rejected', { message: 'Server error processing claim' });
+            socket.emit('claim_result', { success: false, message: 'Server error processing claim' });
         }
     });
 
