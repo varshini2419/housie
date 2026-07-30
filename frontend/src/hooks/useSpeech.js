@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const useSpeech = () => {
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(() => {
+  const [isVoiceEnabledState, setIsVoiceEnabledState] = useState(() => {
     const saved = localStorage.getItem('voiceEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  
+  // Use a ref so socket listeners never have a stale closure
+  const isVoiceEnabled = useRef(isVoiceEnabledState);
   
   const [voicesLoaded, setVoicesLoaded] = useState(false);
   const speechQueue = useRef([]);
@@ -38,14 +41,15 @@ const useSpeech = () => {
 
   // Save preference
   useEffect(() => {
-    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabled));
-  }, [isVoiceEnabled]);
+    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
+  }, [isVoiceEnabledState]);
 
   // Unlock iOS Safari SpeechSynthesis on first user interaction
   const unlockAudio = useCallback(() => {
     if (initialized.current || !window.speechSynthesis) return;
     console.log('[Voice Engine] Unlocking Audio context (iOS/Safari compat)');
-    const utterance = new SpeechSynthesisUtterance('');
+    // Speak a space instead of empty string to avoid Safari lockups
+    const utterance = new SpeechSynthesisUtterance(' '); 
     utterance.volume = 0; // Silent unlock
     window.speechSynthesis.speak(utterance);
     initialized.current = true;
@@ -54,17 +58,17 @@ const useSpeech = () => {
   // Ensure unlock on toggle if not already unlocked
   const toggleVoice = () => {
     unlockAudio();
-    setIsVoiceEnabled(prev => {
-      const next = !prev;
-      if (!next && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        speechQueue.current = [];
-        isSpeaking.current = false;
-        currentSpokenNumber.current = null;
-        timeoutRefs.current.forEach(clearTimeout);
-      }
-      return next;
-    });
+    const next = !isVoiceEnabled.current;
+    isVoiceEnabled.current = next;
+    setIsVoiceEnabledState(next);
+    
+    if (!next && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      speechQueue.current = [];
+      isSpeaking.current = false;
+      currentSpokenNumber.current = null;
+      timeoutRefs.current.forEach(clearTimeout);
+    }
   };
 
   const getBestVoice = () => {
@@ -120,7 +124,7 @@ const useSpeech = () => {
   };
 
   const processQueue = useCallback(async () => {
-    if (!isVoiceEnabled || !window.speechSynthesis || speechQueue.current.length === 0) {
+    if (!isVoiceEnabled.current || !window.speechSynthesis || speechQueue.current.length === 0) {
       isSpeaking.current = false;
       return;
     }
@@ -129,10 +133,7 @@ const useSpeech = () => {
     
     isSpeaking.current = true;
     
-    // Clear any native ghost queues just to be strictly safe
-    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-        window.speechSynthesis.cancel();
-    }
+    // Removed the aggressive `window.speechSynthesis.cancel()` here that was swallowing utterances
     
     const number = speechQueue.current.shift();
     currentSpokenNumber.current = number;
@@ -148,9 +149,9 @@ const useSpeech = () => {
             const digits = String(number).split('').join(' ');
             await speakUtterance(digits);
             
-            if (isVoiceEnabled) {
+            if (isVoiceEnabled.current) {
                 await delay(500); // Strict 500ms programmatic pause
-                if (isVoiceEnabled) {
+                if (isVoiceEnabled.current) {
                     await speakUtterance(String(number));
                 }
             }
@@ -169,10 +170,10 @@ const useSpeech = () => {
     if (speechQueue.current.length > 0) {
         processQueue();
     }
-  }, [isVoiceEnabled]);
+  }, []);
 
   const announceNumber = useCallback((number) => {
-    if (!isVoiceEnabled || !window.speechSynthesis) {
+    if (!isVoiceEnabled.current || !window.speechSynthesis) {
         return;
     }
     
@@ -191,9 +192,9 @@ const useSpeech = () => {
       const id = setTimeout(processQueue, 50);
       timeoutRefs.current.push(id);
     }
-  }, [isVoiceEnabled, processQueue]);
+  }, [processQueue]);
 
-  return { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio };
+  return { isVoiceEnabled: isVoiceEnabledState, toggleVoice, announceNumber, unlockAudio };
 };
 
 export default useSpeech;
