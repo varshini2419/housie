@@ -84,6 +84,13 @@ const serverTick = async (sessionId, io) => {
 
     if (state.timerId) clearTimeout(state.timerId);
 
+    // Authoritative check: If the game is paused or ended, halt the scheduler entirely.
+    const game = await GameSession.findById(sId);
+    if (!game || game.gameStatus !== 'LIVE') {
+        console.log(`[SCHEDULER] Game is not LIVE (status: ${game?.gameStatus}). Halting serverTick.`);
+        return;
+    }
+
     if (state.phase === 'SPEECH_WAIT') {
         state.tickCountdown--;
         if (state.tickCountdown <= 0) {
@@ -97,7 +104,7 @@ const serverTick = async (sessionId, io) => {
         
         if (state.tickCountdown <= 0) {
             console.log(`[SCHEDULER] Generating Next Number...`);
-            const game = await GameSession.findById(sId);
+
             const continues = await generateNumber(game, io);
             
             if (continues) {
