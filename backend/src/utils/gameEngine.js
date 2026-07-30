@@ -4,6 +4,7 @@ const Ticket = require('../models/Ticket');
 const Winner = require('../models/Winner');
 
 const activeGames = {};
+const DRAW_INTERVAL = 5000;
 
 const fisherYatesShuffle = (array) => {
     let currentIndex = array.length, randomIndex;
@@ -66,6 +67,10 @@ const drawIntervalLogic = async (game, io) => {
         remainingNumbers: state.availableNumbers.length,
         prizes: sessionPrizes
     });
+
+    // Exact 5-second interval between draws
+    if (state.timerId) clearTimeout(state.timerId);
+    state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
 };
 
 const ensureActiveGame = async (sessionId, io) => {
@@ -76,7 +81,7 @@ const ensureActiveGame = async (sessionId, io) => {
         if (io) {
             const game = await GameSession.findById(sIdStr);
             if (game && game.gameStatus === 'LIVE' && !activeGames[sIdStr].timerId) {
-                activeGames[sIdStr].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+                activeGames[sIdStr].timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
             }
         }
         return activeGames[sIdStr];
@@ -111,7 +116,7 @@ const ensureActiveGame = async (sessionId, io) => {
     };
 
     if (game.gameStatus === 'LIVE' && io) {
-        activeGames[sIdStr].timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+        activeGames[sIdStr].timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
     }
 
     return activeGames[sIdStr];
@@ -135,10 +140,10 @@ const startGame = async (sessionId, io) => {
 
     const state = await ensureActiveGame(sessionId, null);
     if (state.timerId) {
-        clearInterval(state.timerId);
+        clearTimeout(state.timerId);
     }
 
-    state.timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+    state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
     io.to(sessionId.toString()).emit('game_started');
     return game;
 };
@@ -152,7 +157,7 @@ const pauseGame = async (sessionId, io) => {
 
     const state = await ensureActiveGame(sessionId, null);
     if (state && state.timerId) {
-        clearInterval(state.timerId);
+        clearTimeout(state.timerId);
         state.timerId = null;
     }
 
@@ -175,9 +180,9 @@ const resumeGame = async (sessionId, io) => {
     const state = await ensureActiveGame(sessionId, null);
     if (state) {
         if (state.timerId) {
-            clearInterval(state.timerId);
+            clearTimeout(state.timerId);
         }
-        state.timerId = setInterval(() => drawIntervalLogic(game, io), 5000);
+        state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
     }
     return game;
 };
@@ -202,7 +207,7 @@ const endGame = async (sessionId, io) => {
     await game.save();
 
     if (state && state.timerId) {
-        clearInterval(state.timerId);
+        clearTimeout(state.timerId);
         state.timerId = null;
     }
 
@@ -216,7 +221,7 @@ const deleteGame = async (sessionId, io) => {
     
     if (activeGames[sIdStr]) {
         if (activeGames[sIdStr].timerId) {
-            clearInterval(activeGames[sIdStr].timerId);
+            clearTimeout(activeGames[sIdStr].timerId);
         }
         delete activeGames[sIdStr];
     }

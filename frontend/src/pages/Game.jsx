@@ -192,7 +192,7 @@ const Game = () => {
           {/* Current Number Card */}
           <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border flex flex-col items-center text-center relative">
             <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Current Drawn Number</h2>
-            <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/30 shadow-2xl border-blue-400/40' : 'bg-slate-100 dark:bg-slate-800 text-brand-text-muted border-brand-border'}`}>
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/30 shadow-2xl border-blue-400/40' : 'bg-slate-100 dark:bg-slate-800 text-brand-text dark:text-white border-brand-border'}`}>
               <span className="text-6xl font-extrabold tracking-tight">
                 {currentNumber || '-'}
               </span>
@@ -205,7 +205,7 @@ const Game = () => {
               <div className="absolute inset-0 bg-brand-card/95 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-3xl p-6 text-center">
                 <span className="text-2xl mb-1 animate-bounce">🏆</span>
                 <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Winner Announced!</span>
-                <span className="text-brand-text-muted text-xs mb-3">Prize verification in progress...</span>
+                <span className="text-brand-text-muted text-xs mb-3">Game Paused - Prize Verification</span>
                 {pauseCountdown > 0 ? (
                   <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">Resuming in {pauseCountdown}s</span>
                 ) : (
@@ -270,7 +270,7 @@ const Game = () => {
                       className={`
                         aspect-square flex items-center justify-center text-lg sm:text-xl font-extrabold rounded-xl border transition-all duration-200 relative select-none
                         ${num === 0 ? 'bg-transparent border-transparent' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'}
-                        ${marked ? 'text-brand-text-muted/40 opacity-70' : 'text-brand-text'}
+                        ${marked ? 'text-brand-text-muted opacity-90 dark:text-slate-400' : 'text-brand-text'}
                         ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}
                       `}
                     >
@@ -302,7 +302,7 @@ const Game = () => {
                   key={num}
                   className={`
                     flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                    ${isDrawn(num) ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/60'}
+                    ${isDrawn(num) ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}
                   `}
                 >
                   {num}

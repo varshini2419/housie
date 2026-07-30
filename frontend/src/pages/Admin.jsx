@@ -693,7 +693,8 @@ const Admin = () => {
               {adminStats?.gameStatus === 'PAUSED' && pauseCountdown > 0 && (
                 <div className="absolute inset-0 z-20 backdrop-blur-md bg-brand-bg/80 flex flex-col items-center justify-center p-6 text-center animate-fade-in border border-brand-border/50 rounded-3xl">
                   <span className="text-2xl mb-1 animate-bounce">🏆</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Prize Verification</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-1">Prize Verification in Progress</span>
+                  <span className="text-brand-text-muted text-xs mb-3">Game is paused for validation...</span>
                   <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mt-2">Resuming in {pauseCountdown}s</span>
                 </div>
               )}
@@ -744,7 +745,7 @@ const Admin = () => {
                     <div 
                       key={num}
                       className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                        ${isDrawn ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-800/60'}
+                        ${isDrawn ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}
                       `}
                     >
                       {num}

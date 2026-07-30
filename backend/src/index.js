@@ -212,11 +212,11 @@ io.on('connection', (socket) => {
                     remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
 
-                // 7-Second Synchronized Pause Logic
+                // 10-Second Synchronized Pause Logic
                 try {
                     await pauseGame(sessionId, io);
                     
-                    let countdown = 7;
+                    let countdown = 10;
                     io.to(sessionId).emit('pause_countdown_tick', { countdown });
                     
                     const intervalId = setInterval(() => {
