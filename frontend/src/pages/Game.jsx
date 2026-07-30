@@ -122,6 +122,16 @@ const Game = () => {
     socket.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
+  if (!ticket || !session) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-brand-bg text-brand-text p-8 text-center">
+        <div className="w-16 h-16 border-4 border-brand-emerald border-t-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(16,185,129,0.3)]"></div>
+        <p className="text-xl font-bold text-brand-text-sec animate-pulse tracking-wide">Loading Game Session...</p>
+        <p className="text-xs text-brand-text-muted mt-3 font-medium uppercase tracking-wider">Please wait</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-brand-bg p-4 sm:p-8 flex flex-col items-center relative overflow-hidden">
       {/* Background Orbs */}
@@ -209,7 +219,7 @@ const Game = () => {
             )}
             <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Claimable Prizes</h2>
             <div className="flex flex-col gap-3">
-              {prizes.filter(p => p.enabled).map(prize => {
+              {(prizes || []).filter(p => p.enabled).map(prize => {
                 const isWon = prize.status === 'COMPLETED';
                 const isLocked = prize.status === 'LOCKED';
                 const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
@@ -252,7 +262,7 @@ const Game = () => {
             </div>
             
             <div className="grid grid-cols-9 gap-1.5 bg-slate-100 dark:bg-slate-950 p-3 rounded-2xl border border-brand-border shadow-inner">
-              {ticket.ticketMatrix.map((row, rIndex) => (
+              {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                 row.map((num, cIndex) => {
                   const marked = num !== 0 && isMarked(num);
                   const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
