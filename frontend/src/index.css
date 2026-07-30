@@ -312,3 +312,12 @@ body {
   border-color: rgba(37, 99, 235, 0.5);
   box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
 }
+
+/* Utilities */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
