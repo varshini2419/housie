@@ -109,7 +109,8 @@ io.on('connection', (socket) => {
                 currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
                 drawnNumbers: activeGames[sessionId].drawnNumbers,
                 prizes: sessionPrizes,
-                markedNumbers: markedNums
+                markedNumbers: markedNums,
+                remainingNumbers: activeGames[sessionId].availableNumbers.length
             });
         }
     });
@@ -207,7 +208,8 @@ io.on('connection', (socket) => {
                     status: game.gameStatus,
                     currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
                     drawnNumbers: activeGames[sessionId].drawnNumbers,
-                    prizes: sessionPrizes
+                    prizes: sessionPrizes,
+                    remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
 
                 // 2-Second Pause Logic

@@ -41,8 +41,7 @@ const Admin = () => {
   const [activityFeed, setActivityFeed] = useState([]);
   const socketRef = useRef(null);
 
-  const { speak } = useSpeech();
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
 
   useEffect(() => {
     if (token) {
@@ -69,9 +68,7 @@ const Admin = () => {
 
       socketRef.current.on('number_drawn', ({ number, drawnNumbers, remainingNumbers }) => {
         setAdminStats(prev => prev ? { ...prev, currentNumber: number, drawnNumbers, remainingNumbers } : prev);
-        if (isVoiceEnabled) {
-          speak(number);
-        }
+        announceNumber(number);
       });
 
       socketRef.current.on('game_started', () => {
@@ -114,9 +111,7 @@ const Admin = () => {
     }
   }, [viewMode, liveSession]);
 
-  const toggleVoice = () => {
-    setIsVoiceEnabled(!isVoiceEnabled);
-  };
+
 
   const fetchActiveSessions = async () => {
     setIsLoadingSessions(true);
@@ -284,6 +279,8 @@ const Admin = () => {
 
   const executeControl = async (action) => {
     try {
+      if (action === 'start') unlockAudio();
+      
       const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
       const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/${action}`, {
         method: 'POST',

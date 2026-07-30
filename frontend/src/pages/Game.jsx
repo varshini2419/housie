@@ -22,8 +22,7 @@ const Game = () => {
   const [toastMsg, setToastMsg] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
 
-  const { speak } = useSpeech();
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -57,9 +56,7 @@ const Game = () => {
     socket.on('number_drawn', ({ number, drawnNumbers }) => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
-      if (isVoiceEnabled) {
-        speak(number);
-      }
+      announceNumber(number);
     });
 
     socket.on('game_started', () => setGameState('LIVE'));
@@ -100,9 +97,7 @@ const Game = () => {
     };
   }, [sessionId, ticket, navigate]);
 
-  const toggleVoice = () => {
-    setIsVoiceEnabled(!isVoiceEnabled);
-  };
+
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -133,7 +128,7 @@ const Game = () => {
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg p-4 sm:p-8 flex flex-col items-center relative overflow-hidden">
+    <div className="min-h-screen bg-brand-bg p-4 sm:p-8 flex flex-col items-center relative overflow-hidden" onClick={unlockAudio}>
       {/* Background Orbs */}
       <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
       <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>

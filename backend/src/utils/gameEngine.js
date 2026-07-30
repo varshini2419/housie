@@ -44,7 +44,8 @@ const drawIntervalLogic = async (game, io) => {
 
     io.to(sId).emit('number_drawn', {
         number: nextNum,
-        history: state.drawnNumbers
+        drawnNumbers: state.drawnNumbers,
+        remainingNumbers: state.availableNumbers.length
     });
 
     const updatedGame = await GameSession.findById(game._id);
