@@ -40,6 +40,7 @@ const Admin = () => {
   const [adminStats, setAdminStats] = useState(null);
   const [activityFeed, setActivityFeed] = useState([]);
   const [pauseCountdown, setPauseCountdown] = useState(0);
+  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
   const socketRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
@@ -83,6 +84,10 @@ const Admin = () => {
 
       socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
         setPauseCountdown(countdown);
+      });
+
+      socketRef.current.on('countdown_update', ({ countdown }) => {
+        setNextDrawCountdown(countdown);
       });
 
       socketRef.current.on('game_resumed', () => {
@@ -698,10 +703,17 @@ const Admin = () => {
                   <span className="px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold mt-2">Resuming in {pauseCountdown}s</span>
                 </div>
               )}
-              <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col items-center justify-center text-center shadow-premium">
-                <p className="text-brand-text-muted text-xs uppercase font-bold tracking-wider mb-2">Current Drawn Number</p>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
+                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">Current Drawn</p>
                 <p className="text-5xl font-black text-brand-blue">{adminStats.currentNumber || '-'}</p>
+                {adminStats?.gameStatus === 'LIVE' && nextDrawCountdown !== null && (
+                  <div className="mt-4 text-xs font-bold text-slate-500 bg-white dark:bg-slate-900 px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-slate-200 dark:border-slate-700 shadow-sm w-max">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    Next draw in: {nextDrawCountdown}s
+                  </div>
+                )}
               </div>
+              
               <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col items-center justify-center text-center shadow-premium">
                 <p className="text-brand-text-muted text-xs uppercase font-bold tracking-wider mb-2">Online Players</p>
                 <p className="text-4xl font-black text-brand-emerald">{adminStats.onlineCount || 0} <span className="text-lg text-brand-text-muted">/ {adminStats.totalJoined || liveSession.totalPlayers}</span></p>

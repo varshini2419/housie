@@ -4,7 +4,8 @@ const Ticket = require('../models/Ticket');
 const Winner = require('../models/Winner');
 
 const activeGames = {};
-const DRAW_INTERVAL = 5000;
+const VOICE_WAIT_SECONDS = 4;
+const DRAW_COUNTDOWN_SECONDS = 5;
 
 const fisherYatesShuffle = (array) => {
     let currentIndex = array.length, randomIndex;
@@ -16,18 +17,20 @@ const fisherYatesShuffle = (array) => {
     return array;
 };
 
-const drawIntervalLogic = async (game, io) => {
+const generateNumber = async (game, io) => {
     const sId = game._id.toString();
     const state = activeGames[sId];
-    if (!state) return;
+    if (!state) return false;
 
     if (state.availableNumbers.length === 0 || state.winners['Full House']) {
         await endGame(game._id, io);
-        return;
+        return false;
     }
 
     const nextNum = state.availableNumbers.pop();
     state.drawnNumbers.push(nextNum);
+
+    console.log(`[SCHEDULER] Generated Number: ${nextNum}`);
 
     if (state.drawnNumbers.length % 5 === 0) {
         await GameSession.findByIdAndUpdate(game._id, {
@@ -68,9 +71,48 @@ const drawIntervalLogic = async (game, io) => {
         prizes: sessionPrizes
     });
 
-    // Exact 5-second interval between draws
+    // Clear the countdown UI during the speech phase
+    io.to(sId).emit('countdown_update', { countdown: null });
+
+    return true;
+};
+
+const serverTick = async (sessionId, io) => {
+    const sId = sessionId.toString();
+    const state = activeGames[sId];
+    if (!state) return;
+
     if (state.timerId) clearTimeout(state.timerId);
-    state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
+
+    if (state.phase === 'SPEECH_WAIT') {
+        state.tickCountdown--;
+        if (state.tickCountdown <= 0) {
+            state.phase = 'COUNTDOWN';
+            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
+            console.log(`[SCHEDULER] Voice Finished. Starting Countdown.`);
+        }
+    } else if (state.phase === 'COUNTDOWN') {
+        io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+        console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
+        
+        if (state.tickCountdown <= 0) {
+            console.log(`[SCHEDULER] Generating Next Number...`);
+            const game = await GameSession.findById(sId);
+            const continues = await generateNumber(game, io);
+            
+            if (continues) {
+                state.phase = 'SPEECH_WAIT';
+                state.tickCountdown = VOICE_WAIT_SECONDS;
+                console.log(`[SCHEDULER] Voice Started.`);
+            } else {
+                return; // Game ended
+            }
+        } else {
+            state.tickCountdown--;
+        }
+    }
+
+    state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
 };
 
 const ensureActiveGame = async (sessionId, io) => {
@@ -81,7 +123,8 @@ const ensureActiveGame = async (sessionId, io) => {
         if (io) {
             const game = await GameSession.findById(sIdStr);
             if (game && game.gameStatus === 'LIVE' && !activeGames[sIdStr].timerId) {
-                activeGames[sIdStr].timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
+                console.log(`[SCHEDULER] Warning: Resuming tick on ensureActiveGame`);
+                activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
             }
         }
         return activeGames[sIdStr];
@@ -111,12 +154,14 @@ const ensureActiveGame = async (sessionId, io) => {
         availableNumbers: shuffled,
         drawnNumbers: drawnNumbers,
         timerId: null,
+        phase: 'COUNTDOWN',
+        tickCountdown: DRAW_COUNTDOWN_SECONDS,
         winners: winners,
         onlinePlayers: new Set()
     };
 
     if (game.gameStatus === 'LIVE' && io) {
-        activeGames[sIdStr].timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
+        activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
     }
 
     return activeGames[sIdStr];
@@ -143,7 +188,11 @@ const startGame = async (sessionId, io) => {
         clearTimeout(state.timerId);
     }
 
-    state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
+    console.log(`[SCHEDULER] Game Started. Timer Created.`);
+    state.phase = 'COUNTDOWN';
+    state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
+    state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+    
     io.to(sessionId.toString()).emit('game_started');
     return game;
 };
@@ -157,6 +206,7 @@ const pauseGame = async (sessionId, io) => {
 
     const state = await ensureActiveGame(sessionId, null);
     if (state && state.timerId) {
+        console.log(`[SCHEDULER] Game Paused. Freezing Timer.`);
         clearTimeout(state.timerId);
         state.timerId = null;
     }
@@ -182,7 +232,8 @@ const resumeGame = async (sessionId, io) => {
         if (state.timerId) {
             clearTimeout(state.timerId);
         }
-        state.timerId = setTimeout(() => drawIntervalLogic(game, io), DRAW_INTERVAL);
+        console.log(`[SCHEDULER] Game Resumed. Restarting Timer from phase: ${state.phase}, countdown: ${state.tickCountdown}`);
+        state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
     }
     return game;
 };

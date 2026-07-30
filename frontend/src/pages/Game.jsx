@@ -22,6 +22,7 @@ const Game = () => {
   const [prizes, setPrizes] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
+  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
 
@@ -69,6 +70,10 @@ const Game = () => {
 
     socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
       setPauseCountdown(countdown);
+    });
+
+    socketRef.current.on('countdown_update', ({ countdown }) => {
+      setNextDrawCountdown(countdown);
     });
 
     socketRef.current.on('game_resumed', () => setGameState('LIVE'));
@@ -256,6 +261,13 @@ const Game = () => {
                 Ticket #{ticket.ticketCode}
               </span>
             </div>
+
+            {gameState === 'LIVE' && nextDrawCountdown !== null && (
+              <div className="mt-4 text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800/60 dark:text-slate-400 px-4 py-1.5 rounded-full flex items-center gap-2 animate-pulse mb-6 w-max">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                Next draw in: {nextDrawCountdown}s
+              </div>
+            )}
             
             <div className="grid grid-cols-9 gap-1.5 bg-slate-100 dark:bg-slate-950 p-3 rounded-2xl border border-brand-border shadow-inner">
               {(ticket?.ticketMatrix || []).map((row, rIndex) => (
