@@ -197,7 +197,7 @@ const Game = () => {
           {/* Current Number Card */}
           <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border flex flex-col items-center text-center relative">
             <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Current Drawn Number</h2>
-            <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/30 shadow-2xl border-blue-400/40' : 'bg-slate-100 dark:bg-slate-800 text-brand-text dark:text-white border-brand-border'}`}>
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center current-number-card ${gameState === "LIVE" ? "live-glow animate-draw-pulse" : ""}`}>
               <span className="text-6xl font-extrabold tracking-tight">
                 {currentNumber || '-'}
               </span>
@@ -232,8 +232,8 @@ const Game = () => {
                     className={`
                       w-full py-3.5 px-4 rounded-2xl font-bold flex justify-between items-center transition-all duration-200 text-sm border shadow-sm
                       ${isWon 
-                        ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 border-slate-200 dark:border-slate-700/60 line-through opacity-75') 
-                        : (isLocked ? 'bg-slate-50 dark:bg-slate-900/50 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                        ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 line-through opacity-75') 
+                        : (isLocked ? 'bg-brand-bg text-brand-text-muted border-brand-border cursor-not-allowed'
                         : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-blue-400/30 hover:shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-[0.98]'))}
                       disabled:cursor-not-allowed cursor-pointer
                     `}
@@ -263,13 +263,13 @@ const Game = () => {
             </div>
 
             {gameState === 'LIVE' && nextDrawCountdown !== null && (
-              <div className="mt-4 text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800/60 dark:text-slate-400 px-4 py-1.5 rounded-full flex items-center gap-2 animate-pulse mb-6 w-max">
+              <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card border border-brand-border px-4 py-1.5 rounded-full flex items-center gap-2 animate-pulse mb-6 w-max">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                 Next draw in: {nextDrawCountdown}s
               </div>
             )}
             
-            <div className="grid grid-cols-9 gap-1.5 bg-slate-100 dark:bg-slate-950 p-3 rounded-2xl border border-brand-border shadow-inner">
+            <div className="grid grid-cols-9 gap-1.5 p-3 ticket-container">
               {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                 row.map((num, cIndex) => {
                   const marked = num !== 0 && isMarked(num);
@@ -281,18 +281,14 @@ const Game = () => {
                       onClick={() => handleMarkNumber(num)}
                       className={`
                         aspect-square flex items-center justify-center text-lg sm:text-xl font-extrabold rounded-xl border transition-all duration-200 relative select-none
-                        ${num === 0 ? 'bg-transparent border-transparent' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'}
-                        ${marked ? 'text-brand-text-muted opacity-90 dark:text-slate-400' : 'text-brand-text'}
+                        ${num === 0 ? 'ticket-cell-empty' : 'ticket-cell shadow-sm'}
+                        ${marked ? "ticket-cell-marked" : ""}
                         ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}
                       `}
                     >
                       {num === 0 ? '' : num}
                       
-                      {marked && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-[120%] h-1 bg-red-500 rotate-[-45deg] rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
-                        </div>
-                      )}
+                      
                     </div>
                   );
                 })
@@ -314,7 +310,7 @@ const Game = () => {
                   key={num}
                   className={`
                     flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                    ${isDrawn(num) ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}
+                    board-cell ${isDrawn(num) ? "drawn animate-draw-pulse" : ""}
                   `}
                 >
                   {num}

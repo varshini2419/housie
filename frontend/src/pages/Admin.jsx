@@ -642,7 +642,7 @@ const Admin = () => {
                       <td className="p-4">
                         {ticket.playerStatus === 'PLAYING' 
                           ? <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">Joined</span>
-                          : <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-500 border border-slate-500/20">Not Joined</span>
+                          : <span className="px-3 py-1 rounded-full text-xs font-bold bg-brand-bg text-brand-text-muted border border-brand-border">Not Joined</span>
                         }
                       </td>
                       <td className="p-4">
@@ -704,10 +704,10 @@ const Admin = () => {
                 </div>
               )}
               <div className="glass-panel-secondary p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">Current Drawn</p>
-                <p className="text-5xl font-black text-brand-blue">{adminStats.currentNumber || '-'}</p>
+                <p className="text-sm font-bold text-brand-text-muted mb-2 uppercase tracking-widest">Current Drawn</p>
+                <p className="text-5xl font-black tracking-tight">{adminStats.currentNumber || '-'}</p>
                 {adminStats?.gameStatus === 'LIVE' && nextDrawCountdown !== null && (
-                  <div className="mt-4 text-xs font-bold text-slate-500 bg-white dark:bg-slate-900 px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-slate-200 dark:border-slate-700 shadow-sm w-max">
+                  <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-brand-border shadow-sm w-max">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                     Next draw in: {nextDrawCountdown}s
                   </div>
@@ -766,7 +766,7 @@ const Admin = () => {
                     <div 
                       key={num}
                       className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                        ${isDrawn ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 border border-blue-400/30' : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}
+                        board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
                       `}
                     >
                       {num}

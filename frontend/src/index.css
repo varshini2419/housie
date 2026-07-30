@@ -48,6 +48,17 @@
   
   --input-bg: #FFFFFF;
   --input-border: #E2E8F0;
+  
+  /* Ticket & Board Colors (Light) */
+  --ticket-bg: #F1F5F9;
+  --ticket-cell: #FFFFFF;
+  --ticket-empty: #F8FAFC;
+  --ticket-border: #E2E8F0;
+  --ticket-number: #0F172A;
+  
+  --board-cell-bg: #FFFFFF;
+  --board-cell-border: #E2E8F0;
+  --board-cell-text: #64748B;
 }
 
 .dark {
@@ -71,8 +82,19 @@
   --accent-rose: #EF4444;
   --accent-cyan: #06B6D4;
   
-  --input-bg: #0B1220;
-  --input-border: rgba(255, 255, 255, 0.08);
+  --input-bg: #111827;
+  --input-border: #374151;
+  
+  /* Ticket & Board Colors (Dark) */
+  --ticket-bg: #111827;
+  --ticket-cell: #1F2937;
+  --ticket-empty: #0F172A;
+  --ticket-border: #374151;
+  --ticket-number: #F8FAFC;
+  
+  --board-cell-bg: #111827;
+  --board-cell-border: #374151;
+  --board-cell-text: #94A3B8;
 }
 
 body {
@@ -220,4 +242,73 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Specialized Components */
+.current-number-card {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 4px solid var(--border-color);
+  box-shadow: var(--shadow-premium);
+  transition: all 300ms ease-in-out;
+}
+.dark .current-number-card.live-glow {
+  background-color: #111827;
+  border-color: #3B82F6;
+  color: #FFFFFF;
+  box-shadow: 0 0 40px -10px rgba(59,130,246,0.35);
+}
+
+@keyframes drawPulse {
+  0% { transform: scale(1); box-shadow: 0 0 20px -10px rgba(59,130,246,0.35); }
+  50% { transform: scale(1.05); box-shadow: 0 0 50px 0px rgba(59,130,246,0.6); }
+  100% { transform: scale(1); box-shadow: 0 0 40px -10px rgba(59,130,246,0.35); }
+}
+
+.animate-draw-pulse {
+  animation: drawPulse 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tambola Ticket */
+.ticket-container {
+  background-color: var(--ticket-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+}
+.ticket-cell {
+  background-color: var(--ticket-cell);
+  border-color: var(--ticket-border);
+  color: var(--ticket-number);
+  transition: all 200ms ease;
+}
+.ticket-cell:hover:not(.ticket-cell-empty):not(.ticket-cell-marked) {
+  background-color: rgba(37, 99, 235, 0.1);
+  border-color: #2563EB;
+}
+.ticket-cell-empty {
+  background-color: var(--ticket-empty);
+  border-color: transparent;
+}
+.ticket-cell-marked {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Number Board */
+.board-cell {
+  background-color: var(--board-cell-bg);
+  border: 1px solid var(--board-cell-border);
+  color: var(--board-cell-text);
+  border-radius: 12px;
+  transition: all 300ms ease;
+}
+.board-cell.drawn {
+  background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  color: #FFFFFF;
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
 }
