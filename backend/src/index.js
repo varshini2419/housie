@@ -20,15 +20,27 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    process.env.FRONTEND_URL
-].filter(Boolean);
-
 const corsOptions = {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        
+        const allowed = [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173'
+        ];
+        
+        if (process.env.FRONTEND_URL) {
+            allowed.push(process.env.FRONTEND_URL.replace(/\/$/, ''));
+        }
+
+        if (allowed.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
+            callback(null, true);
+        } else {
+            console.warn(`CORS blocked request from origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 };
 
@@ -37,8 +49,8 @@ app.use(express.json());
 
 const io = new Server(server, {
     cors: { 
-        origin: allowedOrigins, 
-        methods: ["GET", "POST"],
+        origin: corsOptions.origin, 
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         credentials: true
     }
 });
