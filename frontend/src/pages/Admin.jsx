@@ -60,7 +60,7 @@ const Admin = () => {
       });
 
       socketRef.current.on('game_sync', (data) => {
-        setAdminStats(data);
+        setAdminStats({ ...data, gameStatus: data.status });
       });
 
       socketRef.current.on('player_count_update', ({ onlineCount, totalPlayers }) => {
@@ -659,6 +659,13 @@ const Admin = () => {
               )}
               {(adminStats?.gameStatus === 'LIVE' || adminStats?.gameStatus === 'PAUSED') && (
                 <button onClick={() => { if(window.confirm('Are you sure you want to end this game?')) executeControl('end') }} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-md cursor-pointer">End Game 🛑</button>
+              )}
+              {adminStats?.gameStatus === 'COMPLETED' && (
+                <>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold px-4 py-2 flex items-center gap-2">✓ Game Finished</span>
+                  <button onClick={() => setViewMode('tickets')} className="bg-brand-card hover:bg-brand-bg border border-brand-border text-brand-text px-4 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm cursor-pointer">View Summary</button>
+                  <button onClick={() => handleDeleteSession(liveSession._id, liveSession.sessionName)} className="bg-red-600/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white px-4 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm cursor-pointer">Archive Session</button>
+                </>
               )}
             </div>
           </div>
