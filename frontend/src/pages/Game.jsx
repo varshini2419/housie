@@ -39,6 +39,17 @@ const Game = () => {
     isVoiceEnabledRef.current = isVoiceEnabled;
   }, [isVoiceEnabled]);
 
+  // Continuous local 1s countdown tick for smooth UI countdown 5s -> 4s -> 3s -> 2s -> 1s -> 0s
+  useEffect(() => {
+    if (gameState !== 'LIVE' || nextDrawCountdown === null) return;
+
+    const interval = setInterval(() => {
+      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState, nextDrawCountdown !== null]);
+
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
       navigate('/');
