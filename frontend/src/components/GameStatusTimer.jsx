@@ -58,13 +58,10 @@ const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
     
   if (gameState === 'LIVE') {
     return (
-      <>
-        <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5 shrink-0"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
-        <span className={`${isMobile ? "text-slate-300" : "text-brand-border"} mx-1 shrink-0`}>|</span>
-        <span className={`text-sm font-bold flex flex-row items-center whitespace-nowrap shrink-0 ${isMobile ? 'text-slate-600' : 'text-brand-text-sec'}`}>
-          ⏳ Timer: <span className={liveTimerClasses}>{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span>
-        </span>
-      </>
+      <span className={`text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap shrink-0 ${isMobile ? 'text-slate-700' : 'text-brand-text-sec'}`}>
+        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+        Next draw in: <strong className="text-blue-500 font-mono text-sm sm:text-base font-black tabular-nums">{nextDrawCountdown !== null ? nextDrawCountdown : 5}s</strong>
+      </span>
     );
   } else if (gameState === 'PAUSED') {
     return (
