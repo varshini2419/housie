@@ -146,13 +146,11 @@ const Game = () => {
     });
 
     const handleSpeechFinished = () => {
+      setSpeaking(false);
+      setNextDrawCountdown(5);
       if (socketRef.current) {
         socketRef.current.emit('speech_finished', { sessionId });
       }
-      setTimeout(() => {
-        setSpeaking(false);
-        setNextDrawCountdown(5);
-      }, 2000);
     };
     window.addEventListener('speech_finished', handleSpeechFinished);
 
