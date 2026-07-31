@@ -452,9 +452,12 @@ const Game = () => {
                         <div 
                           key={`mid-cell-${rIndex}-${cIndex}`}
                           onClick={() => handleMarkNumber(num)}
-                          className={`aspect-square flex items-center justify-center text-lg sm:text-xl font-black rounded-2xl transition-all duration-300 select-none
-                            ${num === 0 ? 'bg-transparent border-none' : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs'}
-                            ${marked ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/30 scale-105 border-transparent' : ''}
+                          className={`aspect-square flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-300 select-none
+                            ${num === 0 
+                              ? 'bg-transparent border-none' 
+                              : (marked 
+                                ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-transparent' 
+                                : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs rounded-2xl')}
                             ${canMark ? 'cursor-pointer ring-2 ring-blue-400/80 animate-pulse' : ''}`}
                         >
                           {num === 0 ? '' : num}
@@ -688,9 +691,12 @@ const Game = () => {
                       <div 
                         key={`mob-cell-${rIndex}-${cIndex}`}
                         onClick={() => handleMarkNumber(num)}
-                        className={`aspect-square flex items-center justify-center text-xs font-black rounded-xl transition-all select-none
-                          ${num === 0 ? 'bg-transparent border-none' : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs'}
-                          ${marked ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/30 scale-105 border-transparent' : ''}
+                        className={`aspect-square flex items-center justify-center text-xs font-black transition-all select-none
+                          ${num === 0 
+                            ? 'bg-transparent border-none' 
+                            : (marked 
+                              ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-transparent' 
+                              : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs rounded-xl')}
                           ${canMark ? 'cursor-pointer ring-2 ring-blue-400/80 animate-pulse' : ''}`}
                       >
                         {num === 0 ? '' : num}
