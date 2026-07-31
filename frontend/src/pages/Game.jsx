@@ -41,14 +41,14 @@ const Game = () => {
 
   // Continuous local 1s countdown tick for smooth UI countdown 5s -> 4s -> 3s -> 2s -> 1s -> 0s
   useEffect(() => {
-    if (gameState !== 'LIVE' || nextDrawCountdown === null) return;
+    if (gameState !== 'LIVE' || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
 
-    const interval = setInterval(() => {
+    const timer = setTimeout(() => {
       setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [gameState, nextDrawCountdown !== null]);
+    return () => clearTimeout(timer);
+  }, [gameState, nextDrawCountdown]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
