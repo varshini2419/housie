@@ -90,7 +90,7 @@ const Game = () => {
       setDrawnNumbers(data.drawnNumbers);
       setPrizes(data.prizes);
       if (data.markedNumbers) {
-        setMarkedNumbers(data.markedNumbers);
+        setMarkedNumbers(prev => Array.from(new Set([...prev, ...data.markedNumbers])));
       }
     });
 
@@ -103,7 +103,7 @@ const Game = () => {
       if (autoMark && ticket?.ticketMatrix) {
         const flatNums = ticket.ticketMatrix.flat();
         if (flatNums.includes(number) && !markedNumbers.includes(number)) {
-          setMarkedNumbers(prev => [...prev, number]);
+          setMarkedNumbers(prev => Array.from(new Set([...prev, number])));
           socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number });
         }
       }
@@ -219,7 +219,7 @@ const Game = () => {
     if (!isDrawn(num)) return;
     if (isMarked(num)) return;
     
-    setMarkedNumbers(prev => [...prev, num]);
+    setMarkedNumbers(prev => Array.from(new Set([...prev, num])));
     socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
