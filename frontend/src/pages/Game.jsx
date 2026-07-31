@@ -279,19 +279,16 @@ const Game = () => {
                   return (
                     <button 
                       key={prize.id} disabled={isWon || isLocked || gameState !== 'LIVE'} onClick={() => claimPrize(prize.id)}
-                      className={`shrink-0 min-w-[140px] p-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-200 border shadow-sm
+                      className={`shrink-0 min-w-[140px] max-w-[220px] p-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-200 border shadow-sm h-auto
                         ${isWon ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 opacity-75') 
                           : (isLocked ? 'bg-brand-bg text-brand-text-muted border-brand-border cursor-not-allowed'
                           : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/30 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'))}
-                        disabled:cursor-not-allowed cursor-pointer text-center`}
+                        disabled:cursor-not-allowed cursor-pointer text-center whitespace-normal`}
                     >
                       <span className="text-sm">🏆 {prize.name}</span>
-                      {prize.prizeItem && (
-                        <div className="flex flex-col items-center mt-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">🎁 Prize</span>
-                          <span className="text-xs font-semibold">{prize.prizeItem}</span>
-                        </div>
-                      )}
+                      <span className={`text-[11px] font-medium leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-emerald-100' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-blue-100' : 'text-brand-text-sec')}`}>
+                        🎁 {prize.prizeItem || 'Prize to be announced'}
+                      </span>
                       {isWon && <span className="text-[10px] font-mono opacity-80 uppercase mt-1">{prize.winner}</span>}
                       {!isWon && isLocked && <span className="text-[10px] uppercase opacity-75 mt-1">Locked 🔒</span>}
                     </button>
@@ -504,7 +501,7 @@ const Game = () => {
                       key={`mob-claim-${prize.id}`}
                       disabled={isWon || isLocked || gameState !== 'LIVE'}
                       onClick={() => claimPrize(prize.id)}
-                      className={`flex-grow p-4 min-w-[140px] rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 border shadow-sm text-center
+                      className={`flex-grow p-4 min-w-[140px] rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 border shadow-sm text-center h-auto whitespace-normal
                         ${isWon 
                           ? (wonByMe ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border-transparent shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border-slate-200') 
                           : (isLocked ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
@@ -512,12 +509,9 @@ const Game = () => {
                       `}
                     >
                       <span className="text-[13px]">🏆 {prize.name}</span>
-                      {prize.prizeItem && (
-                        <div className="flex flex-col items-center mt-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">🎁 Prize</span>
-                          <span className="text-xs font-semibold">{prize.prizeItem}</span>
-                        </div>
-                      )}
+                      <span className={`text-[11px] font-medium leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-emerald-100' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-blue-100' : 'text-slate-500')}`}>
+                        🎁 {prize.prizeItem || 'Prize to be announced'}
+                      </span>
                       {isWon && <span className="text-[10px] font-black uppercase tracking-wider opacity-90 mt-1">{prize.winner}</span>}
                       {!isWon && isLocked && <span className="text-[10px] uppercase opacity-60 mt-1">Locked 🔒</span>}
                     </button>
