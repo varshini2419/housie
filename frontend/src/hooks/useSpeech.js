@@ -97,6 +97,7 @@ const useSpeech = () => {
       }
 
       let finished = false;
+      let failsafeId = null;
       
       activeUtterances.current.add(utterance); // Keep alive to prevent GC bug where onend never fires
       
@@ -104,6 +105,12 @@ const useSpeech = () => {
           activeUtterances.current.delete(utterance); // Release for GC
           if (finished) return;
           finished = true;
+          
+          if (failsafeId) {
+              clearTimeout(failsafeId);
+              timeoutRefs.current = timeoutRefs.current.filter(id => id !== failsafeId);
+          }
+          
           resolve();
       };
 
@@ -124,22 +131,28 @@ const useSpeech = () => {
       console.log(`[VOICE TRACE] Calling window.speechSynthesis.speak() for text: "${text}"`);
       window.speechSynthesis.speak(utterance);
       
-      // Failsafe for Safari where onend might not fire
-      const failsafe = setTimeout(() => {
+      // Failsafe for stuck speech engine
+      failsafeId = setTimeout(() => {
           if (!finished) {
               console.warn('[Voice Engine] Utterance failsafe triggered for text:', text);
+              // Aggressively unlock the stuck engine
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
               window.speechSynthesis.cancel();
               finish();
           }
       }, 5000);
       
-      timeoutRefs.current.push(failsafe);
+      timeoutRefs.current.push(failsafeId);
     });
   };
 
   const delay = (ms) => {
       return new Promise(resolve => {
-          const id = setTimeout(resolve, ms);
+          const id = setTimeout(() => {
+              timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+              resolve();
+          }, ms);
           timeoutRefs.current.push(id);
       });
   };
@@ -224,7 +237,10 @@ const useSpeech = () => {
     
     if (!isSpeaking.current) {
       console.log(`[VOICE TRACE] Scheduling processQueue (queue length: ${speechQueue.current.length})`);
-      const id = setTimeout(processQueue, 50);
+      const id = setTimeout(() => {
+          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+          processQueue();
+      }, 50);
       timeoutRefs.current.push(id);
     }
   }, [processQueue]);

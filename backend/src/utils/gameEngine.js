@@ -122,56 +122,73 @@ const serverTick = async (sessionId, io) => {
     state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
 };
 
+const pendingGameCreations = {};
+
 const ensureActiveGame = async (sessionId, io) => {
     if (!sessionId) return null;
     const sIdStr = sessionId.toString();
     
+    while (pendingGameCreations[sIdStr]) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
     if (activeGames[sIdStr]) {
-        if (io) {
-            const game = await GameSession.findById(sIdStr);
-            if (game && game.gameStatus === 'LIVE' && !activeGames[sIdStr].timerId) {
-                console.log(`[SCHEDULER] Warning: Resuming tick on ensureActiveGame`);
-                activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+        if (io && !activeGames[sIdStr].timerLock && !activeGames[sIdStr].timerId) {
+            activeGames[sIdStr].timerLock = true;
+            try {
+                const game = await GameSession.findById(sIdStr);
+                if (game && game.gameStatus === 'LIVE' && !activeGames[sIdStr].timerId) {
+                    console.log(`[SCHEDULER] Warning: Resuming tick on ensureActiveGame`);
+                    activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+                }
+            } finally {
+                activeGames[sIdStr].timerLock = false;
             }
         }
         return activeGames[sIdStr];
     }
 
-    const game = await GameSession.findById(sIdStr);
-    if (!game) return null;
+    pendingGameCreations[sIdStr] = true;
+    try {
+        const game = await GameSession.findById(sIdStr);
+        if (!game) return null;
 
-    const drawnNumbers = game.drawnNumbers || [];
-    const allNums = Array.from({length: 90}, (_, i) => i + 1);
-    const remainingNums = allNums.filter(n => !drawnNumbers.includes(n));
-    const shuffled = fisherYatesShuffle(remainingNums);
+        const drawnNumbers = game.drawnNumbers || [];
+        const allNums = Array.from({length: 90}, (_, i) => i + 1);
+        const remainingNums = allNums.filter(n => !drawnNumbers.includes(n));
+        const shuffled = fisherYatesShuffle(remainingNums);
 
-    const winners = {};
-    if (game.prizes && game.prizes.length > 0) {
-        game.prizes.forEach(prize => {
-            if (prize.status === 'COMPLETED') {
-                winners[prize.name] = {
-                    ticketCode: prize.winnerTicket,
-                    playerName: prize.winner
-                };
-            }
-        });
+        const winners = {};
+        if (game.prizes && game.prizes.length > 0) {
+            game.prizes.forEach(prize => {
+                if (prize.status === 'COMPLETED') {
+                    winners[prize.name] = {
+                        ticketCode: prize.winnerTicket,
+                        playerName: prize.winner
+                    };
+                }
+            });
+        }
+
+        activeGames[sIdStr] = {
+            availableNumbers: shuffled,
+            drawnNumbers: drawnNumbers,
+            timerId: null,
+            timerLock: false,
+            phase: 'COUNTDOWN',
+            tickCountdown: DRAW_COUNTDOWN_SECONDS,
+            winners: winners,
+            onlinePlayers: new Set()
+        };
+
+        if (game.gameStatus === 'LIVE' && io) {
+            activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+        }
+
+        return activeGames[sIdStr];
+    } finally {
+        pendingGameCreations[sIdStr] = false;
     }
-
-    activeGames[sIdStr] = {
-        availableNumbers: shuffled,
-        drawnNumbers: drawnNumbers,
-        timerId: null,
-        phase: 'COUNTDOWN',
-        tickCountdown: DRAW_COUNTDOWN_SECONDS,
-        winners: winners,
-        onlinePlayers: new Set()
-    };
-
-    if (game.gameStatus === 'LIVE' && io) {
-        activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
-    }
-
-    return activeGames[sIdStr];
 };
 
 const triggerCountdown = (sessionId, io) => {

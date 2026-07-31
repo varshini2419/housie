@@ -37,10 +37,12 @@ const Game = () => {
 
     socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
-    socketRef.current.emit('join_game', {
-      sessionId,
-      ticketCode: ticket.ticketCode,
-      role: 'player'
+    socketRef.current.on('connect', () => {
+      socketRef.current.emit('join_game', {
+        sessionId,
+        ticketCode: ticket.ticketCode,
+        role: 'player'
+      });
     });
 
     socketRef.current.on('player_count_update', ({ onlineCount, totalPlayers }) => {
@@ -104,7 +106,7 @@ const Game = () => {
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [sessionId, ticket, navigate]);
+  }, [sessionId, ticket?.ticketCode, navigate]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);

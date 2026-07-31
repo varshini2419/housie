@@ -55,9 +55,11 @@ const Admin = () => {
     if (viewMode === 'monitor' && liveSession) {
       socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
-      socketRef.current.emit('join_game', {
-        sessionId: liveSession._id,
-        role: 'admin'
+      socketRef.current.on('connect', () => {
+        socketRef.current.emit('join_game', {
+          sessionId: liveSession._id,
+          role: 'admin'
+        });
       });
 
       socketRef.current.on('game_sync', (data) => {
@@ -128,7 +130,7 @@ const Admin = () => {
         if (socketRef.current) socketRef.current.disconnect();
       };
     }
-  }, [viewMode, liveSession]);
+  }, [viewMode, liveSession?._id]);
 
 
 
