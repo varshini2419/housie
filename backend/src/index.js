@@ -215,7 +215,7 @@ io.on('connection', (socket) => {
                     remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
 
-                // Sequential 10-Second Pause Logic for Popups
+                // Sequential 6-Second Pause Logic for Popups
                 if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;
                 pauseQueues[sessionId]++;
 
@@ -228,7 +228,7 @@ io.on('connection', (socket) => {
                                 // Ignore if already paused
                             }
                             
-                            let countdown = 10;
+                            let countdown = 6;
                             io.to(sessionId).emit('pause_countdown_tick', { countdown });
                             
                             const intervalId = setInterval(() => {
@@ -240,7 +240,7 @@ io.on('connection', (socket) => {
                                 }
                             }, 1000);
 
-                            await new Promise(r => setTimeout(r, 10000));
+                            await new Promise(r => setTimeout(r, 6000));
                             
                             pauseQueues[sessionId]--;
                         }

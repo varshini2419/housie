@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
 const WinnerPopup = ({ winner, onClose }) => {
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(6);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     // Trigger entrance animation
     setShow(true);
+    // Reset countdown on new winner just in case
+    setCountdown(6);
     
     // Countdown timer
     const interval = setInterval(() => {
@@ -22,7 +24,7 @@ const WinnerPopup = ({ winner, onClose }) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [onClose]);
+  }, [winner, onClose]);
 
   if (!winner) return null;
 
@@ -72,7 +74,7 @@ const WinnerPopup = ({ winner, onClose }) => {
         {/* Countdown */}
         <div className="flex flex-col items-center">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">
-            Game resumes in
+            Next number in...
           </p>
           <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-xl font-bold text-white bg-white/5">
             {countdown}

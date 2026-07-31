@@ -167,264 +167,413 @@ const Game = () => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg relative pb-20 md:pb-0" onClick={unlockAudio}>
+    <div className="min-h-screen bg-[#F8FAFC] relative pb-20 md:pb-0" onClick={unlockAudio}>
       
-      {/* Background Orbs */}
-      <div className="pointer-events-none fixed -top-40 -left-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
-      <div className="pointer-events-none fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
+      {/* Background Orbs (Kept for both) */}
+      <div className="pointer-events-none fixed -top-40 -left-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen z-0 opacity-60"></div>
+      <div className="pointer-events-none fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen z-0 opacity-60"></div>
 
       {toastMsg && (
-        <div className="fixed top-20 right-4 left-4 md:left-auto md:right-8 md:top-8 bg-brand-card border-l-4 border-brand-emerald text-brand-text p-4 rounded-2xl shadow-premium-lg z-[100] animate-bounce flex items-center gap-3">
+        <div className="fixed top-20 right-4 left-4 md:left-auto md:right-8 md:top-8 bg-white border-l-4 border-emerald-500 text-slate-800 p-4 rounded-2xl shadow-xl z-[100] animate-bounce flex items-center gap-3">
           <span className="text-xl">🎉</span>
           <span className="font-semibold text-sm">{toastMsg}</span>
         </div>
       )}
 
-      {/* Sticky Compact Header (Mobile & Desktop) */}
-      <div className="sticky top-0 z-50 h-[60px] glass-panel rounded-none border-x-0 border-t-0 flex justify-between items-center px-4 w-full">
-        <div className="flex items-center gap-2">
-          <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-lg">Tambola</span>
-          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-brand-blue text-[10px] font-mono font-bold">
-            #{ticket.ticketCode}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">{onlineCount} Online</span>
+      {/* ===================== DESKTOP VIEW (UNTOUCHED) ===================== */}
+      <div className="hidden md:block">
+        {/* Sticky Compact Header (Desktop) */}
+        <div className="sticky top-0 z-50 h-[60px] glass-panel rounded-none border-x-0 border-t-0 flex justify-between items-center px-8 w-full">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-lg">Tambola</span>
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-brand-blue text-[10px] font-mono font-bold">
+              #{ticket.ticketCode}
+            </span>
           </div>
-          <button onClick={toggleVoice} className="text-xl opacity-80 hover:opacity-100 transition-opacity">
-            {isVoiceEnabled ? '🔊' : '🔈'}
-          </button>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <div className="flex bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[10px] font-semibold text-emerald-600">{onlineCount} Online</span>
+            </div>
+            <button onClick={toggleVoice} className="text-xl opacity-80 hover:opacity-100 transition-opacity">
+              {isVoiceEnabled ? '🔊' : '🔈'}
+            </button>
+            <ThemeToggle />
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto w-full relative z-10 px-8 pt-8 grid grid-cols-3 gap-6">
+          {/* Left Column (Desktop) */}
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col items-center justify-center pt-2 pb-4">
+              <div className="relative">
+                {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-500/20 animate-pulse rounded-full blur-xl pointer-events-none"></div>}
+                <div className={`w-40 h-40 rounded-full flex items-center justify-center current-number-card ${gameState === "LIVE" ? "live-glow animate-draw-pulse" : ""}`}>
+                  <span className="text-[6rem] font-black tracking-tighter leading-none mt-2">
+                    {currentNumber || '-'}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-4 text-brand-text-sec font-bold text-sm tracking-widest uppercase">
+                {getNumberName(currentNumber)}
+              </p>
+              {gameState === 'LIVE' && nextDrawCountdown !== null && (
+                <div className="mt-4 px-5 py-2 rounded-full bg-brand-card border border-brand-border flex items-center gap-3 shadow-md">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                  <span className="text-sm font-bold text-brand-text">Next draw in: <span className="text-blue-500 font-mono text-base">{nextDrawCountdown}s</span></span>
+                </div>
+              )}
+              {gameState === 'PAUSED' && (
+                <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                  <span className="text-amber-500 text-lg animate-bounce">🏆</span>
+                  <span className="text-sm font-bold text-amber-600">
+                    {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Winner Verification...'}
+                  </span>
+                </div>
+              )}
+              {gameState === 'WAITING' && (
+                <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm font-bold animate-pulse">
+                  ⏳ Waiting for Host...
+                </div>
+              )}
+              {gameState === 'COMPLETED' && (
+                <div className="mt-4 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm font-bold">
+                  🏁 Game Completed
+                </div>
+              )}
+            </div>
+
+            <div className="w-full">
+               <div className="ticket-container p-4 shadow-premium w-full mx-auto max-w-lg">
+                  <div className="grid grid-cols-9 gap-1.5 w-full">
+                    {(ticket?.ticketMatrix || []).map((row, rIndex) => (
+                      row.map((num, cIndex) => {
+                        const marked = num !== 0 && isMarked(num);
+                        const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+                        return (
+                          <div 
+                            key={`r${rIndex}-c${cIndex}`} 
+                            onClick={() => handleMarkNumber(num)}
+                            className={`aspect-square flex items-center justify-center text-xl font-extrabold rounded-xl border transition-all duration-200 relative select-none
+                              ${num === 0 ? 'ticket-cell-empty' : 'ticket-cell shadow-sm'}
+                              ${marked ? 'ticket-cell-marked' : ''}
+                              ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}`}
+                          >
+                            {num === 0 ? '' : num}
+                          </div>
+                        );
+                      })
+                    ))}
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          {/* Right Column (Desktop) */}
+          <div className="flex flex-col gap-6 col-span-2">
+            <div className="w-full">
+              <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-3">Claim Prizes</h2>
+              <div className="flex flex-wrap gap-3 w-full">
+                {(prizes || []).filter(p => p.enabled).map(prize => {
+                  const isWon = prize.status === 'COMPLETED';
+                  const isLocked = prize.status === 'LOCKED';
+                  const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
+                  return (
+                    <button 
+                      key={prize.id} disabled={isWon || isLocked || gameState !== 'LIVE'} onClick={() => claimPrize(prize.id)}
+                      className={`shrink-0 py-2.5 px-5 rounded-full font-bold flex flex-row items-center gap-2 transition-all duration-200 border shadow-sm
+                        ${isWon ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 opacity-75') 
+                          : (isLocked ? 'bg-brand-bg text-brand-text-muted border-brand-border cursor-not-allowed'
+                          : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/30 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'))}
+                        disabled:cursor-not-allowed cursor-pointer`}
+                    >
+                      <span className="text-sm">{prize.name}</span>
+                      {isWon && <span className="text-[10px] font-mono opacity-80 uppercase">{prize.winner}</span>}
+                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-75">Locked 🔒</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="w-full glass-panel p-6 mt-2">
+              <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+                🏆 Winners Board
+              </h2>
+              <div className="flex flex-col gap-4">
+                {prizes.filter(p => p.enabled).map(prize => {
+                  const isWon = prize.status === 'COMPLETED';
+                  return (
+                    <div key={`win-${prize.id}`} className={`flex justify-between items-center p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
+                      <span className="text-sm font-bold text-brand-text">{prize.name}</span>
+                      {isWon ? (
+                        <span className="text-sm font-extrabold text-emerald-500 flex items-center gap-2">
+                          {prize.winner} <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-brand-text-muted italic opacity-70">Waiting...</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div className="glass-panel p-5">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Recent Draws</h2>
+                <span className="text-xs font-semibold text-brand-text-muted bg-brand-bg px-2.5 py-1 rounded-full border border-brand-border">
+                  {drawnNumbers.length} / 90
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-3 mb-6">
+                {drawnNumbers.slice(-10).map(num => (
+                  <div key={`rec-${num}`} className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-600 to-indigo-600 shadow-[0_4px_10px_rgba(37,99,235,0.3)] animate-draw-pulse">
+                    {num}
+                  </div>
+                ))}
+                {drawnNumbers.length === 0 && <span className="text-sm text-brand-text-muted italic">No numbers drawn yet.</span>}
+              </div>
+              <button onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} className="w-full py-3 text-sm font-bold text-brand-blue border border-brand-border rounded-xl hover:bg-brand-bg transition-colors shadow-sm">
+                {isHistoryExpanded ? 'Collapse Full History' : 'View Full History'}
+              </button>
+              {isHistoryExpanded && (
+                <div className="mt-4 p-4 bg-brand-bg rounded-2xl border border-brand-border max-h-48 overflow-y-auto grid grid-cols-10 gap-2.5 shadow-inner">
+                  {drawnNumbers.map(num => (
+                    <div key={`hist-${num}`} className="flex items-center justify-center p-2 rounded-xl text-xs font-bold bg-brand-card text-brand-text border border-brand-border shadow-sm">
+                      {num}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel p-5">
+               <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Number Board (1-90)</h2>
+                <button onClick={() => setIsBoardExpanded(!isBoardExpanded)} className="text-xs font-bold text-brand-blue bg-blue-500/10 px-3 py-1.5 rounded-full">
+                  {isBoardExpanded ? 'Hide' : 'Expand'}
+                </button>
+              </div>
+              {isBoardExpanded && (
+                <div className="grid grid-cols-10 gap-1.5">
+                  {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                    <div key={`board-${num}`} className={`flex items-center justify-center aspect-square rounded-lg text-xs font-bold transition-all duration-300 ${isDrawn(num) ? 'board-cell drawn animate-draw-pulse' : 'board-cell'}`}>
+                      {num}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto w-full relative z-10 px-0 sm:px-4 md:px-8 pt-4 md:pt-8 flex flex-col md:grid md:grid-cols-3 gap-6">
+      {/* ===================== MOBILE VIEW ===================== */}
+      <div className="md:hidden flex flex-col w-full relative z-10 pb-28">
         
-        {/* TAB 1: GAME (Mobile default) / Left Column (Desktop) */}
-        <div className={`flex-col gap-6 ${activeTab === 'game' ? 'flex' : 'hidden md:flex'}`}>
-          
-          {/* Hero: Current Number & Countdown */}
-          <div className="flex flex-col items-center justify-center pt-2 pb-4">
-            <div className="relative">
-              {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-500/20 animate-pulse rounded-full blur-xl pointer-events-none"></div>}
-              <div className={`w-36 h-36 sm:w-40 sm:h-40 rounded-full flex items-center justify-center current-number-card ${gameState === "LIVE" ? "live-glow animate-draw-pulse" : ""}`}>
-                <span className="text-[5rem] sm:text-[6rem] font-black tracking-tighter leading-none mt-2">
-                  {currentNumber || '-'}
-                </span>
-              </div>
-            </div>
-            
-            <p className="mt-4 text-brand-text-sec font-bold text-sm tracking-widest uppercase">
-              {getNumberName(currentNumber)}
-            </p>
-
-            {gameState === 'LIVE' && nextDrawCountdown !== null && (
-              <div className="mt-4 px-5 py-2 rounded-full bg-brand-card border border-brand-border flex items-center gap-3 shadow-md">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-                <span className="text-sm font-bold text-brand-text">Next draw in: <span className="text-blue-500 font-mono text-base">{nextDrawCountdown}s</span></span>
-              </div>
-            )}
-
-            {gameState === 'PAUSED' && (
-              <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-                <span className="text-amber-500 text-lg animate-bounce">🏆</span>
-                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                  {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Winner Verification...'}
-                </span>
-              </div>
-            )}
-            {gameState === 'WAITING' && (
-              <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-bold animate-pulse">
-                ⏳ Waiting for Host...
-              </div>
-            )}
-            {gameState === 'COMPLETED' && (
-              <div className="mt-4 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm font-bold">
-                🏁 Game Completed
-              </div>
-            )}
+        {/* Mobile Sticky Header */}
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm px-4 py-3 flex justify-between items-center w-full">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-slate-800 text-lg">Tambola</span>
+            <span className="px-2 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold shadow-sm">
+              #{ticket.ticketCode}
+            </span>
           </div>
-
-          {/* Ticket Section (Full width on mobile) */}
-          <div className="w-full px-2 sm:px-0">
-             <div className="ticket-container p-2 sm:p-4 shadow-premium w-full mx-auto max-w-lg">
-                <div className="grid grid-cols-9 gap-1 sm:gap-1.5 w-full">
-                  {(ticket?.ticketMatrix || []).map((row, rIndex) => (
-                    row.map((num, cIndex) => {
-                      const marked = num !== 0 && isMarked(num);
-                      const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
-                      
-                      return (
-                        <div 
-                          key={`r${rIndex}-c${cIndex}`} 
-                          onClick={() => handleMarkNumber(num)}
-                          className={`
-                            aspect-square flex items-center justify-center text-[1rem] sm:text-xl font-extrabold rounded-lg sm:rounded-xl border transition-all duration-200 relative select-none
-                            ${num === 0 ? 'ticket-cell-empty' : 'ticket-cell shadow-sm'}
-                            ${marked ? 'ticket-cell-marked' : ''}
-                            ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}
-                          `}
-                        >
-                          {num === 0 ? '' : num}
-                        </div>
-                      );
-                    })
-                  ))}
-                </div>
-             </div>
-          </div>
-        </div>
-
-        {/* TAB 2: PRIZES (Mobile) / Right Column Part 1 (Desktop) */}
-        <div className={`flex-col gap-6 ${activeTab === 'prizes' ? 'flex px-4 sm:px-0' : 'hidden md:flex md:col-span-2'}`}>
-          
-          <div className="w-full">
-            <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-3">Claim Prizes</h2>
-            {/* Horizontal Scrollable Chips */}
-            <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide snap-x w-full">
-              {(prizes || []).filter(p => p.enabled).map(prize => {
-                const isWon = prize.status === 'COMPLETED';
-                const isLocked = prize.status === 'LOCKED';
-                const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
-                
-                return (
-                  <button 
-                    key={prize.id}
-                    disabled={isWon || isLocked || gameState !== 'LIVE'}
-                    onClick={() => claimPrize(prize.id)}
-                    className={`
-                      shrink-0 snap-start py-2.5 px-5 rounded-full font-bold flex flex-col sm:flex-row items-center gap-1 transition-all duration-200 border shadow-sm whitespace-nowrap min-w-[120px] sm:min-w-0
-                      ${isWon 
-                        ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 opacity-75') 
-                        : (isLocked ? 'bg-brand-bg text-brand-text-muted border-brand-border cursor-not-allowed'
-                        : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/30 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'))}
-                      disabled:cursor-not-allowed cursor-pointer
-                    `}
-                  >
-                    <span className="text-sm">{prize.name}</span>
-                    {isWon && <span className="text-[10px] font-mono opacity-80 uppercase">{prize.winner}</span>}
-                    {!isWon && isLocked && <span className="text-[10px] uppercase opacity-75">Locked 🔒</span>}
-                  </button>
-                )
-              })}
+          <div className="flex items-center gap-3">
+            <div className="flex bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full items-center gap-2 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[11px] font-bold text-emerald-700">{onlineCount}</span>
             </div>
-          </div>
-
-          <div className="w-full glass-panel p-6 mt-2">
-            <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
-              🏆 Winners Board
-            </h2>
-            <div className="flex flex-col gap-4">
-              {prizes.filter(p => p.enabled).map(prize => {
-                const isWon = prize.status === 'COMPLETED';
-                return (
-                  <div key={`win-${prize.id}`} className={`flex justify-between items-center p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
-                    <span className="text-sm font-bold text-brand-text">{prize.name}</span>
-                    {isWon ? (
-                      <span className="text-sm font-extrabold text-emerald-500 flex items-center gap-2">
-                        {prize.winner} <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      </span>
-                    ) : (
-                      <span className="text-xs font-semibold text-brand-text-muted italic opacity-70">Waiting...</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* TAB 3: HISTORY (Mobile) / Right Column Part 2 (Desktop) */}
-        <div className={`flex-col gap-6 ${activeTab === 'history' ? 'flex px-4 sm:px-0' : 'hidden md:flex md:col-span-2'}`}>
-          
-          <div className="glass-panel p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Recent Draws</h2>
-              <span className="text-xs font-semibold text-brand-text-muted bg-brand-bg px-2.5 py-1 rounded-full border border-brand-border">
-                {drawnNumbers.length} / 90
-              </span>
-            </div>
-            
-            {/* Show only last 10 drawn numbers natively to save space */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              {drawnNumbers.slice(-10).map(num => (
-                <div key={`rec-${num}`} className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-600 to-indigo-600 shadow-[0_4px_10px_rgba(37,99,235,0.3)] animate-draw-pulse">
-                  {num}
-                </div>
-              ))}
-              {drawnNumbers.length === 0 && <span className="text-sm text-brand-text-muted italic">No numbers drawn yet.</span>}
-            </div>
-            
-            <button 
-              onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-              className="w-full py-3 text-sm font-bold text-brand-blue border border-brand-border rounded-xl hover:bg-brand-bg transition-colors shadow-sm"
-            >
-              {isHistoryExpanded ? 'Collapse Full History' : 'View Full History'}
+            <button onClick={toggleVoice} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-lg shadow-sm active:scale-95 transition-transform">
+              {isVoiceEnabled ? '🔊' : '🔈'}
             </button>
+          </div>
+        </div>
 
-            {isHistoryExpanded && (
-              <div className="mt-4 p-4 bg-brand-bg rounded-2xl border border-brand-border max-h-48 overflow-y-auto grid grid-cols-5 sm:grid-cols-10 gap-2.5 shadow-inner">
-                {drawnNumbers.map(num => (
-                  <div key={`hist-${num}`} className="flex items-center justify-center p-2 rounded-xl text-xs font-bold bg-brand-card text-brand-text border border-brand-border shadow-sm">
+        {/* Tab Content */}
+        <div className="w-full px-4 pt-4">
+          
+          {/* TAB 1: GAME */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'game' ? 'block' : 'hidden'}`}>
+            
+            {/* Mobile Hero: Current Number */}
+            <div className="flex flex-col items-center justify-center relative">
+              <div className="relative">
+                {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-400/30 animate-pulse rounded-full blur-2xl pointer-events-none"></div>}
+                <div className={`w-40 h-40 rounded-full flex items-center justify-center bg-white border-4 border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] relative overflow-hidden z-10 ${gameState === "LIVE" ? "border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-draw-pulse" : ""}`}>
+                   <span className="text-[6.5rem] font-black text-slate-800 tracking-tighter leading-none mt-2 relative z-10">
+                     {currentNumber || '-'}
+                   </span>
+                   {gameState === "LIVE" && <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-50"></div>}
+                </div>
+              </div>
+              
+              <div className="mt-5 flex flex-col items-center">
+                {gameState === 'LIVE' && nextDrawCountdown !== null && (
+                  <div className="px-5 py-2 rounded-full bg-white border border-slate-200 flex items-center gap-2 shadow-sm">
+                    <div className="w-4 h-4 relative flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-75"></div>
+                      <div className="relative w-2 h-2 rounded-full bg-blue-500"></div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Next in <span className="text-blue-600 font-black">{nextDrawCountdown}s</span></span>
+                  </div>
+                )}
+                {gameState === 'PAUSED' && (
+                  <div className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-200 flex items-center gap-2 shadow-sm">
+                    <span className="text-amber-500 text-lg animate-bounce">🏆</span>
+                    <span className="text-sm font-bold text-amber-700">
+                      {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Winner Verification...'}
+                    </span>
+                  </div>
+                )}
+                {gameState === 'WAITING' && (
+                  <div className="px-6 py-2.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold animate-pulse shadow-sm">
+                    ⏳ Waiting for Host to Start...
+                  </div>
+                )}
+                {gameState === 'COMPLETED' && (
+                  <div className="px-6 py-2.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-bold shadow-sm">
+                    🏁 Game Completed
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Recent Chips */}
+            <div className="w-full mt-2">
+              <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide snap-x px-1">
+                {drawnNumbers.slice(-15).reverse().map((num, i) => (
+                  <div key={`mob-rec-${num}`} className={`shrink-0 snap-start flex items-center justify-center font-bold shadow-sm rounded-full ${i === 0 ? 'w-12 h-12 text-white bg-gradient-to-br from-blue-500 to-indigo-600 text-lg shadow-blue-500/30' : 'w-10 h-10 text-slate-600 bg-white border border-slate-200 text-sm opacity-80'}`}>
                     {num}
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div className="glass-panel p-5">
-             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider">Number Board (1-90)</h2>
-              <button 
-                onClick={() => setIsBoardExpanded(!isBoardExpanded)}
-                className="text-xs font-bold text-brand-blue bg-blue-500/10 px-3 py-1.5 rounded-full"
-              >
-                {isBoardExpanded ? 'Hide' : 'Expand'}
-              </button>
             </div>
 
-            {isBoardExpanded && (
+            {/* Mobile Ticket Card */}
+            <div className="w-full bg-white p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Your Ticket</h2>
+              <div className="grid grid-cols-9 gap-1 sm:gap-1.5 w-full bg-[#F8FAFC] p-2 rounded-2xl border border-slate-200 inset-shadow-sm">
+                {(ticket?.ticketMatrix || []).map((row, rIndex) => (
+                  row.map((num, cIndex) => {
+                    const marked = num !== 0 && isMarked(num);
+                    const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+                    return (
+                      <div 
+                        key={`mob-r${rIndex}-c${cIndex}`} 
+                        onClick={() => handleMarkNumber(num)}
+                        className={`aspect-square flex items-center justify-center text-sm font-black rounded-[8px] transition-all duration-300 select-none
+                          ${num === 0 ? 'bg-transparent' : 'bg-white text-slate-800 shadow-sm border border-slate-200/60'}
+                          ${marked ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 text-white border-emerald-500 shadow-md scale-105 z-10 ring-2 ring-emerald-200' : ''}
+                          ${canMark ? 'cursor-pointer animate-pulse ring-2 ring-blue-400/50' : ''}`}
+                      >
+                        {num === 0 ? '' : num}
+                      </div>
+                    );
+                  })
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* TAB 2: PRIZES */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'prizes' ? 'block' : 'hidden'}`}>
+            <div className="w-full">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Claim Prizes</h2>
+              <div className="flex flex-wrap gap-2.5 w-full">
+                {(prizes || []).filter(p => p.enabled).map(prize => {
+                  const isWon = prize.status === 'COMPLETED';
+                  const isLocked = prize.status === 'LOCKED';
+                  const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
+                  
+                  return (
+                    <button 
+                      key={`mob-claim-${prize.id}`}
+                      disabled={isWon || isLocked || gameState !== 'LIVE'}
+                      onClick={() => claimPrize(prize.id)}
+                      className={`flex-grow py-3 px-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border shadow-sm
+                        ${isWon 
+                          ? (wonByMe ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border-transparent shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border-slate-200') 
+                          : (isLocked ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+                          : (gameState !== 'LIVE' ? 'bg-slate-50 text-slate-400 border-slate-200' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent shadow-blue-500/20'))}
+                      `}
+                    >
+                      <span className="text-[13px]">{prize.name}</span>
+                      {isWon && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{prize.winner}</span>}
+                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-60">Locked 🔒</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="w-full">
+              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                🏆 Winners Board
+              </h2>
+              <div className="flex flex-col gap-3">
+                {prizes.filter(p => p.enabled).map(prize => {
+                  const isWon = prize.status === 'COMPLETED';
+                  return (
+                    <div key={`mob-win-${prize.id}`} className={`flex items-center p-4 rounded-2xl bg-white border transition-all shadow-sm ${isWon ? 'border-emerald-200 shadow-emerald-500/10' : 'border-slate-100'}`}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${isWon ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-300'}`}>
+                        {isWon ? '🎉' : '⏳'}
+                      </div>
+                      <div className="flex flex-col flex-grow">
+                        <span className="text-sm font-bold text-slate-800">{prize.name}</span>
+                        {isWon ? (
+                          <span className="text-xs font-black text-emerald-500 tracking-wide uppercase">
+                            {prize.winner}
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400 italic">Waiting for winner</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* TAB 3: HISTORY */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'history' ? 'block' : 'hidden'}`}>
+            <div className="bg-white p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+               <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Number Board (1-90)</h2>
+              </div>
               <div className="grid grid-cols-10 gap-1 sm:gap-1.5">
                 {Array.from({length: 90}, (_, i) => i + 1).map(num => (
                   <div 
-                    key={`board-${num}`}
-                    className={`
-                      flex items-center justify-center aspect-square rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-300
-                      ${isDrawn(num) ? 'board-cell drawn animate-draw-pulse' : 'board-cell'}
+                    key={`mob-board-${num}`}
+                    className={`flex items-center justify-center aspect-square rounded-[6px] text-[10px] font-bold transition-all duration-300
+                      ${isDrawn(num) ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm' : 'bg-slate-50 text-slate-400 border border-slate-100'}
                     `}
                   >
                     {num}
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
-
         </div>
 
-      </div>
-
-      {/* Sticky Bottom Navigation (Mobile Only) */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 h-16 bg-brand-card/80 backdrop-blur-xl border border-brand-border flex justify-around items-center px-2 z-50 rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)]">
-        <button onClick={() => setActiveTab('game')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'game' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
-          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'game' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🎟️</span>
-          <span className="text-[10px] font-bold">Game</span>
-          {activeTab === 'game' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
-        </button>
-        <button onClick={() => setActiveTab('history')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'history' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
-          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'history' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🔢</span>
-          <span className="text-[10px] font-bold">History</span>
-          {activeTab === 'history' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
-        </button>
-        <button onClick={() => setActiveTab('prizes')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'prizes' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
-          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'prizes' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🏆</span>
-          <span className="text-[10px] font-bold">Prizes</span>
-          {activeTab === 'prizes' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
-        </button>
+        {/* Mobile Sticky Bottom Nav */}
+        <div className="fixed bottom-6 left-6 right-6 h-16 bg-white/90 backdrop-blur-xl border border-slate-200 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.1)] flex justify-between items-center px-4 z-50 rounded-full">
+          <button onClick={() => setActiveTab('game')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'game' ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`text-xl mb-1 transition-transform ${activeTab === 'game' ? 'scale-110' : 'grayscale opacity-60'}`}>🎟️</span>
+            <span className="text-[10px] font-bold">Game</span>
+          </button>
+          <button onClick={() => setActiveTab('prizes')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'prizes' ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`text-xl mb-1 transition-transform ${activeTab === 'prizes' ? 'scale-110' : 'grayscale opacity-60'}`}>🏆</span>
+            <span className="text-[10px] font-bold">Prizes</span>
+          </button>
+          <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`text-xl mb-1 transition-transform ${activeTab === 'history' ? 'scale-110' : 'grayscale opacity-60'}`}>🔢</span>
+            <span className="text-[10px] font-bold">Board</span>
+          </button>
+        </div>
       </div>
 
       <WinnerPopup winner={activeWinner} onClose={handlePopupClose} />
