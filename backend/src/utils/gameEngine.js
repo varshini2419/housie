@@ -28,26 +28,26 @@ const drawIntervalLogic = async (game, io) => {
     const nextNum = state.availableNumbers.pop();
     state.drawnNumbers.push(nextNum);
 
+    // Emit number_drawn immediately for instant socket delivery & countdown timer sync
+    io.to(sId).emit('number_drawn', {
+        number: nextNum,
+        history: state.drawnNumbers,
+        drawnNumbers: state.drawnNumbers
+    });
+
+    // Save state to database asynchronously without blocking interval or socket timing
+    GameSession.findByIdAndUpdate(game._id, {
+        currentNumber: nextNum,
+        drawnNumbers: state.drawnNumbers
+    }).catch(err => console.error('Error updating GameSession:', err));
+
     if (state.drawnNumbers.length % 5 === 0) {
-        await GameSession.findByIdAndUpdate(game._id, {
-            currentNumber: nextNum,
-            drawnNumbers: state.drawnNumbers
-        });
-        await DrawHistory.findOneAndUpdate(
+        DrawHistory.findOneAndUpdate(
             { sessionId: game._id },
             { numbersCalled: state.drawnNumbers },
             { upsert: true }
-        );
-    } else {
-        await GameSession.findByIdAndUpdate(game._id, { currentNumber: nextNum });
+        ).catch(err => console.error('Error updating DrawHistory:', err));
     }
-
-    io.to(sId).emit('number_drawn', {
-        number: nextNum,
-        history: state.drawnNumbers
-    });
-
-    const updatedGame = await GameSession.findById(game._id);
 
     const defaultPrizes = [
         { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null },
@@ -56,15 +56,15 @@ const drawIntervalLogic = async (game, io) => {
         { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null },
         { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null }
     ];
-    
-    const sessionPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
 
-    io.to(sId).emit('admin_stats', {
-        totalJoined: await Ticket.countDocuments({ sessionId: game._id }),
-        onlineCount: state.onlinePlayers.size,
-        remainingNumbers: state.availableNumbers.length,
-        prizes: sessionPrizes
-    });
+    Ticket.countDocuments({ sessionId: game._id }).then(totalJoined => {
+        io.to(sId).emit('admin_stats', {
+            totalJoined,
+            onlineCount: state.onlinePlayers.size,
+            remainingNumbers: state.availableNumbers.length,
+            prizes: defaultPrizes
+        });
+    }).catch(err => console.error('Error in admin_stats:', err));
 };
 
 const ensureActiveGame = async (sessionId, io) => {

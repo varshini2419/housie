@@ -43,6 +43,11 @@ const Admin = () => {
 
   const { speak } = useSpeech();
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const isVoiceEnabledRef = useRef(isVoiceEnabled);
+
+  useEffect(() => {
+    isVoiceEnabledRef.current = isVoiceEnabled;
+  }, [isVoiceEnabled]);
 
   useEffect(() => {
     if (token) {
@@ -69,7 +74,7 @@ const Admin = () => {
 
       socketRef.current.on('number_drawn', ({ number, drawnNumbers, remainingNumbers }) => {
         setAdminStats(prev => prev ? { ...prev, currentNumber: number, drawnNumbers, remainingNumbers } : prev);
-        if (isVoiceEnabled) {
+        if (isVoiceEnabledRef.current) {
           speak(number);
         }
       });
@@ -109,7 +114,18 @@ const Admin = () => {
       });
 
       return () => {
-        if (socketRef.current) socketRef.current.disconnect();
+        if (socketRef.current) {
+          socketRef.current.off('game_sync');
+          socketRef.current.off('player_count_update');
+          socketRef.current.off('number_drawn');
+          socketRef.current.off('game_started');
+          socketRef.current.off('game_paused');
+          socketRef.current.off('game_resumed');
+          socketRef.current.off('game_ended');
+          socketRef.current.off('player_joined_status');
+          socketRef.current.off('claim_result');
+          socketRef.current.disconnect();
+        }
       };
     }
   }, [viewMode, liveSession]);

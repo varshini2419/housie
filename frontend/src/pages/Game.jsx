@@ -22,8 +22,25 @@ const Game = () => {
   const [toastMsg, setToastMsg] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
 
-  const { speak } = useSpeech();
+  const { speak, announceNumber } = useSpeech();
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const isVoiceEnabledRef = useRef(isVoiceEnabled);
+  const [timer, setTimer] = useState(5);
+
+  useEffect(() => {
+    isVoiceEnabledRef.current = isVoiceEnabled;
+  }, [isVoiceEnabled]);
+
+  // 1-second countdown timer effect for live game
+  useEffect(() => {
+    if (gameState !== 'LIVE') return;
+
+    const interval = setInterval(() => {
+      setTimer(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -57,12 +74,17 @@ const Game = () => {
     socket.on('number_drawn', ({ number, drawnNumbers }) => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
-      if (isVoiceEnabled) {
+      setTimer(5); // Reset timer to 5s immediately upon receiving new number
+
+      if (isVoiceEnabledRef.current) {
         speak(number);
       }
     });
 
-    socket.on('game_started', () => setGameState('LIVE'));
+    socket.on('game_started', () => {
+      setGameState('LIVE');
+      setTimer(5);
+    });
 
     socket.on('game_paused', ({ winners, countdown }) => {
       setGameState('PAUSED');
@@ -73,7 +95,11 @@ const Game = () => {
       setPauseCountdown(countdown);
     });
 
-    socket.on('game_resumed', () => setGameState('LIVE'));
+    socket.on('game_resumed', () => {
+      setGameState('LIVE');
+      setTimer(5);
+    });
+
     socket.on('game_ended', () => setGameState('COMPLETED'));
 
     socket.on('game_deleted', () => {
@@ -96,7 +122,19 @@ const Game = () => {
     });
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.off('player_count_update');
+        socket.off('game_sync');
+        socket.off('number_drawn');
+        socket.off('game_started');
+        socket.off('game_paused');
+        socket.off('pause_countdown_tick');
+        socket.off('game_resumed');
+        socket.off('game_ended');
+        socket.off('game_deleted');
+        socket.off('claim_result');
+        socket.disconnect();
+      }
     };
   }, [sessionId, ticket, navigate]);
 
@@ -185,11 +223,48 @@ const Game = () => {
 
           {/* Current Number Card */}
           <div className="glass-panel rounded-3xl p-6 shadow-premium border border-brand-border flex flex-col items-center text-center relative">
-            <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Current Drawn Number</h2>
+            <h2 className="text-xs text-brand-text-muted mb-3 font-bold uppercase tracking-wider">Current Drawn Number</h2>
             <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 ${gameState === 'LIVE' ? 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/30 shadow-2xl border-blue-400/40' : 'bg-slate-100 dark:bg-slate-800 text-brand-text-muted border-brand-border'}`}>
               <span className="text-6xl font-extrabold tracking-tight">
                 {currentNumber || '-'}
               </span>
+            </div>
+            
+            {currentNumber && (
+              <p className="text-xs font-extrabold uppercase text-brand-text-muted tracking-widest mt-2">
+                NUMBER {currentNumber}
+              </p>
+            )}
+
+            {/* Timer countdown pill badge */}
+            <div className="mt-4 px-5 py-2 rounded-full bg-brand-bg border border-brand-border flex items-center gap-3 shadow-inner">
+              {gameState === 'LIVE' && (
+                <>
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Running
+                  </span>
+                  <span className="text-brand-text-muted text-xs">|</span>
+                  <span className="text-xs font-semibold text-brand-text-sec flex items-center gap-1">
+                    ⌛ Timer: <strong className="text-brand-blue font-mono text-sm font-bold">{timer}s</strong>
+                  </span>
+                </>
+              )}
+              {gameState === 'PAUSED' && (
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  ⏸️ Timer: Paused
+                </span>
+              )}
+              {gameState === 'WAITING' && (
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  ⏳ Waiting Room
+                </span>
+              )}
+              {gameState === 'COMPLETED' && (
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  🏁 Game Ended
+                </span>
+              )}
             </div>
           </div>
 
