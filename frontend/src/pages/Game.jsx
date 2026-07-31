@@ -142,11 +142,14 @@ const Game = () => {
     });
 
     const handleSpeechFinished = () => {
-      setSpeaking(false);
-      setNextDrawCountdown(5);
       if (socketRef.current) {
         socketRef.current.emit('speech_finished', { sessionId });
       }
+      // Wait for 2 seconds (2000ms) after speech ends completely before starting the 5s countdown
+      setTimeout(() => {
+        setSpeaking(false);
+        setNextDrawCountdown(5);
+      }, 2000);
     };
     window.addEventListener('speech_finished', handleSpeechFinished);
 

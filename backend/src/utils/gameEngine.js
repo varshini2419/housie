@@ -97,14 +97,16 @@ const serverTick = async (sessionId, io) => {
         return;
     }
 
-    if (state.phase === 'SPEECH_WAIT') {
+    if (state.phase === 'SPEECH_WAIT' || state.phase === 'POST_SPEECH_PAUSE') {
         io.to(sId).emit('countdown_update', { countdown: 5 });
-        state.tickCountdown--;
-        if (state.tickCountdown <= 0) {
-            state.phase = 'COUNTDOWN';
-            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-            console.log(`[SCHEDULER] Voice Finished (Failsafe expired). Starting 5s Countdown.`);
-            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+        if (state.phase === 'SPEECH_WAIT') {
+            state.tickCountdown--;
+            if (state.tickCountdown <= 0) {
+                state.phase = 'COUNTDOWN';
+                state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
+                console.log(`[SCHEDULER] Voice Finished (Failsafe expired). Starting 5s Countdown.`);
+                io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+            }
         }
     } else if (state.phase === 'COUNTDOWN') {
         io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
@@ -196,10 +198,16 @@ const triggerCountdown = (sessionId, io) => {
     const sIdStr = sessionId.toString();
     const state = activeGames[sIdStr];
     if (state && state.phase === 'SPEECH_WAIT') {
-        state.phase = 'COUNTDOWN';
-        state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-        console.log(`[SCHEDULER] Voice Finished (Triggered by client). Starting Countdown.`);
-        if (io) io.to(sIdStr).emit('countdown_update', { countdown: state.tickCountdown });
+        state.phase = 'POST_SPEECH_PAUSE'; // Intermediate 2s wait state
+        console.log(`[SCHEDULER] Voice Finished. Waiting 2s before starting countdown...`);
+        setTimeout(() => {
+            if (activeGames[sIdStr] && activeGames[sIdStr].phase === 'POST_SPEECH_PAUSE') {
+                activeGames[sIdStr].phase = 'COUNTDOWN';
+                activeGames[sIdStr].tickCountdown = DRAW_COUNTDOWN_SECONDS;
+                console.log(`[SCHEDULER] 2s wait complete. Starting 5s Countdown.`);
+                if (io) io.to(sIdStr).emit('countdown_update', { countdown: DRAW_COUNTDOWN_SECONDS });
+            }
+        }, 2000);
     }
 };
 
