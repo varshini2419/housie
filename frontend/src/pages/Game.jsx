@@ -24,6 +24,12 @@ const Game = () => {
   const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
+  const isSpeakingStateRef = useRef(false);
+
+  const setSpeaking = (val) => {
+    isSpeakingStateRef.current = val;
+    setIsSpeakingState(val);
+  };
 
   // New UI States for Mobile Layout
   const [activeTab, setActiveTab] = useState('game'); // 'game', 'prizes', 'history'
@@ -41,7 +47,7 @@ const Game = () => {
   }, [isVoiceEnabled]);
 
   // Continuous local 1s countdown tick for smooth UI countdown 5s -> 4s -> 3s -> 2s -> 1s -> 0s
-  // Pauses while voice is actively speaking, starts 5s countdown immediately after speech ends
+  // Strictly pauses while voice is speaking, starts 5s countdown immediately after speech ends
   useEffect(() => {
     if (gameState !== 'LIVE' || isSpeakingState || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
 
@@ -88,13 +94,17 @@ const Game = () => {
       setDrawnNumbers(drawnNumbers);
       setNextDrawCountdown(5);
       if (isVoiceEnabledRef.current) {
-        setIsSpeakingState(true);
+        setSpeaking(true);
         announceNumber(number);
+      } else {
+        setSpeaking(false);
       }
     });
 
     socketRef.current.on('countdown_update', ({ countdown }) => {
-      setNextDrawCountdown(countdown);
+      if (!isSpeakingStateRef.current && countdown !== null && countdown !== undefined) {
+        setNextDrawCountdown(countdown);
+      }
     });
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
@@ -132,7 +142,7 @@ const Game = () => {
     });
 
     const handleSpeechFinished = () => {
-      setIsSpeakingState(false);
+      setSpeaking(false);
       if (socketRef.current) {
         socketRef.current.emit('speech_finished', { sessionId });
       }
