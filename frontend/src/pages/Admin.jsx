@@ -304,6 +304,15 @@ const Admin = () => {
       if (action === 'start') unlockAudio();
       
       const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      
+      if (action === 'start') {
+        const maskedToken = token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'NULL_OR_EMPTY';
+        console.log(`[Frontend Auth Debug] Action: ${action}`);
+        console.log(`[Frontend Auth Debug] URL: ${apiUrl}/api/game/${liveSession._id}/${action}`);
+        console.log(`[Frontend Auth Debug] Token exists: ${!!token}`);
+        console.log(`[Frontend Auth Debug] Header: Bearer ${maskedToken}`);
+      }
+
       const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/${action}`, {
         method: 'POST',
         headers: {
