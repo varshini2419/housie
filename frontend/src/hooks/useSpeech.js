@@ -171,7 +171,7 @@ const useSpeech = () => {
     const number = item;
     currentSpokenNumber.current = number;
 
-    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+    window.dispatchEvent(new CustomEvent('speech_started', { detail: { number } }));
 
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
@@ -188,6 +188,9 @@ const useSpeech = () => {
     } catch (err) {
         console.error('[Voice Engine] Queue processing error:', err);
     }
+
+    // Dispatch speech_finished ONLY after speech utterance has completed
+    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
 
     isSpeaking.current = false;
     currentSpokenNumber.current = null;
