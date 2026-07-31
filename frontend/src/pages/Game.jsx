@@ -46,17 +46,7 @@ const Game = () => {
     isVoiceEnabledRef.current = isVoiceEnabled;
   }, [isVoiceEnabled]);
 
-  // Continuous local 1s countdown tick for smooth UI countdown 5s -> 4s -> 3s -> 2s -> 1s -> 0s
-  // Strictly pauses while voice is speaking, starts 5s countdown immediately after speech ends
-  useEffect(() => {
-    if (gameState !== 'LIVE' || isSpeakingState || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
 
-    const timer = setTimeout(() => {
-      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [gameState, isSpeakingState, nextDrawCountdown]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
