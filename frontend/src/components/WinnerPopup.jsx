@@ -1,16 +1,48 @@
 import React, { useState, useEffect } from 'react';
 
 const WinnerPopup = ({ winner, onClose }) => {
-  const [countdown, setCountdown] = useState(6);
+  const [countdown, setCountdown] = useState(5);
   const [show, setShow] = useState(false);
+
+  // Synthesize triumphant cheering/victory fanfare sound effect using Web Audio API
+  useEffect(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playFanfareNote = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+        
+        gain.gain.setValueAtTime(0.35, ctx.currentTime + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(ctx.currentTime + startTime);
+        osc.stop(ctx.currentTime + startTime + duration);
+      };
+
+      // Play 4-note ascending fanfare chime: C5, E5, G5, C6
+      playFanfareNote(523.25, 0.0, 0.25); // C5
+      playFanfareNote(659.25, 0.2, 0.25); // E5
+      playFanfareNote(783.99, 0.4, 0.35); // G5
+      playFanfareNote(1046.50, 0.65, 0.9); // C6 (triumph finale note!)
+    } catch (e) {
+      console.log('Audio playback error:', e);
+    }
+  }, []);
 
   useEffect(() => {
     // Trigger entrance animation
     setShow(true);
-    // Reset countdown on new winner
-    setCountdown(6);
+    setCountdown(5);
     
-    // Countdown timer
+    // Countdown timer for 5s popup visibility
     const interval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -36,69 +68,67 @@ const WinnerPopup = ({ winner, onClose }) => {
     <div className={`fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4 transition-all duration-400 ${show ? 'opacity-100' : 'opacity-0'}`}>
       
       {/* Dark Blurred Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-lg"></div>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
       
       {/* Confetti Overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center z-0">
         <div className="confetti-overlay"></div>
       </div>
 
-      {/* Main Premium Trophy Card */}
-      <div className={`relative z-10 bg-gradient-to-b from-[#09122C] via-[#0F172A] to-[#1E1B4B] text-white p-8 sm:p-10 rounded-[2.5rem] border border-yellow-500/30 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.9)] flex flex-col items-center text-center max-w-md w-full transform transition-all duration-500 delay-100 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-10'}`}>
+      {/* Main Glassmorphism Winner Card (Matching Sample UI) */}
+      <div className={`relative z-10 bg-white/95 text-slate-800 p-8 sm:p-10 rounded-[2.5rem] border border-white/80 shadow-[0_30px_90px_rgba(0,0,0,0.6)] flex flex-col items-center text-center max-w-sm sm:max-w-md w-full transform transition-all duration-500 delay-100 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-10'}`}>
         
         {/* Background Sparkle Accents */}
-        <div className="absolute top-4 left-6 w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-        <div className="absolute top-10 right-8 w-2.5 h-2.5 rounded-full bg-pink-500"></div>
-        <div className="absolute bottom-8 left-10 w-2 h-2 rounded-full bg-emerald-400"></div>
-        <div className="absolute bottom-10 right-6 w-2 h-2 rounded-full bg-purple-400 animate-pulse"></div>
+        <div className="absolute top-4 left-6 w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
+        <div className="absolute top-10 right-8 w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+        <div className="absolute bottom-8 left-10 w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+        <div className="absolute bottom-10 right-6 w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></div>
 
-        {/* Golden 3D Trophy Graphic */}
-        <div className="relative mb-4 mt-2">
-          <div className="absolute inset-0 bg-yellow-500/20 rounded-full blur-2xl animate-pulse"></div>
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-300 via-amber-500 to-yellow-600 flex items-center justify-center shadow-[0_0_40px_rgba(251,191,36,0.6)] border-4 border-yellow-200/50 relative z-10 animate-bounce-slow">
-            <span className="text-5xl drop-shadow-md">🏆</span>
+        {/* Golden 3D Trophy Icon */}
+        <div className="relative mb-3 mt-1">
+          <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse"></div>
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/40 border-4 border-white relative z-10 animate-bounce-slow">
+            <span className="text-4xl drop-shadow-sm">🏆</span>
           </div>
         </div>
 
-        {/* Prize Ribbon Banner */}
-        <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-purple-900/90 border border-yellow-500/40 px-6 py-2 rounded-full mb-3 shadow-lg flex items-center gap-2">
-          <span className="text-yellow-300 font-black tracking-widest text-xs uppercase">
-            🎉 {winner.prizeName} 🎉
-          </span>
-        </div>
+        {/* Header Label */}
+        <h2 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-1">
+          WINNER ANNOUNCED!
+        </h2>
         
-        {/* Header Title */}
-        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md mb-2">
+        {/* Title */}
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-tight mb-1">
           Congratulations!
         </h1>
 
-        {/* Subtitle / Verification */}
-        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-5">
-          {winner.prizeItem ? `Prize: ${winner.prizeItem}` : 'Waiting for verification...'}
+        {/* Winner Name in Yellow/Amber Gradient */}
+        <p className="text-2xl sm:text-3xl font-black text-amber-500 tracking-tight leading-tight mb-4 drop-shadow-xs">
+          {displayName}!
         </p>
 
-        {/* Winner Name Box */}
-        <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl mb-6 w-full backdrop-blur-sm flex flex-col items-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Winner</span>
-          <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-400">
-            {displayName}
+        {/* Prize Ribbon Box */}
+        <div className="bg-slate-100/90 border border-slate-200/80 px-6 py-2.5 rounded-2xl mb-4 w-full flex flex-col items-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">WON PRIZE</span>
+          <span className="text-xl sm:text-2xl font-black text-emerald-600">
+            {winner.prizeName}
           </span>
         </div>
 
         {/* Branding Partner Badge */}
-        <div className="mb-6 flex items-center gap-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 px-4 py-1.5 rounded-full text-xs font-semibold text-emerald-300 shadow-inner">
+        <div className="mb-5 flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 px-4 py-1.5 rounded-full text-xs font-bold text-emerald-700 shadow-xs">
           <span className="text-slate-400 text-[11px] font-medium">Branding Partner:</span>
-          <span className="font-extrabold text-emerald-400 flex items-center gap-1">
+          <span className="font-extrabold text-emerald-700 flex items-center gap-1">
             🌿 NutriDelight
           </span>
         </div>
         
-        {/* Countdown */}
+        {/* Countdown Timer Circle */}
         <div className="flex flex-col items-center">
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">
-            Next draw in...
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">
+            NEXT NUMBER IN...
           </span>
-          <div className="w-10 h-10 rounded-full border-2 border-white/20 flex items-center justify-center text-sm font-bold text-white bg-white/5 font-mono">
+          <div className="w-10 h-10 rounded-full border-2 border-slate-200 flex items-center justify-center text-sm font-black text-slate-700 bg-slate-100 font-mono shadow-inner">
             {countdown}
           </div>
         </div>

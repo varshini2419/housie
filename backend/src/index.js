@@ -56,7 +56,7 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
-const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
+const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown, triggerAutoPause } = require('./utils/gameEngine');
 
 const pauseQueues = {};
 
@@ -220,6 +220,9 @@ io.on('connection', (socket) => {
                     prizes: sessionPrizes,
                     remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
+
+                // Auto-pause game for 10 seconds to display winner popup and fanfare
+                await triggerAutoPause(sessionId, io, 10);
 
                 // Sequential 6-Second Pause Logic for Popups
                 if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;

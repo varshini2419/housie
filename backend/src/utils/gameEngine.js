@@ -232,6 +232,59 @@ const startGame = async (sessionId, io) => {
     return game;
 };
 
+const autoPauseTimers = {};
+
+const triggerAutoPause = async (sessionId, io, durationSeconds = 10) => {
+    if (!sessionId) return;
+    const sIdStr = sessionId.toString();
+    const game = await GameSession.findById(sessionId);
+    if (!game || game.gameStatus !== 'LIVE') return;
+
+    // Pause the game status in DB
+    game.gameStatus = 'PAUSED';
+    await game.save();
+
+    const state = activeGames[sIdStr];
+    if (state && state.timerId) {
+        clearTimeout(state.timerId);
+        state.timerId = null;
+    }
+
+    if (autoPauseTimers[sIdStr]) {
+        clearInterval(autoPauseTimers[sIdStr]);
+    }
+
+    let remainingPause = durationSeconds;
+    console.log(`[SCHEDULER] Auto-pausing game for ${durationSeconds}s due to valid prize claim.`);
+    io.to(sIdStr).emit('game_paused', { status: 'PAUSED', countdown: remainingPause });
+
+    autoPauseTimers[sIdStr] = setInterval(async () => {
+        remainingPause--;
+        if (remainingPause > 0) {
+            io.to(sIdStr).emit('pause_countdown_tick', { countdown: remainingPause });
+        } else {
+            clearInterval(autoPauseTimers[sIdStr]);
+            delete autoPauseTimers[sIdStr];
+
+            // Auto Resume game after 10 seconds
+            const g = await GameSession.findById(sessionId);
+            if (g && g.gameStatus === 'PAUSED') {
+                g.gameStatus = 'LIVE';
+                await g.save();
+
+                console.log(`[SCHEDULER] 10s auto-pause complete. Resuming game to LIVE.`);
+                io.to(sIdStr).emit('game_resumed', { status: 'LIVE' });
+
+                if (activeGames[sIdStr]) {
+                    activeGames[sIdStr].phase = 'COUNTDOWN';
+                    activeGames[sIdStr].tickCountdown = DRAW_COUNTDOWN_SECONDS;
+                    activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+                }
+            }
+        }
+    }, 1000);
+};
+
 const pauseGame = async (sessionId, io) => {
     const game = await GameSession.findById(sessionId);
     if (!game || game.gameStatus !== 'LIVE') throw new Error('Game is not LIVE');
@@ -330,5 +383,6 @@ module.exports = {
     resumeGame,
     endGame,
     deleteGame,
-    triggerCountdown
+    triggerCountdown,
+    triggerAutoPause
 };
