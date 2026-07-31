@@ -22,6 +22,8 @@ const Game = () => {
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
+  const [nextDrawCountdown, setNextDrawCountdown] = useState(5);
+  const [pauseCountdown, setPauseCountdown] = useState(0);
 
   const [activeTab, setActiveTab] = useState('game'); // 'game', 'leaderboard', 'history'
   const [isBoardExpanded, setIsBoardExpanded] = useState(false);
@@ -71,8 +73,17 @@ const Game = () => {
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    socketRef.current.on('game_paused', ({ winners }) => {
+    socketRef.current.on('game_paused', ({ winners, countdown }) => {
       setGameState('PAUSED');
+      if (countdown !== undefined) setPauseCountdown(countdown);
+    });
+    
+    socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
+      setPauseCountdown(countdown);
+    });
+    
+    socketRef.current.on('countdown_update', ({ countdown }) => {
+      setNextDrawCountdown(countdown);
     });
 
     socketRef.current.on('game_resumed', () => setGameState('LIVE'));
@@ -358,7 +369,7 @@ const Game = () => {
               </p>
               
               <div className="mt-6">
-                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={false} />
+                <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
               </div>
             </motion.div>
 
@@ -499,7 +510,7 @@ const Game = () => {
               </div>
               
               <div className="mt-6">
-                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={true} />
+                <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={true} />
               </div>
             </div>
 

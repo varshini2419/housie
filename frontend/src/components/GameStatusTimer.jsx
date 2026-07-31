@@ -1,69 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
-  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
-  const [pauseCountdown, setPauseCountdown] = useState(0);
-
-  const [localCountdown, setLocalCountdown] = useState(5);
-  const timerIntervalRef = useRef(null);
-
-  const clearTimer = () => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    if (!socketRef || !socketRef.current) return;
-
-    const handlePaused = ({ countdown }) => {
-      clearTimer();
-      if (countdown !== undefined) {
-          setPauseCountdown(countdown);
-          setLocalCountdown(countdown); // Sync local timer
-      }
-    };
-    
-    const handlePauseTick = ({ countdown }) => {
-      setPauseCountdown(countdown);
-    };
-    
-    const handleCountdownUpdate = ({ countdown }) => {
-      clearTimer(); // Prevent multiple setInterval instances
-      
-      if (countdown === null) {
-          setLocalCountdown(5); // Reset to 5 immediately when next number is generated (during speech phase)
-      } else {
-          setLocalCountdown(countdown);
-          // Start local frontend countdown for perfect synchronization
-          timerIntervalRef.current = setInterval(() => {
-              setLocalCountdown(prev => {
-                  if (prev <= 1) {
-                      clearTimer();
-                      return 0;
-                  }
-                  return prev - 1;
-              });
-          }, 1000);
-      }
-    };
-
-    socketRef.current.on('game_paused', handlePaused);
-    socketRef.current.on('pause_countdown_tick', handlePauseTick);
-    socketRef.current.on('countdown_update', handleCountdownUpdate);
-
-    return () => {
-      clearTimer(); // Dispose of old timer instances properly on unmount
-      if (socketRef.current) {
-          socketRef.current.off('game_paused', handlePaused);
-          socketRef.current.off('pause_countdown_tick', handlePauseTick);
-          socketRef.current.off('countdown_update', handleCountdownUpdate);
-      }
-    };
-  }, [socketRef]);
-
+const GameStatusTimer = ({ gameState, countdown = 5, pauseCountdown = 0, isMobile = false }) => {
   const wrapperClasses = "flex items-center gap-3";
   const timerTextClasses = "text-sm font-bold text-[#4F8EF7] min-w-[28px] tabular-nums text-center inline-block";
 
@@ -88,7 +26,7 @@ const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
           <span className="text-[#6B7280]/30 shrink-0">|</span>
           <div className="flex items-center gap-1.5 bg-[#4F8EF7]/5 px-3 py-1.5 rounded-full border border-[#4F8EF7]/10">
             <span className="text-xs font-semibold text-[#6B7280]">⏳ Timer:</span>
-            <span className={timerTextClasses}>{localCountdown}s</span>
+            <span className={timerTextClasses}>{countdown}s</span>
           </div>
         </motion.div>
       )}

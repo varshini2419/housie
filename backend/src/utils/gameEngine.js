@@ -90,10 +90,13 @@ const serverTick = async (sessionId, io) => {
 
     if (state.phase === 'COUNTDOWN' || state.phase === 'SPEECH_WAIT') {
         io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
-        console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
+        
+        console.log(`Game Running`);
+        console.log(`Admin Timer: ${state.tickCountdown}`);
+        console.log(`Player Timer: ${state.tickCountdown}`);
         
         if (state.tickCountdown <= 0) {
-            console.log(`[SCHEDULER] Generating Next Number...`);
+            console.log(`Generating Next Number`);
 
             const continues = await generateNumber(game, io);
             
