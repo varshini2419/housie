@@ -485,11 +485,11 @@ const Admin = () => {
               {/* Prize Configuration */}
               <div className="space-y-3 border-t border-brand-border pt-4">
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Configured Prizes</label>
-                <div className="grid grid-cols-1 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3 max-h-[22rem] overflow-y-auto pr-1">
                   {prizes.map((prize, idx) => (
-                    <div key={prize.id} className="flex flex-col sm:flex-row items-center justify-between gap-2 glass-panel-secondary p-3 border border-brand-border hover:border-emerald-500/30 transition-all">
-                      <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                        <label className="flex items-center gap-2.5 cursor-pointer select-none truncate">
+                    <div key={prize.id} className="flex flex-col gap-2.5 glass-panel-secondary p-3.5 rounded-xl border border-brand-border hover:border-emerald-500/30 transition-all">
+                      <div className="flex items-center justify-between w-full">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
                           <input 
                             type="checkbox" 
                             checked={prize.enabled} 
@@ -500,22 +500,8 @@ const Admin = () => {
                             }} 
                             className="accent-emerald-500 rounded cursor-pointer w-4 h-4" 
                           />
-                          <span className="text-sm font-semibold text-brand-text-sec truncate min-w-[100px]">{prize.name}</span>
+                          <span className="text-sm font-bold text-brand-text-sec">{prize.name}</span>
                         </label>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <input 
-                          type="text" 
-                          value={prize.prizeItem || ''} 
-                          onChange={(e) => {
-                            const newPrizes = [...prizes];
-                            newPrizes[idx].prizeItem = e.target.value;
-                            setPrizes(newPrizes);
-                          }} 
-                          placeholder="Prize Item (Optional)" 
-                          className="flex-1 min-w-[120px] p-2 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
-                        />
                         <button 
                           type="button" 
                           onClick={() => setPrizes(prev => prev.filter(p => p.id !== prize.id))}
@@ -524,6 +510,21 @@ const Admin = () => {
                         >
                           ✕
                         </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2.5 w-full pl-6">
+                        <span className="text-lg opacity-80">🎁</span>
+                        <input 
+                          type="text" 
+                          value={prize.prizeItem || ''} 
+                          onChange={(e) => {
+                            const newPrizes = [...prizes];
+                            newPrizes[idx].prizeItem = e.target.value;
+                            setPrizes(newPrizes);
+                          }} 
+                          placeholder="Add Prize Item" 
+                          className="flex-1 p-2.5 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
+                        />
                       </div>
                     </div>
                   ))}

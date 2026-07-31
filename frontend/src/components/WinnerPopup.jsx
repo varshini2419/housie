@@ -56,32 +56,38 @@ const WinnerPopup = ({ winner, onClose }) => {
           Winner Announced!
         </h2>
         
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg mb-4 leading-tight">
-          Congratulations<br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">
-            {displayName}!
-          </span>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg mb-6 leading-tight">
+          Congratulations!
         </h1>
         
         {/* Prize Name */}
-        <div className={`bg-white/10 border border-white/20 px-6 py-3 rounded-2xl ${winner.prizeItem ? 'mb-4' : 'mb-8'} backdrop-blur-sm`}>
-          <p className="text-white/60 text-xs uppercase font-bold tracking-wider mb-1">Won Prize</p>
+        <div className={`bg-white/10 border border-white/20 px-6 py-3 rounded-2xl ${winner.prizeItem ? 'mb-4' : 'mb-6'} backdrop-blur-sm`}>
           <p className="text-2xl sm:text-3xl font-extrabold text-emerald-300 drop-shadow-md">
-            {winner.prizeName}
+            🏆 {winner.prizeName}
           </p>
         </div>
 
         {/* Prize Item (Optional) */}
         {winner.prizeItem && (
-          <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 px-8 py-3.5 rounded-2xl mb-8 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(251,191,36,0.15)] flex flex-col items-center max-w-full">
+          <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 px-8 py-3.5 rounded-2xl mb-6 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(251,191,36,0.15)] flex flex-col items-center max-w-full">
             <p className="text-amber-300/80 text-[11px] uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5 shadow-amber-500/20">
-              <span className="text-lg drop-shadow-sm">🎁</span> Prize Item
+              <span className="text-lg drop-shadow-sm">🎁</span> Prize
             </p>
             <p className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-200 to-amber-500 drop-shadow-md truncate max-w-[250px] sm:max-w-[300px]">
               {winner.prizeItem}
             </p>
           </div>
         )}
+
+        {/* Winner Details */}
+        <div className="flex flex-col items-center mb-8">
+          <p className="text-white/60 text-xs uppercase font-bold tracking-widest mb-1">
+            Winner
+          </p>
+          <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-400">
+            {displayName}
+          </span>
+        </div>
         
         {/* Countdown */}
         <div className="flex flex-col items-center">

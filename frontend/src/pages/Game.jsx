@@ -279,15 +279,21 @@ const Game = () => {
                   return (
                     <button 
                       key={prize.id} disabled={isWon || isLocked || gameState !== 'LIVE'} onClick={() => claimPrize(prize.id)}
-                      className={`shrink-0 py-2.5 px-5 rounded-full font-bold flex flex-row items-center gap-2 transition-all duration-200 border shadow-sm
+                      className={`shrink-0 min-w-[140px] p-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-200 border shadow-sm
                         ${isWon ? (wonByMe ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400/40 text-white shadow-emerald-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 opacity-75') 
                           : (isLocked ? 'bg-brand-bg text-brand-text-muted border-brand-border cursor-not-allowed'
                           : (gameState !== 'LIVE' ? 'bg-brand-bg text-brand-text-muted border-brand-border' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/30 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'))}
-                        disabled:cursor-not-allowed cursor-pointer`}
+                        disabled:cursor-not-allowed cursor-pointer text-center`}
                     >
-                      <span className="text-sm">{prize.name}</span>
-                      {isWon && <span className="text-[10px] font-mono opacity-80 uppercase">{prize.winner}</span>}
-                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-75">Locked 🔒</span>}
+                      <span className="text-sm">🏆 {prize.name}</span>
+                      {prize.prizeItem && (
+                        <div className="flex flex-col items-center mt-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">🎁 Prize</span>
+                          <span className="text-xs font-semibold">{prize.prizeItem}</span>
+                        </div>
+                      )}
+                      {isWon && <span className="text-[10px] font-mono opacity-80 uppercase mt-1">{prize.winner}</span>}
+                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-75 mt-1">Locked 🔒</span>}
                     </button>
                   )
                 })}
@@ -302,17 +308,26 @@ const Game = () => {
                 {prizes.filter(p => p.enabled).map(prize => {
                   const isWon = prize.status === 'COMPLETED';
                   return (
-                    <div key={`win-${prize.id}`} className={`flex justify-between items-center p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-brand-text">{prize.name}</span>
-                        {prize.prizeItem && <span className="text-[11px] font-semibold text-brand-text-sec mt-0.5">🎁 {prize.prizeItem}</span>}
-                      </div>
+                    <div key={`win-${prize.id}`} className={`flex flex-col p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
+                      <span className="text-sm font-bold text-brand-text mb-3">🏆 {prize.name}</span>
+                      
+                      {prize.prizeItem && (
+                        <div className="mb-3 flex flex-col">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted">🎁 Prize</span>
+                          <span className="text-xs font-semibold text-brand-text-sec">{prize.prizeItem}</span>
+                        </div>
+                      )}
+
                       {isWon ? (
-                        <span className="text-sm font-extrabold text-emerald-500 flex items-center gap-2">
-                          {prize.winner} <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        </span>
+                        <div className="flex flex-col mt-auto pt-3 border-t border-brand-border">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted mb-0.5">Winner</span>
+                          <span className="text-sm font-extrabold text-emerald-500">{prize.winner}</span>
+                          {prize.winnerTicket && <span className="text-[10px] font-mono text-brand-text-muted mt-1">Ticket #{prize.winnerTicket}</span>}
+                        </div>
                       ) : (
-                        <span className="text-xs font-semibold text-brand-text-muted italic opacity-70">Waiting...</span>
+                        <div className="mt-auto pt-3 border-t border-brand-border">
+                           <span className="text-xs font-semibold text-brand-text-muted italic opacity-70">Waiting...</span>
+                        </div>
                       )}
                     </div>
                   );
@@ -489,16 +504,22 @@ const Game = () => {
                       key={`mob-claim-${prize.id}`}
                       disabled={isWon || isLocked || gameState !== 'LIVE'}
                       onClick={() => claimPrize(prize.id)}
-                      className={`flex-grow py-3 px-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 transition-all active:scale-95 border shadow-sm
+                      className={`flex-grow p-4 min-w-[140px] rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 border shadow-sm text-center
                         ${isWon 
                           ? (wonByMe ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border-transparent shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border-slate-200') 
                           : (isLocked ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                           : (gameState !== 'LIVE' ? 'bg-slate-50 text-slate-400 border-slate-200' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-transparent shadow-blue-500/20'))}
                       `}
                     >
-                      <span className="text-[13px]">{prize.name}</span>
-                      {isWon && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{prize.winner}</span>}
-                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-60">Locked 🔒</span>}
+                      <span className="text-[13px]">🏆 {prize.name}</span>
+                      {prize.prizeItem && (
+                        <div className="flex flex-col items-center mt-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">🎁 Prize</span>
+                          <span className="text-xs font-semibold">{prize.prizeItem}</span>
+                        </div>
+                      )}
+                      {isWon && <span className="text-[10px] font-black uppercase tracking-wider opacity-90 mt-1">{prize.winner}</span>}
+                      {!isWon && isLocked && <span className="text-[10px] uppercase opacity-60 mt-1">Locked 🔒</span>}
                     </button>
                   )
                 })}
@@ -513,21 +534,27 @@ const Game = () => {
                 {prizes.filter(p => p.enabled).map(prize => {
                   const isWon = prize.status === 'COMPLETED';
                   return (
-                    <div key={`mob-win-${prize.id}`} className={`flex items-center p-4 rounded-2xl bg-white border transition-all shadow-sm ${isWon ? 'border-emerald-200 shadow-emerald-500/10' : 'border-slate-100'}`}>
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${isWon ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-300'}`}>
-                        {isWon ? '🎉' : '⏳'}
-                      </div>
-                      <div className="flex flex-col flex-grow">
-                        <span className="text-sm font-bold text-slate-800">{prize.name}</span>
-                        {prize.prizeItem && <span className="text-[11px] font-semibold text-slate-500 mt-0.5 mb-1">🎁 {prize.prizeItem}</span>}
-                        {isWon ? (
-                          <span className="text-xs font-black text-emerald-500 tracking-wide uppercase">
-                            {prize.winner}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-semibold text-slate-400 italic">Waiting for winner</span>
-                        )}
-                      </div>
+                    <div key={`mob-win-${prize.id}`} className={`flex flex-col p-5 rounded-3xl bg-white border transition-all shadow-sm ${isWon ? 'border-emerald-200 shadow-emerald-500/10' : 'border-slate-100'}`}>
+                      <span className="text-sm font-bold text-slate-800 mb-3">🏆 {prize.name}</span>
+                      
+                      {prize.prizeItem && (
+                        <div className="mb-4 flex flex-col">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">🎁 Prize</span>
+                          <span className="text-sm font-semibold text-slate-600">{prize.prizeItem}</span>
+                        </div>
+                      )}
+
+                      {isWon ? (
+                        <div className="flex flex-col pt-3 border-t border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Winner</span>
+                          <span className="text-sm font-extrabold text-emerald-500">{prize.winner}</span>
+                          {prize.winnerTicket && <span className="text-[10px] font-mono text-slate-400 mt-1">Ticket #{prize.winnerTicket}</span>}
+                        </div>
+                      ) : (
+                        <div className="pt-3 border-t border-slate-100">
+                          <span className="text-xs font-semibold text-slate-400 italic">Waiting...</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
