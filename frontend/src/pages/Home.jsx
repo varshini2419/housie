@@ -111,9 +111,9 @@ const Home = () => {
                 onChange={(e) => setSelectedSessionId(e.target.value)}
                 className="w-full premium-input appearance-none cursor-pointer"
               >
-              <option value="" className="bg-brand-card">-- Choose Active Session --</option>
+              <option value="" className="bg-white dark:bg-[#0F172A] text-slate-900 dark:text-white font-medium">-- Choose Active Session --</option>
               {sessions.map(session => (
-                <option key={session._id} value={session._id} className="bg-brand-card text-brand-text">
+                <option key={session._id} value={session._id} className="bg-white dark:bg-[#0F172A] text-slate-900 dark:text-white font-medium">
                   {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
                 </option>
               ))}

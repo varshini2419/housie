@@ -173,6 +173,17 @@ body {
   background-color: var(--card-bg);
 }
 
+/* Custom Option styling for Native Select Dropdowns */
+select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.dark select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
 /* Premium Buttons */
 .premium-btn-primary {
   background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
