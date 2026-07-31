@@ -21,6 +21,8 @@ const Game = () => {
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
+  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
+  const [pauseCountdown, setPauseCountdown] = useState(0);
 
   // New UI States for Mobile Layout
   const [activeTab, setActiveTab] = useState('game'); // 'game', 'prizes', 'history'
@@ -31,6 +33,17 @@ const Game = () => {
   const [activeWinner, setActiveWinner] = useState(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
+
+  // Smooth local 1s countdown tick for 5s -> 4s -> 3s -> 2s -> 1s -> 0s
+  useEffect(() => {
+    if (gameState !== 'LIVE' || nextDrawCountdown === null) return;
+
+    const interval = setInterval(() => {
+      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState, nextDrawCountdown !== null]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -66,13 +79,25 @@ const Game = () => {
     socketRef.current.on('number_drawn', ({ number, drawnNumbers }) => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
+      setNextDrawCountdown(5);
       announceNumber(number);
+    });
+
+    socketRef.current.on('countdown_update', ({ countdown }) => {
+      if (countdown !== null && countdown !== undefined) {
+        setNextDrawCountdown(countdown);
+      }
     });
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    socketRef.current.on('game_paused', ({ winners }) => {
+    socketRef.current.on('game_paused', ({ winners, countdown }) => {
       setGameState('PAUSED');
+      if (countdown !== undefined) setPauseCountdown(countdown);
+    });
+
+    socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
+      setPauseCountdown(countdown);
     });
 
     socketRef.current.on('game_resumed', () => setGameState('LIVE'));
@@ -111,8 +136,10 @@ const Game = () => {
         socketRef.current.off('player_count_update');
         socketRef.current.off('game_sync');
         socketRef.current.off('number_drawn');
+        socketRef.current.off('countdown_update');
         socketRef.current.off('game_started');
         socketRef.current.off('game_paused');
+        socketRef.current.off('pause_countdown_tick');
         socketRef.current.off('game_resumed');
         socketRef.current.off('game_ended');
         socketRef.current.off('game_deleted');
@@ -229,7 +256,7 @@ const Game = () => {
               
               {/* Fixed Status Area */}
               <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-brand-card border border-brand-border px-5 py-2.5 rounded-full shadow-sm w-72 max-w-full">
-                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={false} />
+                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
               </div>
             </div>
 
@@ -417,7 +444,7 @@ const Game = () => {
               
               {/* Fixed Status Area */}
               <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-white border border-slate-200 px-5 py-2.5 rounded-full shadow-sm min-w-[240px]">
-                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={true} />
+                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={true} />
               </div>
             </div>
 
