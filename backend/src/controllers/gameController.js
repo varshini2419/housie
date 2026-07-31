@@ -34,7 +34,9 @@ exports.createSession = async (req, res) => {
         status: p.sequence === 1 ? 'AVAILABLE' : 'LOCKED',
         winner: null,
         winnerTicket: null,
-        claimedAt: null, prizeItem: null }));
+        claimedAt: null, 
+        prizeItem: p.prizeItem || null 
+    }));
 
     try {
         const newSession = new GameSession({

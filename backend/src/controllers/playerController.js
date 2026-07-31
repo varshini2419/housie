@@ -72,7 +72,14 @@ exports.joinGame = async (req, res) => {
                 gameStatus: session.gameStatus,
                 currentNumber: session.currentNumber,
                 drawnNumbers: session.drawnNumbers,
-                prizes: sessionPrizes
+                prizes: sessionPrizes.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    status: p.status,
+                    winner: p.winner,
+                    winnerTicket: p.winnerTicket,
+                    prizeItem: p.prizeItem || null
+                }))
             }
         });
 
