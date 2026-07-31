@@ -367,16 +367,38 @@ body {
   border-color: transparent;
   box-shadow: none;
 }
+
+/* Number Transition Animation */
+@keyframes numberEnter {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-number-enter {
+  animation: numberEnter 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Premium Ticket Active Glow */
+.ticket-active-glow {
+  box-shadow: 
+    0 0 40px -10px rgba(16, 185, 129, 0.4),
+    0 20px 40px -15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* Enhancing existing marked cell animation */
 .ticket-cell-marked {
   background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-emerald-hover) 100%);
   color: #FFFFFF;
   border-color: rgba(16, 185, 129, 0.6);
   box-shadow: 
-    0 6px 12px -2px rgba(16, 185, 129, 0.4),
-    0 0 10px 0 rgba(16, 185, 129, 0.2),
+    0 6px 15px -3px rgba(16, 185, 129, 0.4),
+    0 0 15px 0 rgba(16, 185, 129, 0.25),
     inset 0 1px 1px rgba(255,255,255,0.4);
-  transform: scale(1.06);
+  transform: scale(1.08);
   z-index: 10;
+  transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Number Board */

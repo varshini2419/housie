@@ -8,6 +8,7 @@ const PrizeSchema = new mongoose.Schema({
     sequence: { type: Number, required: true },
     winner: { type: String, default: null }, // Store Player Name
     winnerTicket: { type: String, default: null },
+    prizeItem: { type: String, default: null },
     claimedAt: { type: Date, default: null },
     status: { type: String, enum: ['LOCKED', 'AVAILABLE', 'COMPLETED'], default: 'AVAILABLE' }
 }, { _id: false });

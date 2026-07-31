@@ -93,15 +93,15 @@ const Game = () => {
       navigate('/');
     });
 
-    socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName }) => {
+    socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
       if (success) {
-        setWinnerQueue(prev => [...prev, { prizeName, winnerTicket, winnerName }]);
+        setWinnerQueue(prev => [...prev, { prizeName, winnerTicket, winnerName, prizeItem }]);
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
-            return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName };
+            return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem };
           }
           return p;
         }));
@@ -208,8 +208,8 @@ const Game = () => {
             <div className="flex flex-col items-center justify-center pt-2 pb-4">
               <div className="relative">
                 {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-500/20 animate-pulse rounded-full blur-xl pointer-events-none"></div>}
-                <div className={`w-40 h-40 rounded-full flex items-center justify-center current-number-card ${gameState === "LIVE" ? "live-glow animate-draw-pulse" : ""}`}>
-                  <span className="text-[6rem] font-black tracking-tighter leading-none mt-2">
+                <div key={currentNumber} className={`w-40 h-40 rounded-full flex items-center justify-center current-number-card ${gameState === "LIVE" ? "live-glow animate-draw-pulse" : ""}`}>
+                  <span className="text-[6rem] font-black tracking-tighter leading-none mt-2 animate-number-enter">
                     {currentNumber || '-'}
                   </span>
                 </div>
@@ -217,35 +217,33 @@ const Game = () => {
               <p className="mt-4 text-brand-text-sec font-bold text-sm tracking-widest uppercase">
                 {getNumberName(currentNumber)}
               </p>
-              {gameState === 'LIVE' && nextDrawCountdown !== null && (
-                <div className="mt-4 px-5 py-2 rounded-full bg-brand-card border border-brand-border flex items-center gap-3 shadow-md">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-                  <span className="text-sm font-bold text-brand-text">Next draw in: <span className="text-blue-500 font-mono text-base">{nextDrawCountdown}s</span></span>
-                </div>
-              )}
-              {gameState === 'PAUSED' && (
-                <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-                  <span className="text-amber-500 text-lg animate-bounce">🏆</span>
-                  <span className="text-sm font-bold text-amber-600">
-                    {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Winner Verification...'}
-                  </span>
-                </div>
-              )}
-              {gameState === 'WAITING' && (
-                <div className="mt-4 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm font-bold animate-pulse">
-                  ⏳ Waiting for Host...
-                </div>
-              )}
-              {gameState === 'COMPLETED' && (
-                <div className="mt-4 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm font-bold">
-                  🏁 Game Completed
-                </div>
-              )}
+              
+              {/* Fixed Status Area */}
+              <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-brand-card border border-brand-border px-5 py-2.5 rounded-full shadow-sm w-72 max-w-full">
+                {gameState === 'LIVE' ? (
+                  <>
+                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
+                    <span className="text-brand-border mx-1">|</span>
+                    <span className="text-sm font-bold text-brand-text-sec">⏳ Timer: <span className="text-blue-500 font-mono text-base">{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span></span>
+                  </>
+                ) : gameState === 'PAUSED' ? (
+                  <>
+                    <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5"><span className="text-lg">🟡</span> Paused</span>
+                    <span className="text-brand-border mx-1">|</span>
+                    <span className="text-sm font-bold text-brand-text-sec">⏸ {pauseCountdown > 0 ? `Waiting ${pauseCountdown}s` : 'Waiting...'}</span>
+                  </>
+                ) : gameState === 'WAITING' ? (
+                  <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5">⏳ Waiting for Host...</span>
+                ) : (
+                   <span className="text-sm font-bold text-blue-600 flex items-center gap-1.5">🏁 Game Completed</span>
+                )}
+              </div>
             </div>
 
             <div className="w-full">
-               <div className="ticket-container p-4 shadow-premium w-full mx-auto max-w-lg">
-                  <div className="grid grid-cols-9 gap-1.5 w-full">
+               <div className="ticket-container p-4 shadow-premium w-full mx-auto max-w-lg ticket-active-glow relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/5 to-transparent pointer-events-none"></div>
+                  <div className="grid grid-cols-9 gap-1.5 w-full relative z-10">
                     {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                       row.map((num, cIndex) => {
                         const marked = num !== 0 && isMarked(num);
@@ -254,10 +252,10 @@ const Game = () => {
                           <div 
                             key={`r${rIndex}-c${cIndex}`} 
                             onClick={() => handleMarkNumber(num)}
-                            className={`aspect-square flex items-center justify-center text-xl font-extrabold rounded-xl border transition-all duration-200 relative select-none
+                            className={`aspect-square flex items-center justify-center text-xl font-extrabold rounded-xl border transition-all duration-400 relative select-none
                               ${num === 0 ? 'ticket-cell-empty' : 'ticket-cell shadow-sm'}
                               ${marked ? 'ticket-cell-marked' : ''}
-                              ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-105 hover:shadow-md ring-2 ring-blue-500/30' : ''}`}
+                              ${canMark ? 'cursor-pointer hover:border-blue-500 hover:scale-110 hover:shadow-lg ring-2 ring-blue-500/30' : ''}`}
                           >
                             {num === 0 ? '' : num}
                           </div>
@@ -305,7 +303,10 @@ const Game = () => {
                   const isWon = prize.status === 'COMPLETED';
                   return (
                     <div key={`win-${prize.id}`} className={`flex justify-between items-center p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
-                      <span className="text-sm font-bold text-brand-text">{prize.name}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-brand-text">{prize.name}</span>
+                        {prize.prizeItem && <span className="text-[11px] font-semibold text-brand-text-sec mt-0.5">🎁 {prize.prizeItem}</span>}
+                      </div>
                       {isWon ? (
                         <span className="text-sm font-extrabold text-emerald-500 flex items-center gap-2">
                           {prize.winner} <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -401,41 +402,32 @@ const Game = () => {
             <div className="flex flex-col items-center justify-center relative">
               <div className="relative">
                 {gameState === 'PAUSED' && <div className="absolute inset-0 bg-amber-400/30 animate-pulse rounded-full blur-2xl pointer-events-none"></div>}
-                <div className={`w-40 h-40 rounded-full flex items-center justify-center bg-white border-4 border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] relative overflow-hidden z-10 ${gameState === "LIVE" ? "border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-draw-pulse" : ""}`}>
-                   <span className="text-[6.5rem] font-black text-slate-800 tracking-tighter leading-none mt-2 relative z-10">
+                <div key={currentNumber} className={`w-40 h-40 rounded-full flex items-center justify-center bg-white border-4 border-slate-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] relative overflow-hidden z-10 ${gameState === "LIVE" ? "border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-draw-pulse" : ""}`}>
+                   <span className="text-[6.5rem] font-black text-slate-800 tracking-tighter leading-none mt-2 relative z-10 animate-number-enter">
                      {currentNumber || '-'}
                    </span>
                    {gameState === "LIVE" && <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent opacity-50"></div>}
                 </div>
               </div>
               
-              <div className="mt-5 flex flex-col items-center">
-                {gameState === 'LIVE' && nextDrawCountdown !== null && (
-                  <div className="px-5 py-2 rounded-full bg-white border border-slate-200 flex items-center gap-2 shadow-sm">
-                    <div className="w-4 h-4 relative flex items-center justify-center">
-                      <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-75"></div>
-                      <div className="relative w-2 h-2 rounded-full bg-blue-500"></div>
-                    </div>
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Next in <span className="text-blue-600 font-black">{nextDrawCountdown}s</span></span>
-                  </div>
-                )}
-                {gameState === 'PAUSED' && (
-                  <div className="px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-200 flex items-center gap-2 shadow-sm">
-                    <span className="text-amber-500 text-lg animate-bounce">🏆</span>
-                    <span className="text-sm font-bold text-amber-700">
-                      {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Winner Verification...'}
-                    </span>
-                  </div>
-                )}
-                {gameState === 'WAITING' && (
-                  <div className="px-6 py-2.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold animate-pulse shadow-sm">
-                    ⏳ Waiting for Host to Start...
-                  </div>
-                )}
-                {gameState === 'COMPLETED' && (
-                  <div className="px-6 py-2.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-bold shadow-sm">
-                    🏁 Game Completed
-                  </div>
+              {/* Fixed Status Area */}
+              <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-white border border-slate-200 px-5 py-2.5 rounded-full shadow-sm min-w-[240px]">
+                {gameState === 'LIVE' ? (
+                  <>
+                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
+                    <span className="text-slate-300 mx-1">|</span>
+                    <span className="text-sm font-bold text-slate-600">⏳ Timer: <span className="text-blue-600 font-black">{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span></span>
+                  </>
+                ) : gameState === 'PAUSED' ? (
+                  <>
+                    <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5"><span className="text-lg">🟡</span> Paused</span>
+                    <span className="text-slate-300 mx-1">|</span>
+                    <span className="text-sm font-bold text-slate-600">⏸ {pauseCountdown > 0 ? `Waiting ${pauseCountdown}s` : 'Waiting...'}</span>
+                  </>
+                ) : gameState === 'WAITING' ? (
+                  <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5">⏳ Waiting for Host</span>
+                ) : (
+                   <span className="text-sm font-bold text-blue-600 flex items-center gap-1.5">🏁 Completed</span>
                 )}
               </div>
             </div>
@@ -452,9 +444,14 @@ const Game = () => {
             </div>
 
             {/* Mobile Ticket Card */}
-            <div className="w-full bg-white p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
-              <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Your Ticket</h2>
-              <div className="grid grid-cols-9 gap-1 sm:gap-1.5 w-full bg-[#F8FAFC] p-2 rounded-2xl border border-slate-200 inset-shadow-sm">
+            <div className="w-full bg-white p-4 rounded-3xl ticket-active-glow relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/5 to-transparent pointer-events-none"></div>
+              <div className="flex justify-between items-center mb-3 px-1 relative z-10">
+                 <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Your Ticket</h2>
+                 <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">ACTIVE</span>
+              </div>
+              
+              <div className="grid grid-cols-9 gap-1 sm:gap-1.5 w-full bg-[#F8FAFC] p-2 rounded-2xl border border-slate-200 shadow-inner relative z-10">
                 {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                   row.map((num, cIndex) => {
                     const marked = num !== 0 && isMarked(num);
@@ -463,9 +460,9 @@ const Game = () => {
                       <div 
                         key={`mob-r${rIndex}-c${cIndex}`} 
                         onClick={() => handleMarkNumber(num)}
-                        className={`aspect-square flex items-center justify-center text-sm font-black rounded-[8px] transition-all duration-300 select-none
+                        className={`aspect-square flex items-center justify-center text-sm font-black rounded-[8px] transition-all duration-400 select-none
                           ${num === 0 ? 'bg-transparent' : 'bg-white text-slate-800 shadow-sm border border-slate-200/60'}
-                          ${marked ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 text-white border-emerald-500 shadow-md scale-105 z-10 ring-2 ring-emerald-200' : ''}
+                          ${marked ? 'ticket-cell-marked ring-2 ring-emerald-200/50' : ''}
                           ${canMark ? 'cursor-pointer animate-pulse ring-2 ring-blue-400/50' : ''}`}
                       >
                         {num === 0 ? '' : num}
@@ -522,6 +519,7 @@ const Game = () => {
                       </div>
                       <div className="flex flex-col flex-grow">
                         <span className="text-sm font-bold text-slate-800">{prize.name}</span>
+                        {prize.prizeItem && <span className="text-[11px] font-semibold text-slate-500 mt-0.5 mb-1">🎁 {prize.prizeItem}</span>}
                         {isWon ? (
                           <span className="text-xs font-black text-emerald-500 tracking-wide uppercase">
                             {prize.winner}

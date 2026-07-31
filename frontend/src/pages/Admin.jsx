@@ -14,13 +14,14 @@ const Admin = () => {
   const [ticketCodeMode, setTicketCodeMode] = useState('RANDOM');
   const [startingRegisterNumber, setStartingRegisterNumber] = useState('');
   const [prizes, setPrizes] = useState([
-    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true },
-    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true },
-    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true },
-    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true },
-    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true }
+    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, prizeItem: '' },
+    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, prizeItem: '' },
+    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, prizeItem: '' },
+    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, prizeItem: '' },
+    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, prizeItem: '' }
   ]);
   const [customPrizeName, setCustomPrizeName] = useState('');
+  const [customPrizeItem, setCustomPrizeItem] = useState('');
   const [customPrizeType, setCustomPrizeType] = useState('Jaldi5');
 
   const [activeSessions, setActiveSessions] = useState([]);
@@ -484,36 +485,53 @@ const Admin = () => {
               {/* Prize Configuration */}
               <div className="space-y-3 border-t border-brand-border pt-4">
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Configured Prizes</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 gap-2.5 max-h-56 overflow-y-auto pr-1">
                   {prizes.map((prize, idx) => (
-                    <div key={prize.id} className="flex items-center justify-between gap-2 glass-panel-secondary p-3 border border-brand-border hover:border-emerald-500/30 transition-all">
-                      <label className="flex items-center gap-2.5 cursor-pointer select-none truncate">
+                    <div key={prize.id} className="flex flex-col sm:flex-row items-center justify-between gap-2 glass-panel-secondary p-3 border border-brand-border hover:border-emerald-500/30 transition-all">
+                      <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none truncate">
+                          <input 
+                            type="checkbox" 
+                            checked={prize.enabled} 
+                            onChange={(e) => {
+                              const newPrizes = [...prizes];
+                              newPrizes[idx].enabled = e.target.checked;
+                              setPrizes(newPrizes);
+                            }} 
+                            className="accent-emerald-500 rounded cursor-pointer w-4 h-4" 
+                          />
+                          <span className="text-sm font-semibold text-brand-text-sec truncate min-w-[100px]">{prize.name}</span>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <input 
-                          type="checkbox" 
-                          checked={prize.enabled} 
+                          type="text" 
+                          value={prize.prizeItem || ''} 
                           onChange={(e) => {
                             const newPrizes = [...prizes];
-                            newPrizes[idx].enabled = e.target.checked;
+                            newPrizes[idx].prizeItem = e.target.value;
                             setPrizes(newPrizes);
                           }} 
-                          className="accent-emerald-500 rounded cursor-pointer w-4 h-4" 
+                          placeholder="Prize Item (Optional)" 
+                          className="flex-1 min-w-[120px] p-2 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
                         />
-                        <span className="text-sm font-semibold text-brand-text-sec truncate">{prize.name}</span>
-                      </label>
-                      <button 
-                        type="button" 
-                        onClick={() => setPrizes(prev => prev.filter(p => p.id !== prize.id))}
-                        className="text-red-500 hover:text-red-600 transition-colors p-1 text-xs font-bold cursor-pointer rounded hover:bg-red-500/10"
-                        title="Delete prize"
-                      >
-                        ✕
-                      </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setPrizes(prev => prev.filter(p => p.id !== prize.id))}
+                          className="text-red-500 hover:text-red-600 transition-colors p-1.5 text-xs font-bold cursor-pointer rounded hover:bg-red-500/10 ml-auto"
+                          title="Delete prize"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
 
                 <div className="glass-panel-secondary p-4 border border-brand-border flex flex-col sm:flex-row gap-2 mt-3">
                   <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
+                  <input type="text" value={customPrizeItem} onChange={e => setCustomPrizeItem(e.target.value)} placeholder="Prize Item (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
                   <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
                     <option value="Jaldi5">Jaldi 5</option>
                     <option value="FirstLine">First Line</option>
@@ -525,9 +543,10 @@ const Admin = () => {
                     if(!customPrizeName.trim()) return;
                     const sameType = prizes.filter(p => p.type === customPrizeType);
                     const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
-                    setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true }]);
+                    setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true, prizeItem: customPrizeItem }]);
                     setCustomPrizeName('');
-                  }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer">Add Prize</button>
+                    setCustomPrizeItem('');
+                  }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
                 </div>
               </div>
               
@@ -750,7 +769,10 @@ const Admin = () => {
                       <div key={prize.id} className={`bg-brand-bg p-4 rounded-2xl border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
                         <div className="flex justify-between items-center mb-1">
                           <span className={`font-bold text-xs ${isWon ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-blue'}`}>{prize.name}</span>
-                          <span className="text-[10px] text-brand-text-muted font-mono uppercase bg-brand-card px-2 py-0.5 rounded-full border border-brand-border">{prize.status}</span>
+                          <div className="flex items-center gap-2">
+                            {prize.prizeItem && <span className="text-xs font-semibold text-brand-text-sec text-right">{prize.prizeItem}</span>}
+                            <span className="text-[10px] text-brand-text-muted font-mono uppercase bg-brand-card px-2 py-0.5 rounded-full border border-brand-border">{prize.status}</span>
+                          </div>
                         </div>
                         {isWon ? (
                           <div className="text-xs text-brand-text-sec mt-2">

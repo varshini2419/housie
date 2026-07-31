@@ -191,6 +191,10 @@ const useSpeech = () => {
     
     console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
 
+    // Dispatch event to start countdown instantly BEFORE speech
+    // This allows the server to immediately transition to COUNTDOWN phase
+    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
     try {
@@ -210,9 +214,6 @@ const useSpeech = () => {
         console.error('[Voice Engine] Queue processing error:', err);
     }
 
-    // Dispatch event to start countdown instantly
-    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-    
     isSpeaking.current = false;
     currentSpokenNumber.current = null;
     
