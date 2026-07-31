@@ -46,11 +46,11 @@ exports.joinGame = async (req, res) => {
         }
 
         const defaultPrizes = [
-            { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
-            { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
-            { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
-            { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null },
-            { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null }
+            { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null, prizeItem: null },
+            { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null, prizeItem: null },
+            { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null, prizeItem: null },
+            { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null, prizeItem: null },
+            { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: 'AVAILABLE', winner: null, winnerTicket: null, prizeItem: null }
         ];
 
         const sessionPrizes = session.prizes && session.prizes.length > 0 ? session.prizes : defaultPrizes;
@@ -72,7 +72,14 @@ exports.joinGame = async (req, res) => {
                 gameStatus: session.gameStatus,
                 currentNumber: session.currentNumber,
                 drawnNumbers: session.drawnNumbers,
-                prizes: sessionPrizes
+                prizes: sessionPrizes.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    status: p.status,
+                    winner: p.winner,
+                    winnerTicket: p.winnerTicket,
+                    prizeItem: p.prizeItem || null
+                }))
             }
         });
 
