@@ -144,8 +144,8 @@ const Game = () => {
     <div className="min-h-screen bg-brand-bg relative pb-20 md:pb-0" onClick={unlockAudio}>
       
       {/* Background Orbs */}
-      <div className="pointer-events-none fixed -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge z-0"></div>
-      <div className="pointer-events-none fixed -bottom-40 -right-40 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge z-0"></div>
+      <div className="pointer-events-none fixed -top-40 -left-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
+      <div className="pointer-events-none fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
 
       {toastMsg && (
         <div className="fixed top-20 right-4 left-4 md:left-auto md:right-8 md:top-8 bg-brand-card border-l-4 border-brand-emerald text-brand-text p-4 rounded-2xl shadow-premium-lg z-[100] animate-bounce flex items-center gap-3">
@@ -286,20 +286,22 @@ const Game = () => {
             </div>
           </div>
 
-          <div className="w-full glass-panel p-5 mt-2">
-            <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="w-full glass-panel p-6 mt-2">
+            <h2 className="text-sm text-brand-text-muted font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
               🏆 Winners Board
             </h2>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-4">
               {prizes.filter(p => p.enabled).map(prize => {
                 const isWon = prize.status === 'COMPLETED';
                 return (
-                  <div key={`win-${prize.id}`} className="flex justify-between items-center p-3 rounded-xl bg-brand-bg border border-brand-border">
+                  <div key={`win-${prize.id}`} className={`flex justify-between items-center p-4 rounded-2xl bg-brand-bg border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
                     <span className="text-sm font-bold text-brand-text">{prize.name}</span>
                     {isWon ? (
-                      <span className="text-sm font-bold text-emerald-500">{prize.winner}</span>
+                      <span className="text-sm font-extrabold text-emerald-500 flex items-center gap-2">
+                        {prize.winner} <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      </span>
                     ) : (
-                      <span className="text-xs font-semibold text-brand-text-muted italic">Waiting...</span>
+                      <span className="text-xs font-semibold text-brand-text-muted italic opacity-70">Waiting...</span>
                     )}
                   </div>
                 );
@@ -321,9 +323,9 @@ const Game = () => {
             </div>
             
             {/* Show only last 10 drawn numbers natively to save space */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-3 mb-6">
               {drawnNumbers.slice(-10).map(num => (
-                <div key={`rec-${num}`} className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md animate-draw-pulse">
+                <div key={`rec-${num}`} className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-600 to-indigo-600 shadow-[0_4px_10px_rgba(37,99,235,0.3)] animate-draw-pulse">
                   {num}
                 </div>
               ))}
@@ -332,15 +334,15 @@ const Game = () => {
             
             <button 
               onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-              className="w-full py-2 text-sm font-bold text-brand-blue border border-brand-border rounded-xl hover:bg-brand-bg transition-colors"
+              className="w-full py-3 text-sm font-bold text-brand-blue border border-brand-border rounded-xl hover:bg-brand-bg transition-colors shadow-sm"
             >
               {isHistoryExpanded ? 'Collapse Full History' : 'View Full History'}
             </button>
 
             {isHistoryExpanded && (
-              <div className="mt-4 p-3 bg-brand-bg rounded-xl border border-brand-border max-h-48 overflow-y-auto grid grid-cols-5 sm:grid-cols-10 gap-2">
+              <div className="mt-4 p-4 bg-brand-bg rounded-2xl border border-brand-border max-h-48 overflow-y-auto grid grid-cols-5 sm:grid-cols-10 gap-2.5 shadow-inner">
                 {drawnNumbers.map(num => (
-                  <div key={`hist-${num}`} className="flex items-center justify-center p-2 rounded-lg text-xs font-bold bg-brand-card text-brand-text border border-brand-border">
+                  <div key={`hist-${num}`} className="flex items-center justify-center p-2 rounded-xl text-xs font-bold bg-brand-card text-brand-text border border-brand-border shadow-sm">
                     {num}
                   </div>
                 ))}
@@ -381,18 +383,21 @@ const Game = () => {
       </div>
 
       {/* Sticky Bottom Navigation (Mobile Only) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-panel rounded-none border-x-0 border-b-0 flex justify-around items-center px-2 z-50">
-        <button onClick={() => setActiveTab('game')} className={`flex flex-col items-center justify-center w-20 h-full transition-colors ${activeTab === 'game' ? 'text-brand-blue' : 'text-brand-text-muted'}`}>
-          <span className="text-xl mb-0.5">🎟️</span>
+      <div className="md:hidden fixed bottom-4 left-4 right-4 h-16 bg-brand-card/80 backdrop-blur-xl border border-brand-border flex justify-around items-center px-2 z-50 rounded-[24px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)]">
+        <button onClick={() => setActiveTab('game')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'game' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
+          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'game' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🎟️</span>
           <span className="text-[10px] font-bold">Game</span>
+          {activeTab === 'game' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
         </button>
-        <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-20 h-full transition-colors ${activeTab === 'history' ? 'text-brand-blue' : 'text-brand-text-muted'}`}>
-          <span className="text-xl mb-0.5">🔢</span>
+        <button onClick={() => setActiveTab('history')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'history' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
+          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'history' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🔢</span>
           <span className="text-[10px] font-bold">History</span>
+          {activeTab === 'history' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
         </button>
-        <button onClick={() => setActiveTab('prizes')} className={`flex flex-col items-center justify-center w-20 h-full transition-colors ${activeTab === 'prizes' ? 'text-brand-blue' : 'text-brand-text-muted'}`}>
-          <span className="text-xl mb-0.5">🏆</span>
+        <button onClick={() => setActiveTab('prizes')} className={`relative flex flex-col items-center justify-center w-20 h-full transition-all duration-300 ${activeTab === 'prizes' ? 'text-brand-blue scale-105' : 'text-brand-text-muted hover:text-brand-text'}`}>
+          <span className="text-xl mb-0.5" style={{ filter: activeTab === 'prizes' ? 'drop-shadow(0 0 8px rgba(37,99,235,0.5))' : 'none' }}>🏆</span>
           <span className="text-[10px] font-bold">Prizes</span>
+          {activeTab === 'prizes' && <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-brand-blue"></div>}
         </button>
       </div>
 

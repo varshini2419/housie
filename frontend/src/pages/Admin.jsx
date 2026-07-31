@@ -116,7 +116,15 @@ const Admin = () => {
         }, ...prev.slice(0, 19)]);
       });
 
+      const handleSpeechFinished = (e) => {
+        if (socketRef.current) {
+          socketRef.current.emit('speech_finished', { sessionId: liveSession._id });
+        }
+      };
+      window.addEventListener('speech_finished', handleSpeechFinished);
+
       return () => {
+        window.removeEventListener('speech_finished', handleSpeechFinished);
         if (socketRef.current) socketRef.current.disconnect();
       };
     }
@@ -342,8 +350,8 @@ const Admin = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
         {/* Background Ambient Orbs */}
-        <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-        <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+        <div className="pointer-events-none absolute -top-40 -left-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
+        <div className="pointer-events-none absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
 
         <div className="absolute top-8 right-8 z-20">
           <ThemeToggle />
@@ -733,22 +741,25 @@ const Admin = () => {
                 </div>
               </div>
                 <p className="text-brand-text-muted text-xs uppercase font-bold tracking-wider mb-3 text-center sticky top-0 bg-brand-card pb-1">Configured Prizes</p>
-                <div className="space-y-2.5">
-                  {(adminStats?.prizes || []).map(prize => (
-                    <div key={prize.id} className="bg-brand-bg p-3 rounded-2xl border border-brand-border">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`font-bold text-xs ${prize.status === 'COMPLETED' ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-blue'}`}>{prize.name}</span>
-                        <span className="text-[10px] text-brand-text-muted font-mono uppercase bg-brand-card px-2 py-0.5 rounded-full border border-brand-border">{prize.status}</span>
-                      </div>
-                      {prize.status === 'COMPLETED' ? (
-                        <div className="text-xs text-brand-text-sec">
-                          <p>Winner: <strong>{prize.winner}</strong> (#{prize.winnerTicket})</p>
+                <div className="space-y-3">
+                  {(adminStats?.prizes || []).map(prize => {
+                    const isWon = prize.status === 'COMPLETED';
+                    return (
+                      <div key={prize.id} className={`bg-brand-bg p-4 rounded-2xl border transition-all duration-300 shadow-sm ${isWon ? 'border-l-4 border-l-emerald-500 border-t-brand-border border-r-brand-border border-b-brand-border bg-emerald-500/5' : 'border-brand-border hover:shadow-md'}`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className={`font-bold text-xs ${isWon ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-blue'}`}>{prize.name}</span>
+                          <span className="text-[10px] text-brand-text-muted font-mono uppercase bg-brand-card px-2 py-0.5 rounded-full border border-brand-border">{prize.status}</span>
                         </div>
-                      ) : (
-                        <p className="text-brand-text-muted italic text-xs">Waiting...</p>
-                      )}
-                    </div>
-                  ))}
+                        {isWon ? (
+                          <div className="text-xs text-brand-text-sec mt-2">
+                            <p>Winner: <strong className="text-emerald-500">{prize.winner}</strong> (#{prize.winnerTicket})</p>
+                          </div>
+                        ) : (
+                          <p className="text-brand-text-muted italic text-xs mt-2 opacity-70">Waiting...</p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

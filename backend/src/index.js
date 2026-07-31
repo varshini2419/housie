@@ -56,7 +56,7 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
-const { activeGames, ensureActiveGame, pauseGame, resumeGame } = require('./utils/gameEngine');
+const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
 
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
@@ -265,6 +265,10 @@ io.on('connection', (socket) => {
             });
         }
         console.log(`Client disconnected: ${socket.id}`);
+    });
+
+    socket.on('speech_finished', ({ sessionId }) => {
+        triggerCountdown(sessionId, io);
     });
 });
 

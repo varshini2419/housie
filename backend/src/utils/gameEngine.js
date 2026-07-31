@@ -4,7 +4,7 @@ const Ticket = require('../models/Ticket');
 const Winner = require('../models/Winner');
 
 const activeGames = {};
-const VOICE_WAIT_SECONDS = 4;
+const VOICE_WAIT_SECONDS = 15;
 const DRAW_COUNTDOWN_SECONDS = 5;
 
 const fisherYatesShuffle = (array) => {
@@ -174,6 +174,18 @@ const ensureActiveGame = async (sessionId, io) => {
     return activeGames[sIdStr];
 };
 
+const triggerCountdown = (sessionId, io) => {
+    if (!sessionId) return;
+    const sIdStr = sessionId.toString();
+    const state = activeGames[sIdStr];
+    if (state && state.phase === 'SPEECH_WAIT') {
+        state.phase = 'COUNTDOWN';
+        state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
+        console.log(`[SCHEDULER] Voice Finished (Triggered by client). Starting Countdown.`);
+        if (io) io.to(sIdStr).emit('countdown_update', { countdown: state.tickCountdown });
+    }
+};
+
 const startGame = async (sessionId, io) => {
     const liveGame = await GameSession.findOne({ gameStatus: 'LIVE' });
     if (liveGame && liveGame._id.toString() !== sessionId.toString()) {
@@ -301,5 +313,6 @@ module.exports = {
     pauseGame,
     resumeGame,
     endGame,
-    deleteGame
+    deleteGame,
+    triggerCountdown
 };

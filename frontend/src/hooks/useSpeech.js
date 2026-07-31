@@ -158,36 +158,34 @@ const useSpeech = () => {
     }
     
     isSpeaking.current = true;
-    
-    // Removed the aggressive `window.speechSynthesis.cancel()` here that was swallowing utterances
+    window.speechSynthesis.cancel(); // Ensure no zombie native queues
     
     const number = speechQueue.current.shift();
     currentSpokenNumber.current = number;
     
     console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
 
+    const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
     try {
         if (number < 10) {
             // Single digit: Speak once
             await speakUtterance(String(number));
         } else {
-            // Two digits: "Two Four" -> Pause 500ms -> "Twenty Four"
-            const digits = String(number).split('').join(' ');
+            // Two digits: "one one" -> "eleven" immediately
+            const digits = String(number).split('').map(d => digitWords[parseInt(d)]).join(' ');
             await speakUtterance(digits);
             
             if (isVoiceEnabled.current) {
-                await delay(500); // Strict 500ms programmatic pause
-                if (isVoiceEnabled.current) {
-                    await speakUtterance(String(number));
-                }
+                await speakUtterance(String(number));
             }
         }
     } catch (err) {
         console.error('[Voice Engine] Queue processing error:', err);
     }
 
-    // Small natural delay before processing the next number in queue
-    await delay(300);
+    // Dispatch event to start countdown instantly
+    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
     
     isSpeaking.current = false;
     currentSpokenNumber.current = null;
@@ -202,6 +200,8 @@ const useSpeech = () => {
     console.log(`[VOICE TRACE] announceNumber called for: ${number}`);
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
         console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
+        // If voice is disabled, instantly trigger countdown
+        window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
         return;
     }
 
@@ -224,8 +224,6 @@ const useSpeech = () => {
     
     if (!isSpeaking.current) {
       console.log(`[VOICE TRACE] Scheduling processQueue (queue length: ${speechQueue.current.length})`);
-      // In JS event loop, multiple sync calls to announceNumber will queue numbers first.
-      // setTimeout ensures processQueue checks the fully populated queue on the next tick.
       const id = setTimeout(processQueue, 50);
       timeoutRefs.current.push(id);
     }
