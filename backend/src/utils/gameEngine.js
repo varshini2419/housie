@@ -106,15 +106,6 @@ const serverTick = async (sessionId, io) => {
             console.log(`[SCHEDULER] Voice Finished (Failsafe expired). Starting 5s Countdown.`);
             io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
         }
-    } else if (state.phase === 'POST_SPEECH_PAUSE') {
-        io.to(sId).emit('countdown_update', { countdown: 5 });
-        state.postSpeechPauseTicks = (state.postSpeechPauseTicks || 2) - 1;
-        if (state.postSpeechPauseTicks <= 0) {
-            state.phase = 'COUNTDOWN';
-            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-            console.log(`[SCHEDULER] 2s post-speech wait complete. Starting 5s Countdown.`);
-            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
-        }
     } else if (state.phase === 'COUNTDOWN') {
         if (state.tickCountdown < 0) {
             console.log(`[SCHEDULER] Countdown reached 0. Generating Next Number...`);
@@ -204,9 +195,10 @@ const triggerCountdown = (sessionId, io) => {
     const sIdStr = sessionId.toString();
     const state = activeGames[sIdStr];
     if (state && state.phase === 'SPEECH_WAIT') {
-        state.phase = 'POST_SPEECH_PAUSE';
-        state.postSpeechPauseTicks = 2; // Synchronized 2-tick pause
-        console.log(`[SCHEDULER] Voice Finished. Holding for 2 server ticks before countdown...`);
+        state.phase = 'COUNTDOWN';
+        state.tickCountdown = DRAW_COUNTDOWN_SECONDS; // 5
+        console.log(`[SCHEDULER] Voice Finished. Starting 5s Countdown immediately.`);
+        if (io) io.to(sIdStr).emit('countdown_update', { countdown: DRAW_COUNTDOWN_SECONDS });
     }
 };
 
