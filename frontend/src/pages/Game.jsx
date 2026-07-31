@@ -5,6 +5,7 @@ import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
 import WinnerPopup from '../components/WinnerPopup';
+import GameStatusTimer from '../components/GameStatusTimer';
 
 const Game = () => {
   const { sessionId } = useParams();
@@ -20,8 +21,6 @@ const Game = () => {
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
-  const [pauseCountdown, setPauseCountdown] = useState(0);
-  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
 
   // New UI States for Mobile Layout
   const [activeTab, setActiveTab] = useState('game'); // 'game', 'prizes', 'history'
@@ -72,17 +71,8 @@ const Game = () => {
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    socketRef.current.on('game_paused', ({ winners, countdown }) => {
+    socketRef.current.on('game_paused', ({ winners }) => {
       setGameState('PAUSED');
-      if (countdown !== undefined) setPauseCountdown(countdown);
-    });
-
-    socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
-      setPauseCountdown(countdown);
-    });
-
-    socketRef.current.on('countdown_update', ({ countdown }) => {
-      setNextDrawCountdown(countdown);
     });
 
     socketRef.current.on('game_resumed', () => setGameState('LIVE'));
@@ -220,23 +210,7 @@ const Game = () => {
               
               {/* Fixed Status Area */}
               <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-brand-card border border-brand-border px-5 py-2.5 rounded-full shadow-sm w-72 max-w-full">
-                {gameState === 'LIVE' ? (
-                  <>
-                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
-                    <span className="text-brand-border mx-1">|</span>
-                    <span className="text-sm font-bold text-brand-text-sec">⏳ Timer: <span className="text-blue-500 font-mono text-base">{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span></span>
-                  </>
-                ) : gameState === 'PAUSED' ? (
-                  <>
-                    <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5"><span className="text-lg">🟡</span> Paused</span>
-                    <span className="text-brand-border mx-1">|</span>
-                    <span className="text-sm font-bold text-brand-text-sec">⏸ {pauseCountdown > 0 ? `Waiting ${pauseCountdown}s` : 'Waiting...'}</span>
-                  </>
-                ) : gameState === 'WAITING' ? (
-                  <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5">⏳ Waiting for Host...</span>
-                ) : (
-                   <span className="text-sm font-bold text-blue-600 flex items-center gap-1.5">🏁 Game Completed</span>
-                )}
+                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={false} />
               </div>
             </div>
 
@@ -424,23 +398,7 @@ const Game = () => {
               
               {/* Fixed Status Area */}
               <div className="mt-5 flex flex-row items-center justify-center gap-3 bg-white border border-slate-200 px-5 py-2.5 rounded-full shadow-sm min-w-[240px]">
-                {gameState === 'LIVE' ? (
-                  <>
-                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
-                    <span className="text-slate-300 mx-1">|</span>
-                    <span className="text-sm font-bold text-slate-600">⏳ Timer: <span className="text-blue-600 font-black">{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span></span>
-                  </>
-                ) : gameState === 'PAUSED' ? (
-                  <>
-                    <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5"><span className="text-lg">🟡</span> Paused</span>
-                    <span className="text-slate-300 mx-1">|</span>
-                    <span className="text-sm font-bold text-slate-600">⏸ {pauseCountdown > 0 ? `Waiting ${pauseCountdown}s` : 'Waiting...'}</span>
-                  </>
-                ) : gameState === 'WAITING' ? (
-                  <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5">⏳ Waiting for Host</span>
-                ) : (
-                   <span className="text-sm font-bold text-blue-600 flex items-center gap-1.5">🏁 Completed</span>
-                )}
+                <GameStatusTimer gameState={gameState} socketRef={socketRef} isMobile={true} />
               </div>
             </div>
 
