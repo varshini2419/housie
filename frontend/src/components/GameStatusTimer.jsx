@@ -16,19 +16,40 @@ const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
     };
     
     const handleCountdownUpdate = ({ countdown }) => {
-      setNextDrawCountdown(countdown);
+      if (countdown !== null && countdown !== undefined) {
+        setNextDrawCountdown(countdown);
+      }
+    };
+
+    const handleNumberDrawn = () => {
+      setNextDrawCountdown(5);
     };
 
     socketRef.current.on('game_paused', handlePaused);
     socketRef.current.on('pause_countdown_tick', handlePauseTick);
     socketRef.current.on('countdown_update', handleCountdownUpdate);
+    socketRef.current.on('number_drawn', handleNumberDrawn);
 
     return () => {
-      socketRef.current.off('game_paused', handlePaused);
-      socketRef.current.off('pause_countdown_tick', handlePauseTick);
-      socketRef.current.off('countdown_update', handleCountdownUpdate);
+      if (socketRef.current) {
+        socketRef.current.off('game_paused', handlePaused);
+        socketRef.current.off('pause_countdown_tick', handlePauseTick);
+        socketRef.current.off('countdown_update', handleCountdownUpdate);
+        socketRef.current.off('number_drawn', handleNumberDrawn);
+      }
     };
   }, [socketRef]);
+
+  // Continuous local 1s countdown tick for smooth UI countdown 5s -> 4s -> 3s -> 2s -> 1s -> 0s
+  useEffect(() => {
+    if (gameState !== 'LIVE' || nextDrawCountdown === null) return;
+
+    const interval = setInterval(() => {
+      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState, nextDrawCountdown === null]);
 
   // Tabular numbers and fixed minimum width prevent the layout from shifting when text length changes.
   const liveTimerClasses = isMobile 

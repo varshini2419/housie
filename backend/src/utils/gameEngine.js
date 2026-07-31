@@ -74,8 +74,8 @@ const generateNumber = async (game, io) => {
         });
     }).catch(err => console.error('Error in admin_stats:', err));
 
-    // Clear the countdown UI during the speech phase
-    io.to(sId).emit('countdown_update', { countdown: null });
+    // Emit initial countdown update to 5 right away when a number is generated
+    io.to(sId).emit('countdown_update', { countdown: DRAW_COUNTDOWN_SECONDS });
 
     return true;
 };
@@ -94,32 +94,19 @@ const serverTick = async (sessionId, io) => {
         return;
     }
 
-    if (state.phase === 'SPEECH_WAIT') {
-        state.tickCountdown--;
-        if (state.tickCountdown <= 0) {
-            state.phase = 'COUNTDOWN';
-            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-            console.log(`[SCHEDULER] Voice Finished. Starting Countdown.`);
-        }
-    } else if (state.phase === 'COUNTDOWN') {
-        io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
-        console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
-        
-        if (state.tickCountdown <= 0) {
-            console.log(`[SCHEDULER] Generating Next Number...`);
+    io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+    console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
 
-            const continues = await generateNumber(game, io);
-            
-            if (continues) {
-                state.phase = 'SPEECH_WAIT';
-                state.tickCountdown = VOICE_WAIT_SECONDS;
-                console.log(`[SCHEDULER] Voice Started.`);
-            } else {
-                return; // Game ended
-            }
+    if (state.tickCountdown <= 0) {
+        console.log(`[SCHEDULER] Generating Next Number...`);
+        const continues = await generateNumber(game, io);
+        if (continues) {
+            state.tickCountdown = DRAW_COUNTDOWN_SECONDS; // Reset to 5
         } else {
-            state.tickCountdown--;
+            return; // Game ended
         }
+    } else {
+        state.tickCountdown--;
     }
 
     state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
