@@ -117,6 +117,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('speech_finished', ({ sessionId }) => {
+        if (sessionId) {
+            triggerCountdown(sessionId, io);
+        }
+    });
+
     socket.on('mark_number', async ({ sessionId, ticketCode, number }) => {
         const state = await ensureActiveGame(sessionId, io);
         if (!state) return;

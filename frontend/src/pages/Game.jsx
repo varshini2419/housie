@@ -98,7 +98,15 @@ const Game = () => {
       }
     });
 
+    const handleSpeechFinished = () => {
+      if (socketRef.current) {
+        socketRef.current.emit('speech_finished', { sessionId });
+      }
+    };
+    window.addEventListener('speech_finished', handleSpeechFinished);
+
     return () => {
+      window.removeEventListener('speech_finished', handleSpeechFinished);
       if (socketRef.current) {
         socketRef.current.off('player_count_update');
         socketRef.current.off('game_sync');
