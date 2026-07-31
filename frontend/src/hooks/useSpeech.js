@@ -173,7 +173,20 @@ const useSpeech = () => {
     isSpeaking.current = true;
     window.speechSynthesis.cancel(); // Ensure no zombie native queues
     
-    const number = speechQueue.current.shift();
+    const item = speechQueue.current.shift();
+    
+    if (typeof item === 'object' && item.type === 'winner') {
+        try {
+            await speakUtterance(item.text);
+        } catch (err) {
+            console.error('[Voice Engine] Winner announcement error:', err);
+        }
+        isSpeaking.current = false;
+        if (speechQueue.current.length > 0) processQueue();
+        return;
+    }
+
+    const number = item;
     currentSpokenNumber.current = number;
     
     console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
@@ -245,7 +258,21 @@ const useSpeech = () => {
     }
   }, [processQueue]);
 
-  return { isVoiceEnabled: isVoiceEnabledState, toggleVoice, announceNumber, unlockAudio };
+  const announceWinner = useCallback((text) => {
+    if (!isVoiceEnabled.current || !window.speechSynthesis) return;
+    
+    speechQueue.current.push({ type: 'winner', text });
+    
+    if (!isSpeaking.current) {
+      const id = setTimeout(() => {
+          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+          processQueue();
+      }, 50);
+      timeoutRefs.current.push(id);
+    }
+  }, [processQueue]);
+
+  return { isVoiceEnabled: isVoiceEnabledState, toggleVoice, announceNumber, announceWinner, unlockAudio };
 };
 
 export default useSpeech;

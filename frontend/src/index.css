@@ -415,3 +415,43 @@ body {
     scrollbar-width: none;
 }
 
+/* Winner Celebration Animations */
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(-5%); }
+  50% { transform: translateY(5%); }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 2.5s infinite ease-in-out;
+}
+
+.confetti-overlay {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 150vh;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(circle, #f59e0b 3px, transparent 4px),
+    radial-gradient(circle, #10b981 4px, transparent 5px),
+    radial-gradient(circle, #ef4444 3px, transparent 4px),
+    radial-gradient(circle, #3b82f6 4px, transparent 5px),
+    radial-gradient(circle, #8b5cf6 3px, transparent 4px),
+    radial-gradient(circle, #06b6d4 4px, transparent 5px),
+    radial-gradient(circle, #f59e0b 3px, transparent 4px);
+  background-size: 150px 150px, 200px 200px, 120px 120px, 250px 250px, 180px 180px, 220px 220px, 160px 160px;
+  background-position: 10% 0, 30% 0, 50% 0, 70% 0, 90% 0, 20% 0, 80% 0;
+  animation: confettiFall 3s linear infinite;
+  opacity: 0.8;
+}
+
+@keyframes confettiFall {
+  0% { 
+    background-position: 10% -100px, 30% -200px, 50% -150px, 70% -50px, 90% -250px, 20% -100px, 80% -300px; 
+  }
+  100% { 
+    background-position: 10% 100vh, 30% 120vh, 50% 110vh, 70% 100vh, 90% 130vh, 20% 115vh, 80% 125vh; 
+  }
+}
+

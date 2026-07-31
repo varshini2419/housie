@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
+import WinnerPopup from '../components/WinnerPopup';
 
 const Game = () => {
   const { sessionId } = useParams();
@@ -27,7 +28,10 @@ const Game = () => {
   const [isBoardExpanded, setIsBoardExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
-  const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
+  const [winnerQueue, setWinnerQueue] = useState([]);
+  const [activeWinner, setActiveWinner] = useState(null);
+
+  const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -89,11 +93,12 @@ const Game = () => {
       navigate('/');
     });
 
-    socketRef.current.on('claim_result', ({ success, message, prizeId, winnerTicket, winnerName }) => {
+    socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName }) => {
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
       if (success) {
+        setWinnerQueue(prev => [...prev, { prizeName, winnerTicket, winnerName }]);
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
             return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName };
@@ -107,6 +112,25 @@ const Game = () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, [sessionId, ticket?.ticketCode, navigate]);
+
+  useEffect(() => {
+    if (!activeWinner && winnerQueue.length > 0) {
+      const next = winnerQueue[0];
+      setActiveWinner(next);
+      
+      const isPlayer = !next.winnerName || next.winnerName.trim() === '' || next.winnerName === 'Player';
+      const text = isPlayer
+        ? `Congratulations! Ticket Number ${next.winnerTicket} won ${next.prizeName}.`
+        : `Congratulations ${next.winnerName}! You won ${next.prizeName}.`;
+      
+      announceWinner(text);
+    }
+  }, [winnerQueue, activeWinner, announceWinner]);
+
+  const handlePopupClose = () => {
+    setActiveWinner(null);
+    setWinnerQueue(prev => prev.slice(1));
+  };
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -403,6 +427,7 @@ const Game = () => {
         </button>
       </div>
 
+      <WinnerPopup winner={activeWinner} onClose={handlePopupClose} />
     </div>
   );
 };

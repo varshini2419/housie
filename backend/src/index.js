@@ -58,6 +58,8 @@ app.set('io', io);
 
 const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
 
+const pauseQueues = {};
+
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
     
@@ -200,6 +202,7 @@ io.on('connection', (socket) => {
                     success: true,
                     message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
                     prizeId: prize.id,
+                    prizeName: prize.name,
                     winnerTicket: ticketCode,
                     winnerName: ticket.playerName || 'Player'
                 });
@@ -212,35 +215,47 @@ io.on('connection', (socket) => {
                     remainingNumbers: activeGames[sessionId].availableNumbers.length
                 });
 
-                // 10-Second Synchronized Pause Logic
-                try {
-                    await pauseGame(sessionId, io);
-                    
-                    let countdown = 10;
-                    io.to(sessionId).emit('pause_countdown_tick', { countdown });
-                    
-                    const intervalId = setInterval(() => {
-                        countdown--;
-                        if (countdown > 0) {
-                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
-                        } else {
-                            clearInterval(intervalId);
-                        }
-                    }, 1000);
+                // Sequential 10-Second Pause Logic for Popups
+                if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;
+                pauseQueues[sessionId]++;
 
-                    setTimeout(async () => {
-                        clearInterval(intervalId);
-                        const checkGame = await GameSession.findById(sessionId);
-                        if (checkGame && checkGame.gameStatus === 'PAUSED') {
+                if (pauseQueues[sessionId] === 1) {
+                    const processPauseQueue = async () => {
+                        while (pauseQueues[sessionId] > 0) {
                             try {
-                                await resumeGame(sessionId, io);
+                                await pauseGame(sessionId, io);
                             } catch (e) {
-                                console.error('Failed to auto-resume:', e);
+                                // Ignore if already paused
                             }
+                            
+                            let countdown = 10;
+                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                            
+                            const intervalId = setInterval(() => {
+                                countdown--;
+                                if (countdown > 0) {
+                                    io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                                } else {
+                                    clearInterval(intervalId);
+                                }
+                            }, 1000);
+
+                            await new Promise(r => setTimeout(r, 10000));
+                            
+                            pauseQueues[sessionId]--;
                         }
-                    }, 7000);
-                } catch (e) {
-                    console.error('Pause error during claim:', e);
+                        
+                        // Finished all queued pauses
+                        try {
+                            const checkGame = await GameSession.findById(sessionId);
+                            if (checkGame && checkGame.gameStatus === 'PAUSED') {
+                                await resumeGame(sessionId, io);
+                            }
+                        } catch (e) {
+                            console.error('Failed to auto-resume:', e);
+                        }
+                    };
+                    processPauseQueue();
                 }
 
             } else {
