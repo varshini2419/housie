@@ -33,17 +33,11 @@ const Game = () => {
   const [activeWinner, setActiveWinner] = useState(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
+  const isVoiceEnabledRef = useRef(isVoiceEnabled);
 
-  // Smooth local 1s countdown tick for 5s -> 4s -> 3s -> 2s -> 1s -> 0s
   useEffect(() => {
-    if (gameState !== 'LIVE' || nextDrawCountdown === null) return;
-
-    const interval = setInterval(() => {
-      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [gameState, nextDrawCountdown !== null]);
+    isVoiceEnabledRef.current = isVoiceEnabled;
+  }, [isVoiceEnabled]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -79,14 +73,13 @@ const Game = () => {
     socketRef.current.on('number_drawn', ({ number, drawnNumbers }) => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
-      setNextDrawCountdown(5);
-      announceNumber(number);
+      if (isVoiceEnabledRef.current) {
+        announceNumber(number);
+      }
     });
 
     socketRef.current.on('countdown_update', ({ countdown }) => {
-      if (countdown !== null && countdown !== undefined) {
-        setNextDrawCountdown(countdown);
-      }
+      setNextDrawCountdown(countdown);
     });
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
