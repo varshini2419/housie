@@ -32,7 +32,7 @@ const Game = () => {
   // UI States
   const [autoMark, setAutoMark] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isBoardExpanded, setIsBoardExpanded] = useState(false);
+  const [isBoardExpanded, setIsBoardExpanded] = useState(true);
 
   const [winnerQueue, setWinnerQueue] = useState([]);
   const [activeWinner, setActiveWinner] = useState(null);
@@ -184,7 +184,7 @@ const Game = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [sessionId, ticket, navigate, autoMark, markedNumbers]);
+  }, [sessionId, ticket, navigate, autoMark, markedNumbers, nextDrawCountdown]);
 
   useEffect(() => {
     if (!activeWinner && winnerQueue.length > 0) {
@@ -269,43 +269,37 @@ const Game = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full items-center gap-2 shadow-xs">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-bold text-emerald-700">{onlineCount} Online Players</span>
+          <div className="flex bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full items-center gap-1.5 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-bold text-emerald-700">{onlineCount} Online</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={toggleVoice} 
-            className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full text-lg shadow-xs transition-all active:scale-95 cursor-pointer border border-slate-200/80 text-slate-700"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full text-base sm:text-lg shadow-xs transition-all active:scale-95 cursor-pointer border border-slate-200/80 text-slate-700"
             title="Toggle Voice"
           >
             {isVoiceEnabled ? '🔊' : '🔈'}
-          </button>
-
-          <button 
-            className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full text-base shadow-xs transition-all cursor-pointer border border-slate-200/80 text-slate-700"
-            title="Help"
-          >
-            ❓
           </button>
 
           <div className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full border border-slate-200/80 cursor-pointer shadow-xs">
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
               👤
             </div>
-            <span className="text-xs font-bold text-slate-700 hidden sm:inline">Player One</span>
-            <span className="text-xs text-slate-400">▾</span>
+            <span className="text-xs font-bold text-slate-700 hidden sm:inline">Player</span>
           </div>
         </div>
       </header>
 
-      {/* Main Grid Layout */}
+      {/* Main Container */}
       <main className="max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        
+        {/* ===================== DESKTOP GRID LAYOUT ===================== */}
+        <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
           
-          {/* ===================== LEFT COLUMN (col-span-3) ===================== */}
+          {/* LEFT 3 COLUMNS SECTION */}
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
             {/* CURRENT DRAW CARD */}
@@ -314,7 +308,6 @@ const Game = () => {
                 <span>✦</span> CURRENT DRAW <span>✦</span>
               </p>
 
-              {/* Glowing Circle */}
               <div className="relative my-2">
                 <div key={currentNumber} className={`w-36 h-36 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
                   <span className="text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
@@ -323,7 +316,6 @@ const Game = () => {
                 </div>
               </div>
 
-              {/* Timer Pill Badge */}
               <div className="mt-4 bg-slate-100/90 border border-slate-200/80 px-4 py-1.5 rounded-full shadow-inner">
                 <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
               </div>
@@ -390,7 +382,7 @@ const Game = () => {
             </div>
           </div>
 
-          {/* ===================== MIDDLE COLUMN (col-span-6) ===================== */}
+          {/* ===================== MIDDLE 6 COLUMNS SECTION ===================== */}
           <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6">
             
             {/* CLAIM PRIZES ROW */}
@@ -555,7 +547,7 @@ const Game = () => {
 
           </div>
 
-          {/* ===================== RIGHT COLUMN (col-span-3) ===================== */}
+          {/* ===================== RIGHT 3 COLUMNS SECTION ===================== */}
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
             {/* WINNERS CARD */}
@@ -603,8 +595,6 @@ const Game = () => {
 
             {/* FULL HOUSE BANNER CARD */}
             <div className="bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 p-6 rounded-3xl border border-purple-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[180px]">
-              
-              {/* Golden Trophy Icon on right */}
               <div className="absolute right-3 bottom-2 text-6xl opacity-90 drop-shadow-md pointer-events-none">
                 🏆
               </div>
@@ -654,6 +644,213 @@ const Game = () => {
               )}
             </div>
 
+          </div>
+
+        </div>
+
+        {/* ===================== MOBILE VIEW (REQUESTED CARD ORDER) ===================== */}
+        <div className="md:hidden flex flex-col gap-5">
+          
+          {/* 1. CURRENT DRAW CARD */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center relative">
+            <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <span>✦</span> CURRENT DRAW <span>✦</span>
+            </p>
+
+            <div className="relative my-2">
+              <div key={`mob-current-${currentNumber}`} className={`w-36 h-36 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
+                <span className="text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
+                  {currentNumber || '-'}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 bg-slate-100/90 border border-slate-200/80 px-4 py-1.5 rounded-full shadow-inner">
+              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={true} />
+            </div>
+          </div>
+
+          {/* 2. TICKET CARD */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">YOUR TICKET</h2>
+              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Active</span>
+            </div>
+
+            <div className="bg-[#F8FAFC] p-2.5 rounded-2xl border border-slate-200/80 shadow-inner">
+              <div className="grid grid-cols-9 gap-1.5 w-full">
+                {(ticket?.ticketMatrix || []).map((row, rIndex) => (
+                  row.map((num, cIndex) => {
+                    const marked = num !== 0 && isMarked(num);
+                    const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+
+                    return (
+                      <div 
+                        key={`mob-cell-${rIndex}-${cIndex}`}
+                        onClick={() => handleMarkNumber(num)}
+                        className={`aspect-square flex items-center justify-center text-xs font-black rounded-xl transition-all select-none
+                          ${num === 0 ? 'bg-transparent border-none' : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs'}
+                          ${marked ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/30 scale-105 border-transparent' : ''}
+                          ${canMark ? 'cursor-pointer ring-2 ring-blue-400/80 animate-pulse' : ''}`}
+                      >
+                        {num === 0 ? '' : num}
+                      </div>
+                    );
+                  })
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-center gap-4 text-[10px] font-bold text-slate-500">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Called</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-200"></span> Not Called</span>
+              <span className="flex items-center gap-1">⭐ Free Space</span>
+            </div>
+          </div>
+
+          {/* 3. CLAIM PRIZES CARD */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🎁 CLAIM PRIZES</h2>
+            <div className="grid grid-cols-2 gap-2.5 w-full">
+              {(prizes || []).filter(p => p.enabled).map((prize, idx) => {
+                const isWon = prize.status === 'COMPLETED';
+                const isLocked = prize.status === 'LOCKED';
+                const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
+                const isFullHouse = prize.name.toLowerCase().includes('full house');
+
+                return (
+                  <button
+                    key={`mob-claim-${prize.id}`}
+                    disabled={isWon || isLocked || gameState !== 'LIVE'}
+                    onClick={() => claimPrize(prize.id)}
+                    className={`p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 border text-center transition-all cursor-pointer min-h-[90px]
+                      ${isWon 
+                        ? (wonByMe ? 'bg-emerald-500 text-white border-transparent' : 'bg-slate-50 text-slate-400 border-slate-200') 
+                        : (isFullHouse 
+                          ? 'bg-amber-50 border-amber-200 text-amber-900' 
+                          : 'bg-slate-50 border-slate-200 text-slate-800')}`}
+                  >
+                    <span className="text-xs font-black">
+                      {isFullHouse ? '👑' : '🏆'} {prize.name}
+                    </span>
+                    <span className="text-sm font-black text-blue-600">
+                      ₹ {prize.prizeItem || (idx === 0 ? '500' : (idx === 1 ? '1,000' : '1,500'))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. NUMBER BOARD CARD (1-90) */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">NUMBER BOARD (1-90)</h2>
+              <button 
+                onClick={() => setIsBoardExpanded(!isBoardExpanded)}
+                className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100"
+              >
+                {isBoardExpanded ? 'Hide' : 'Expand'}
+              </button>
+            </div>
+
+            {isBoardExpanded && (
+              <div className="grid grid-cols-10 gap-1 pt-1">
+                {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                  <div 
+                    key={`mob-board-grid-${num}`}
+                    className={`flex items-center justify-center aspect-square rounded-md text-[9px] font-bold transition-all ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}
+                  >
+                    {num}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 5. WINNERS CARD */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🏆 WINNERS</h2>
+            <div className="flex flex-col gap-2.5">
+              {prizes.filter(p => p.enabled).map((prize, idx) => {
+                const isWon = prize.status === 'COMPLETED';
+                return (
+                  <div key={`mob-win-item-${prize.id}`} className={`p-3 rounded-2xl border flex items-center justify-between ${isWon ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200/60'}`}>
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                      <span>{isWon ? '🏆' : '🕒'}</span>
+                      <span>{prize.name}</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-500">
+                      {isWon ? prize.winner : 'Waiting...'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 6. GAME INFO CARD */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
+            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-1">GAME INFO</h2>
+            <div className="flex flex-col gap-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="font-bold text-slate-500">🎮 Game ID</span>
+                <span className="font-mono font-bold text-slate-800">TB-2451</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="font-bold text-slate-500">👥 Players</span>
+                <span className="font-bold text-slate-800">{onlineCount}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                <span className="font-bold text-slate-500">🎟️ Tickets Sold</span>
+                <span className="font-bold text-slate-800">{totalJoined}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="font-bold text-slate-500">☑️ Auto Mark</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${autoMark ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {autoMark ? 'ON' : 'OFF'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 7. REST OF CARDS (RECENT NUMBERS, FULL HOUSE BANNER, CONTROLS) */}
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">RECENT NUMBERS 🕒</h2>
+            <div className="grid grid-cols-5 gap-2">
+              {drawnNumbers.slice(-10).reverse().map((num, i) => (
+                <div key={`mob-rec-bottom-${num}-${i}`} className={`aspect-square rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700'}`}>
+                  {num}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FULL HOUSE BANNER */}
+          <div className="bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 p-5 rounded-3xl border border-purple-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+            <div className="absolute right-3 bottom-2 text-5xl opacity-90 pointer-events-none">🏆</div>
+            <div>
+              <span className="text-xs font-black text-purple-900 uppercase tracking-wider block">Full House</span>
+              <p className="text-2xl font-black text-purple-800 tracking-tight mt-1">₹ 5,000</p>
+            </div>
+            <p className="text-[10px] font-bold text-purple-500 mt-2">Be the next champion!</p>
+          </div>
+
+          {/* CONTROLS */}
+          <div className="grid grid-cols-2 gap-2.5 w-full">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800">🤖 Auto Mark</span>
+              <button onClick={() => setAutoMark(!autoMark)} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${autoMark ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
+                <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>
+              </button>
+            </div>
+
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800">🔊 Sound</span>
+              <button onClick={toggleVoice} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${isVoiceEnabled ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
+                <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>
+              </button>
+            </div>
           </div>
 
         </div>
