@@ -52,6 +52,17 @@ const Game = () => {
     document.documentElement.classList.add('light');
   }, []);
 
+  // Smooth local 1s countdown tick for guaranteed 5s -> 4s -> 3s -> 2s -> 1s -> 0s display
+  useEffect(() => {
+    if (gameState !== 'LIVE' || isSpeakingState || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState, isSpeakingState, nextDrawCountdown !== null && nextDrawCountdown > 0]);
+
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
       navigate('/');
@@ -107,7 +118,9 @@ const Game = () => {
 
     socketRef.current.on('countdown_update', ({ countdown }) => {
       if (!isSpeakingStateRef.current && countdown !== null && countdown !== undefined) {
-        setNextDrawCountdown(countdown);
+        if (countdown === 5 || nextDrawCountdown === null) {
+          setNextDrawCountdown(countdown);
+        }
       }
     });
 
