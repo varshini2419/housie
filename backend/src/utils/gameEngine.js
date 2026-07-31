@@ -109,14 +109,13 @@ const serverTick = async (sessionId, io) => {
             }
         }
     } else if (state.phase === 'COUNTDOWN') {
-        io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
-        console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
-        
-        if (state.tickCountdown <= 0) {
-            console.log(`[SCHEDULER] Generating Next Number...`);
+        if (state.tickCountdown < 0) {
+            console.log(`[SCHEDULER] Countdown reached 0. Generating Next Number...`);
             const continues = await generateNumber(game, io);
             if (!continues) return; // Game ended
         } else {
+            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+            console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
             state.tickCountdown--;
         }
     }
