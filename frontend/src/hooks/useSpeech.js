@@ -191,10 +191,6 @@ const useSpeech = () => {
     
     console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
 
-    // Dispatch event to start countdown instantly BEFORE speech
-    // This allows the server to immediately transition to COUNTDOWN phase
-    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
     try {
@@ -216,7 +212,7 @@ const useSpeech = () => {
 
     isSpeaking.current = false;
     currentSpokenNumber.current = null;
-    
+
     // Check if more items exist
     if (speechQueue.current.length > 0) {
         processQueue();
@@ -225,10 +221,13 @@ const useSpeech = () => {
 
   const announceNumber = useCallback((number) => {
     console.log(`[VOICE TRACE] announceNumber called for: ${number}`);
+    
+    // START COUNTDOWN INSTANTLY!
+    // We want the countdown to start the moment the number arrives, concurrently with voice
+    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
         console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
-        // If voice is disabled, instantly trigger countdown
-        window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
         return;
     }
 

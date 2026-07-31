@@ -1,106 +1,141 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const WinnerPopup = ({ winner, onClose }) => {
   const [countdown, setCountdown] = useState(6);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Trigger entrance animation
-    setShow(true);
-    // Reset countdown on new winner just in case
-    setCountdown(6);
-    
-    // Countdown timer
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setShow(false);
-          setTimeout(onClose, 400); // Wait for exit animation
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (winner) {
+      setShow(true);
+      setCountdown(6);
+      
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setShow(false);
+            setTimeout(onClose, 500); // Wait for exit animation
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [winner, onClose]);
 
-  if (!winner) return null;
-
-  const displayName = winner.winnerName && winner.winnerName.trim() !== '' && winner.winnerName !== 'Player' 
+  const displayName = winner?.winnerName && winner.winnerName.trim() !== '' && winner.winnerName !== 'Player' 
     ? winner.winnerName 
-    : `Ticket #${winner.winnerTicket}`;
+    : `Ticket #${winner?.winnerTicket}`;
 
   return (
-    <div className={`fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4 transition-all duration-400 ${show ? 'opacity-100' : 'opacity-0'}`}>
-      
-      {/* Blurred Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
-      
-      {/* CSS Confetti / Sparkles background handled in index.css via classes */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center">
-         <div className="confetti-overlay"></div>
-      </div>
-
-      {/* Main Glassmorphism Card */}
-      <div className={`relative z-10 glass-panel p-8 sm:p-12 rounded-[2rem] border border-white/20 shadow-[0_0_50px_rgba(16,185,129,0.3)] flex flex-col items-center text-center max-w-lg w-full transform transition-all duration-500 delay-100 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-10'}`}>
-        
-        {/* Trophy Icon */}
-        <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-amber-300 to-yellow-600 flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.5)] animate-bounce-slow border-4 border-white/30">
-          <span className="text-5xl">🏆</span>
-        </div>
-        
-        {/* Winner Name */}
-        <h2 className="text-sm sm:text-base font-bold text-emerald-400 uppercase tracking-widest mb-2">
-          Winner Announced!
-        </h2>
-        
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg mb-6 leading-tight">
-          Congratulations!
-        </h1>
-        
-        {/* Prize Name */}
-        <div className={`bg-white/10 border border-white/20 px-6 py-3 rounded-2xl ${winner.prizeItem ? 'mb-4' : 'mb-6'} backdrop-blur-sm`}>
-          <p className="text-2xl sm:text-3xl font-extrabold text-emerald-300 drop-shadow-md">
-            🏆 {winner.prizeName}
-          </p>
-        </div>
-
-        {/* Prize Item (Optional) */}
-        {winner.prizeItem && (
-          <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 px-8 py-3.5 rounded-2xl mb-6 backdrop-blur-md shadow-[inset_0_1px_10px_rgba(251,191,36,0.15)] flex flex-col items-center max-w-full">
-            <p className="text-amber-300/80 text-[11px] uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5 shadow-amber-500/20">
-              <span className="text-lg drop-shadow-sm">🎁</span> Prize
-            </p>
-            <p className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-yellow-200 to-amber-500 drop-shadow-md truncate max-w-[250px] sm:max-w-[300px]">
-              {winner.prizeItem}
-            </p>
+    <AnimatePresence>
+      {show && winner && (
+        <motion.div 
+          className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Blurred Backdrop */}
+          <div className="absolute inset-0 bg-white/20 backdrop-blur-2xl"></div>
+          
+          {/* CSS Confetti / Sparkles background handled in index.css via classes */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center opacity-70">
+             <div className="confetti-overlay"></div>
           </div>
-        )}
 
-        {/* Winner Details */}
-        <div className="flex flex-col items-center mb-8">
-          <p className="text-white/60 text-xs uppercase font-bold tracking-widest mb-1">
-            Winner
-          </p>
-          <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-400">
-            {displayName}
-          </span>
-        </div>
-        
-        {/* Countdown */}
-        <div className="flex flex-col items-center">
-          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">
-            Next number in...
-          </p>
-          <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-xl font-bold text-white bg-white/5">
-            {countdown}
-          </div>
-        </div>
-        
-      </div>
-    </div>
+          {/* Main Glassmorphism Card */}
+          <motion.div 
+            initial={{ scale: 0.8, y: 40, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative z-10 bg-white/80 backdrop-blur-3xl p-8 sm:p-12 rounded-[2rem] border border-white/60 shadow-[0_30px_80px_rgba(0,0,0,0.1),_inset_0_1px_1px_rgba(255,255,255,1)] flex flex-col items-center text-center max-w-lg w-full"
+          >
+            {/* Trophy Icon */}
+            <motion.div 
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.2 }}
+              className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center shadow-[0_15px_30px_rgba(245,158,11,0.4)] border-4 border-white"
+            >
+              <span className="text-5xl">🏆</span>
+            </motion.div>
+            
+            {/* Winner Name */}
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="text-sm sm:text-base font-bold text-[#00C16E] uppercase tracking-widest mb-2"
+            >
+              Winner Announced!
+            </motion.h2>
+            
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-black text-[#1B2430] mb-6 leading-tight tracking-tight"
+            >
+              Congratulations!
+            </motion.h1>
+            
+            {/* Prize Name */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
+              className={`bg-[#00C16E]/10 border border-[#00C16E]/20 px-6 py-3 rounded-2xl ${winner.prizeItem ? 'mb-4' : 'mb-6'}`}
+            >
+              <p className="text-2xl sm:text-3xl font-extrabold text-[#00a85e]">
+                🏆 {winner.prizeName}
+              </p>
+            </motion.div>
+
+            {/* Prize Item (Optional) */}
+            {winner.prizeItem && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}
+                className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-8 py-3.5 rounded-2xl mb-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)] flex flex-col items-center max-w-full"
+              >
+                <p className="text-[#d97706] text-[11px] uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <span className="text-lg">🎁</span> Prize
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-[#F59E0B] truncate max-w-[250px] sm:max-w-[300px]">
+                  {winner.prizeItem}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Winner Details */}
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
+              className="flex flex-col items-center mb-8"
+            >
+              <p className="text-[#6B7280] text-xs uppercase font-bold tracking-widest mb-1">
+                Winner
+              </p>
+              <span className="text-2xl font-black text-[#4F8EF7]">
+                {displayName}
+              </span>
+            </motion.div>
+            
+            {/* Countdown */}
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+              className="flex flex-col items-center"
+            >
+              <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-2">
+                Resuming in...
+              </p>
+              <div className="w-12 h-12 rounded-full border border-[#4F8EF7]/30 flex items-center justify-center text-xl font-bold text-[#4F8EF7] bg-[#4F8EF7]/10 tabular-nums">
+                {countdown}
+              </div>
+            </motion.div>
+            
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

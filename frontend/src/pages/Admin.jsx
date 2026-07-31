@@ -736,10 +736,10 @@ const Admin = () => {
               <div className="glass-panel-secondary p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-bold text-brand-text-muted mb-2 uppercase tracking-widest">Current Drawn</p>
                 <p className="text-5xl font-black tracking-tight">{adminStats.currentNumber || '-'}</p>
-                {adminStats?.gameStatus === 'LIVE' && nextDrawCountdown !== null && (
+                {adminStats?.gameStatus === 'LIVE' && (
                   <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-brand-border shadow-sm w-max">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    Next draw in: {nextDrawCountdown}s
+                    Next draw in: {nextDrawCountdown !== null ? nextDrawCountdown : 5}s
                   </div>
                 )}
               </div>

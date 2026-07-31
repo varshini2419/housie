@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
   const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
 
+  const [localCountdown, setLocalCountdown] = useState(5);
+  const timerIntervalRef = useRef(null);
+
+  const clearTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  };
+
   useEffect(() => {
     if (!socketRef || !socketRef.current) return;
 
     const handlePaused = ({ countdown }) => {
-      if (countdown !== undefined) setPauseCountdown(countdown);
+      clearTimer();
+      if (countdown !== undefined) {
+          setPauseCountdown(countdown);
+          setLocalCountdown(countdown); // Sync local timer
+      }
     };
     
     const handlePauseTick = ({ countdown }) => {
@@ -16,7 +31,23 @@ const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
     };
     
     const handleCountdownUpdate = ({ countdown }) => {
-      setNextDrawCountdown(countdown);
+      clearTimer(); // Prevent multiple setInterval instances
+      
+      if (countdown === null) {
+          setLocalCountdown(5); // Reset to 5 immediately when next number is generated (during speech phase)
+      } else {
+          setLocalCountdown(countdown);
+          // Start local frontend countdown for perfect synchronization
+          timerIntervalRef.current = setInterval(() => {
+              setLocalCountdown(prev => {
+                  if (prev <= 1) {
+                      clearTimer();
+                      return 0;
+                  }
+                  return prev - 1;
+              });
+          }, 1000);
+      }
     };
 
     socketRef.current.on('game_paused', handlePaused);
@@ -24,46 +55,86 @@ const GameStatusTimer = ({ gameState, socketRef, isMobile = false }) => {
     socketRef.current.on('countdown_update', handleCountdownUpdate);
 
     return () => {
-      socketRef.current.off('game_paused', handlePaused);
-      socketRef.current.off('pause_countdown_tick', handlePauseTick);
-      socketRef.current.off('countdown_update', handleCountdownUpdate);
+      clearTimer(); // Dispose of old timer instances properly on unmount
+      if (socketRef.current) {
+          socketRef.current.off('game_paused', handlePaused);
+          socketRef.current.off('pause_countdown_tick', handlePauseTick);
+          socketRef.current.off('countdown_update', handleCountdownUpdate);
+      }
     };
   }, [socketRef]);
 
-  // Tabular numbers and fixed minimum width prevent the layout from shifting when text length changes.
-  const liveTimerClasses = isMobile 
-    ? "text-blue-600 font-black inline-block min-w-[32px] text-center tabular-nums"
-    : "text-blue-500 font-mono text-base inline-block min-w-[32px] text-center tabular-nums";
-    
-  if (gameState === 'LIVE') {
-    return (
-      <>
-        <span className="text-sm font-bold text-emerald-600 flex items-center gap-1.5 shrink-0"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Running</span>
-        <span className={`${isMobile ? "text-slate-300" : "text-brand-border"} mx-1 shrink-0`}>|</span>
-        <span className={`text-sm font-bold flex flex-row items-center whitespace-nowrap shrink-0 ${isMobile ? 'text-slate-600' : 'text-brand-text-sec'}`}>
-          ⏳ Timer: <span className={liveTimerClasses}>{nextDrawCountdown !== null ? nextDrawCountdown : 0}s</span>
-        </span>
-      </>
-    );
-  } else if (gameState === 'PAUSED') {
-    return (
-      <>
-        <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5 shrink-0"><span className="text-lg">🟡</span> Paused</span>
-        <span className={`${isMobile ? "text-slate-300" : "text-brand-border"} mx-1 shrink-0`}>|</span>
-        <span className={`text-sm font-bold tabular-nums inline-block min-w-[100px] text-left shrink-0 whitespace-nowrap ${isMobile ? 'text-slate-600' : 'text-brand-text-sec'}`}>
-          ⏸ {pauseCountdown > 0 ? `Waiting ${pauseCountdown}s` : 'Waiting...'}
-        </span>
-      </>
-    );
-  } else if (gameState === 'WAITING') {
-    return (
-      <span className="text-sm font-bold text-amber-600 flex items-center gap-1.5 shrink-0 whitespace-nowrap">⏳ Waiting for Host{isMobile ? '' : '...'}</span>
-    );
-  } else {
-    return (
-      <span className="text-sm font-bold text-blue-600 flex items-center gap-1.5 shrink-0 whitespace-nowrap">🏁 {isMobile ? 'Completed' : 'Game Completed'}</span>
-    );
-  }
+  const wrapperClasses = "flex items-center gap-3";
+  const timerTextClasses = "text-sm font-bold text-[#4F8EF7] min-w-[28px] tabular-nums text-center inline-block";
+
+  return (
+    <AnimatePresence mode="wait">
+      {gameState === 'LIVE' && (
+        <motion.div 
+          key="live"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className={wrapperClasses}
+        >
+          <div className="flex items-center gap-2 bg-[#00C16E]/10 border border-[#00C16E]/20 px-3 py-1.5 rounded-full">
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-2.5 h-2.5 rounded-full bg-[#00C16E] shadow-[0_0_8px_#00C16E]"
+            />
+            <span className="text-xs font-bold text-[#00a85e] uppercase tracking-wider">Running</span>
+          </div>
+          <span className="text-[#6B7280]/30 shrink-0">|</span>
+          <div className="flex items-center gap-1.5 bg-[#4F8EF7]/5 px-3 py-1.5 rounded-full border border-[#4F8EF7]/10">
+            <span className="text-xs font-semibold text-[#6B7280]">⏳ Timer:</span>
+            <span className={timerTextClasses}>{localCountdown}s</span>
+          </div>
+        </motion.div>
+      )}
+
+      {gameState === 'PAUSED' && (
+        <motion.div 
+          key="paused"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className={wrapperClasses}
+        >
+          <div className="flex items-center gap-2 bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-3 py-1.5 rounded-full">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shadow-[0_0_8px_#F59E0B]" />
+            <span className="text-xs font-bold text-[#d97706] uppercase tracking-wider">Paused</span>
+          </div>
+          <span className="text-[#6B7280]/30 shrink-0">|</span>
+          <div className="flex items-center gap-1.5 bg-[#F59E0B]/5 px-3 py-1.5 rounded-full border border-[#F59E0B]/10">
+             <span className="text-xs font-semibold text-[#d97706] min-w-[70px] tabular-nums">
+               {pauseCountdown > 0 ? `Wait ${pauseCountdown}s` : '⏸ Waiting...'}
+             </span>
+          </div>
+        </motion.div>
+      )}
+
+      {gameState === 'WAITING' && (
+        <motion.div 
+          key="waiting"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex items-center gap-2 bg-[#6B7280]/10 border border-[#6B7280]/20 px-4 py-1.5 rounded-full"
+        >
+          <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Waiting for Host</span>
+        </motion.div>
+      )}
+
+      {gameState === 'COMPLETED' && (
+        <motion.div 
+          key="completed"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex items-center gap-2 bg-[#4F8EF7]/10 border border-[#4F8EF7]/20 px-4 py-1.5 rounded-full"
+        >
+          <span className="text-xs font-bold text-[#4F8EF7] uppercase tracking-wider">Game Over</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default React.memo(GameStatusTimer);

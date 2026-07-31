@@ -71,9 +71,6 @@ const generateNumber = async (game, io) => {
         prizes: sessionPrizes
     });
 
-    // Clear the countdown UI during the speech phase
-    io.to(sId).emit('countdown_update', { countdown: null });
-
     return true;
 };
 
@@ -91,14 +88,7 @@ const serverTick = async (sessionId, io) => {
         return;
     }
 
-    if (state.phase === 'SPEECH_WAIT') {
-        state.tickCountdown--;
-        if (state.tickCountdown <= 0) {
-            state.phase = 'COUNTDOWN';
-            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-            console.log(`[SCHEDULER] Voice Finished. Starting Countdown.`);
-        }
-    } else if (state.phase === 'COUNTDOWN') {
+    if (state.phase === 'COUNTDOWN' || state.phase === 'SPEECH_WAIT') {
         io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
         console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
         
@@ -108,9 +98,8 @@ const serverTick = async (sessionId, io) => {
             const continues = await generateNumber(game, io);
             
             if (continues) {
-                state.phase = 'SPEECH_WAIT';
-                state.tickCountdown = VOICE_WAIT_SECONDS;
-                console.log(`[SCHEDULER] Voice Started.`);
+                state.phase = 'COUNTDOWN';
+                state.tickCountdown = 5;
             } else {
                 return; // Game ended
             }
@@ -176,7 +165,7 @@ const ensureActiveGame = async (sessionId, io) => {
             timerId: null,
             timerLock: false,
             phase: 'COUNTDOWN',
-            tickCountdown: DRAW_COUNTDOWN_SECONDS,
+            tickCountdown: 5,
             winners: winners,
             onlinePlayers: new Set()
         };
