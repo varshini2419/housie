@@ -143,6 +143,7 @@ const Game = () => {
 
     const handleSpeechFinished = () => {
       setSpeaking(false);
+      setNextDrawCountdown(5);
       if (socketRef.current) {
         socketRef.current.emit('speech_finished', { sessionId });
       }
