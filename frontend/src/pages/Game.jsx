@@ -46,6 +46,12 @@ const Game = () => {
     isVoiceEnabledRef.current = isVoiceEnabled;
   }, [isVoiceEnabled]);
 
+  // Force pure light/white theme for User UI page
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+  }, []);
+
 
 
   useEffect(() => {
@@ -247,7 +253,6 @@ const Game = () => {
             <button onClick={toggleVoice} className="text-xl opacity-80 hover:opacity-100 transition-opacity">
               {isVoiceEnabled ? '🔊' : '🔈'}
             </button>
-            <ThemeToggle />
           </div>
         </div>
 
