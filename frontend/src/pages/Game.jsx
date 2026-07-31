@@ -442,11 +442,9 @@ const Game = () => {
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* TAB 2: PRIZES */}
-          <div className={`flex flex-col gap-6 ${activeTab === 'prizes' ? 'block' : 'hidden'}`}>
-            <div className="w-full">
+            {/* PRIZES & WINNERS BOARD (Moved below ticket) */}
+            <div className="w-full mt-4">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Claim Prizes</h2>
               <div className="flex flex-wrap gap-2.5 w-full">
                 {(prizes || []).filter(p => p.enabled).map(prize => {
@@ -478,7 +476,7 @@ const Game = () => {
               </div>
             </div>
 
-            <div className="w-full">
+            <div className="w-full mt-2 pb-4">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                 🏆 Winners Board
               </h2>
@@ -538,15 +536,11 @@ const Game = () => {
 
         {/* Mobile Sticky Bottom Nav */}
         <div className="fixed bottom-6 left-6 right-6 h-16 bg-white/90 backdrop-blur-xl border border-slate-200 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.1)] flex justify-between items-center px-4 z-50 rounded-full">
-          <button onClick={() => setActiveTab('game')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'game' ? 'text-blue-600' : 'text-slate-400'}`}>
+          <button onClick={() => setActiveTab('game')} className={`flex flex-col items-center justify-center w-1/2 h-full transition-all duration-300 ${activeTab === 'game' ? 'text-blue-600' : 'text-slate-400'}`}>
             <span className={`text-xl mb-1 transition-transform ${activeTab === 'game' ? 'scale-110' : 'grayscale opacity-60'}`}>🎟️</span>
             <span className="text-[10px] font-bold">Game</span>
           </button>
-          <button onClick={() => setActiveTab('prizes')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'prizes' ? 'text-blue-600' : 'text-slate-400'}`}>
-            <span className={`text-xl mb-1 transition-transform ${activeTab === 'prizes' ? 'scale-110' : 'grayscale opacity-60'}`}>🏆</span>
-            <span className="text-[10px] font-bold">Prizes</span>
-          </button>
-          <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-1/3 h-full transition-all duration-300 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400'}`}>
+          <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center justify-center w-1/2 h-full transition-all duration-300 ${activeTab === 'history' ? 'text-blue-600' : 'text-slate-400'}`}>
             <span className={`text-xl mb-1 transition-transform ${activeTab === 'history' ? 'scale-110' : 'grayscale opacity-60'}`}>🔢</span>
             <span className="text-[10px] font-bold">Board</span>
           </button>
