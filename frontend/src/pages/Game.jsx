@@ -234,8 +234,7 @@ const Game = () => {
             <motion.button 
               key={prize.id}
               disabled={isWon || isLocked || gameState !== 'LIVE'}
-              onTap={() => claimPrize(prize.id)}
-              onClick={(e) => { e.preventDefault(); claimPrize(prize.id); }}
+              onClick={() => claimPrize(prize.id)}
               whileTap={(isWon || isLocked || gameState !== 'LIVE') ? {} : { scale: 0.95 }}
               className={`flex-grow sm:flex-grow-0 sm:min-w-[120px] p-2.5 rounded-2xl flex flex-col items-center justify-center text-center whitespace-normal select-none touch-manipulation ${btnClass}`}
             >
