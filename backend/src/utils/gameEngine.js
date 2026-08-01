@@ -63,7 +63,11 @@ const generateNumber = async (game, io) => {
         { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
     ];
 
-    const sessionPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
+    const rawPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
+    const sessionPrizes = rawPrizes.map(p => ({
+        ...(p.toObject ? p.toObject() : p),
+        status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+    }));
 
     Ticket.countDocuments({ sessionId: game._id }).then(totalJoined => {
         io.to(sId).emit('admin_stats', {

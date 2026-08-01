@@ -104,7 +104,11 @@ io.on('connection', (socket) => {
                 { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
             ];
             
-            const sessionPrizes = game && game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+            const rawPrizes = game && game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+            const sessionPrizes = rawPrizes.map(p => ({
+                ...(p.toObject ? p.toObject() : p),
+                status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+            }));
 
             socket.emit('game_sync', {
                 status: status,
@@ -157,15 +161,19 @@ io.on('connection', (socket) => {
             { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
         ];
 
-        const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+        const rawSessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+        const sessionPrizes = rawSessionPrizes.map(p => ({
+            ...(p.toObject ? p.toObject() : p),
+            status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+        }));
 
         const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
         if (prizeIndex === -1) return socket.emit('claim_result', { success: false, message: 'Prize not found' });
         
         const prize = sessionPrizes[prizeIndex];
         
-        if (prize.status !== 'AVAILABLE') {
-            return socket.emit('claim_result', { success: false, message: 'Prize is not available' });
+        if (prize.status === 'COMPLETED') {
+            return socket.emit('claim_result', { success: false, message: 'Prize has already been claimed' });
         }
 
         // Duplicate winner validation for same category
