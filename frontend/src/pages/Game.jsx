@@ -440,24 +440,24 @@ const Game = () => {
             </div>
 
             {/* YOUR TICKET CARD (Tambola Matrix Grid) */}
-            <div className="premium-card relative">
+            <div className="premium-card relative border-2 border-slate-800">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-black text-blue-900 uppercase tracking-wider">
                   YOUR TICKET
                 </h2>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800 bg-slate-100 px-3 py-1 rounded-full border-2 border-slate-700">
                   <span>Ticket #{ticket.ticketCode}</span>
-                  <span className="text-slate-400 text-[10px]">📋</span>
+                  <span className="text-slate-500 text-[10px]">📋</span>
                 </div>
               </div>
 
               {/* Tambola Ticket Matrix */}
-              <div className="bg-[#F8FAFC] p-4 rounded-2xl border border-slate-200/80 shadow-inner">
+              <div className="bg-[#F8FAFC] p-4 rounded-2xl border-2 border-slate-800 shadow-md">
                 <div className="grid grid-cols-9 gap-2.5 w-full">
                   {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                     row.map((num, cIndex) => {
                       const marked = num !== 0 && isMarked(num);
-                      const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+                      const canMark = num !== 0 && isDrawn(num) && !marked && (gameState === 'LIVE' || gameState === 'PAUSED');
 
                       return (
                         <div 
@@ -467,9 +467,9 @@ const Game = () => {
                             ${num === 0 
                               ? 'bg-transparent border-none' 
                               : (marked 
-                                ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-transparent' 
-                                : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs rounded-2xl')}
-                            ${canMark ? 'cursor-pointer ring-2 ring-blue-400/80 animate-pulse' : ''}`}
+                                ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-2 border-emerald-600' 
+                                : 'bg-white text-slate-900 border-2 border-slate-700 shadow-xs rounded-2xl')}
+                            ${canMark ? 'cursor-pointer ring-2 ring-blue-500 animate-pulse' : ''}`}
                         >
                           {num === 0 ? '' : num}
                         </div>
@@ -685,18 +685,18 @@ const Game = () => {
           </div>
 
           {/* 2. TICKET CARD */}
-          <div className="premium-card relative">
+          <div className="premium-card relative border-2 border-slate-800">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">YOUR TICKET</h2>
-              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Active</span>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border-2 border-emerald-600">Active</span>
             </div>
 
-            <div className="bg-[#F8FAFC] p-2.5 rounded-2xl border border-slate-200/80 shadow-inner">
+            <div className="bg-[#F8FAFC] p-2.5 rounded-2xl border-2 border-slate-800 shadow-md">
               <div className="grid grid-cols-9 gap-1.5 w-full">
                 {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                   row.map((num, cIndex) => {
                     const marked = num !== 0 && isMarked(num);
-                    const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+                    const canMark = num !== 0 && isDrawn(num) && !marked && (gameState === 'LIVE' || gameState === 'PAUSED');
 
                     return (
                       <div 
@@ -706,9 +706,9 @@ const Game = () => {
                           ${num === 0 
                             ? 'bg-transparent border-none' 
                             : (marked 
-                              ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-transparent' 
-                              : 'bg-white text-slate-800 border border-slate-200/90 shadow-xs rounded-xl')}
-                          ${canMark ? 'cursor-pointer ring-2 ring-blue-400/80 animate-pulse' : ''}`}
+                              ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-2 border-emerald-600' 
+                              : 'bg-white text-slate-900 border-2 border-slate-700 shadow-xs rounded-xl')}
+                          ${canMark ? 'cursor-pointer ring-2 ring-blue-500 animate-pulse' : ''}`}
                       >
                         {num === 0 ? '' : num}
                       </div>
