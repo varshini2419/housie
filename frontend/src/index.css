@@ -70,11 +70,13 @@ body {
   transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-panel:hover {
-  transform: translateY(-4px);
-  box-shadow: 
-    0 30px 70px rgba(0, 0, 0, 0.12),
-    inset 0 1px 1px rgba(255, 255, 255, 1);
+@media (hover: hover) {
+  .glass-panel:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 30px 70px rgba(0, 0, 0, 0.12),
+      inset 0 1px 1px rgba(255, 255, 255, 1);
+  }
 }
 
 /* Header & Nav */
@@ -99,11 +101,13 @@ body {
     0 8px 20px rgba(0, 193, 110, 0.3),
     inset 0 1px 1px rgba(255, 255, 255, 0.4);
 }
-.premium-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 
-    0 12px 25px rgba(0, 193, 110, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+@media (hover: hover) {
+  .premium-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 
+      0 12px 25px rgba(0, 193, 110, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  }
 }
 .premium-btn:active {
   transform: scale(0.97);
@@ -124,9 +128,11 @@ body {
   border: none;
   box-shadow: 0 8px 20px rgba(79, 142, 247, 0.3), inset 0 1px 1px rgba(255,255,255,0.3);
 }
-.claim-btn-active:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 12px 25px rgba(79, 142, 247, 0.4), inset 0 1px 1px rgba(255,255,255,0.5);
+@media (hover: hover) {
+  .claim-btn-active:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 12px 25px rgba(79, 142, 247, 0.4), inset 0 1px 1px rgba(255,255,255,0.5);
+  }
 }
 .claim-btn-active:active {
   transform: scale(0.97);

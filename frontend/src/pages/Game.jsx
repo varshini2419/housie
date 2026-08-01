@@ -220,7 +220,7 @@ const Game = () => {
     <div className="w-full mt-4 sm:mt-0 glass-panel p-4 sm:p-5">
       <h2 className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-3">Claim Prizes</h2>
       <div className="flex flex-wrap gap-2 w-full">
-        {(prizes || []).filter(p => p.enabled).map(prize => {
+        {(prizes || []).filter(p => p.enabled !== false).map(prize => {
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';
           const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
@@ -234,10 +234,10 @@ const Game = () => {
             <motion.button 
               key={prize.id}
               disabled={isWon || isLocked || gameState !== 'LIVE'}
-              onClick={() => claimPrize(prize.id)}
-              whileHover={(isWon || isLocked || gameState !== 'LIVE') ? {} : { y: -2, scale: 1.02 }}
-              whileTap={(isWon || isLocked || gameState !== 'LIVE') ? {} : { scale: 0.98 }}
-              className={`flex-grow sm:flex-grow-0 sm:min-w-[120px] p-2.5 rounded-2xl flex flex-col items-center justify-center text-center whitespace-normal ${btnClass}`}
+              onTap={() => claimPrize(prize.id)}
+              onClick={(e) => { e.preventDefault(); claimPrize(prize.id); }}
+              whileTap={(isWon || isLocked || gameState !== 'LIVE') ? {} : { scale: 0.95 }}
+              className={`flex-grow sm:flex-grow-0 sm:min-w-[120px] p-2.5 rounded-2xl flex flex-col items-center justify-center text-center whitespace-normal select-none touch-manipulation ${btnClass}`}
             >
               <span className="text-xs font-bold">🏆 {prize.name}</span>
               <span className={`text-[10px] font-medium leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-white/90' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-white/90' : 'text-[#6B7280]')}`}>
