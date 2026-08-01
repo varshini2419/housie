@@ -167,7 +167,16 @@ io.on('connection', (socket) => {
             status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
         }));
 
-        const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
+        const prizeIndex = sessionPrizes.findIndex(p => {
+            if (!p) return false;
+            const targetStr = (prizeId || '').toString().toLowerCase();
+            const pId = (p.id || '').toString().toLowerCase();
+            const pMongoId = (p._id || '').toString().toLowerCase();
+            const pName = (p.name || '').toString().toLowerCase();
+            const pType = (p.type || '').toString().toLowerCase();
+            return pId === targetStr || pMongoId === targetStr || pName === targetStr || pType === targetStr;
+        });
+
         if (prizeIndex === -1) return socket.emit('claim_result', { success: false, message: 'Prize not found' });
         
         const prize = sessionPrizes[prizeIndex];
@@ -177,7 +186,7 @@ io.on('connection', (socket) => {
         }
 
         // Duplicate winner validation for same category
-        const hasWonSameCategory = game.prizes && game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
+        const hasWonSameCategory = game.prizes && game.prizes.some(p => (p.type === prize.type || p.name === prize.name) && p.winnerTicket === ticketCode && p.status === 'COMPLETED');
         if (hasWonSameCategory) {
             return socket.emit('claim_result', { success: false, message: 'You have already claimed a prize in this category' });
         }
@@ -202,17 +211,14 @@ io.on('connection', (socket) => {
                 
                 // Unlock next prize in sequence
                 const nextSequence = prize.sequence + 1;
-                const nextPrizeIndex = sessionPrizes.findIndex(p => p.type === prize.type && p.sequence === nextSequence);
+                const nextPrizeIndex = sessionPrizes.findIndex(p => (p.type === prize.type || p.name === prize.name) && p.sequence === nextSequence);
                 if (nextPrizeIndex !== -1) {
                     sessionPrizes[nextPrizeIndex].status = 'AVAILABLE';
                 }
 
-                if (game.prizes && game.prizes.length > 0) {
-                    await game.save();
-                } else {
-                    // For legacy games, update state.winners to maintain backward compatibility
-                    state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
-                }
+                game.prizes = sessionPrizes;
+                await game.save();
+                state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
 
                 const newWinner = new Winner({ sessionId, prizeType: prize.name, ticketCode });
                 await newWinner.save();
