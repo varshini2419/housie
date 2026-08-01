@@ -100,11 +100,13 @@ const Game = () => {
       setNextDrawCountdown(5);
 
       // Auto Mark feature support
-      if (autoMark && ticket?.ticketMatrix) {
-        const flatNums = ticket.ticketMatrix.flat();
-        if (flatNums.includes(number) && !markedNumbers.includes(number)) {
+      if (autoMarkRef.current && ticketRef.current?.ticketMatrix) {
+        const flatNums = ticketRef.current.ticketMatrix.flat();
+        if (flatNums.includes(number)) {
           setMarkedNumbers(prev => Array.from(new Set([...prev, number])));
-          socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number });
+          if (socketRef.current) {
+            socketRef.current.emit('mark_number', { sessionId, ticketCode: ticketRef.current.ticketCode, number });
+          }
         }
       }
 
@@ -303,7 +305,7 @@ const Game = () => {
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
             {/* CURRENT DRAW CARD */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center relative">
+            <div className="premium-card flex flex-col items-center justify-center text-center relative">
               <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <span>✦</span> CURRENT DRAW <span>✦</span>
               </p>
@@ -322,7 +324,7 @@ const Game = () => {
             </div>
 
             {/* RECENT NUMBERS CARD */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="premium-card">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <span>RECENT NUMBERS</span>
                 <span className="text-slate-400 font-normal">🕒</span>
@@ -344,7 +346,7 @@ const Game = () => {
             </div>
 
             {/* GAME INFO CARD */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col gap-3">
+            <div className="premium-card flex flex-col gap-3">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-1">
                 GAME INFO
               </h2>
@@ -386,7 +388,7 @@ const Game = () => {
           <div className="lg:col-span-6 flex flex-col gap-5 sm:gap-6">
             
             {/* CLAIM PRIZES ROW */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="premium-card">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <span>🎁 CLAIM PRIZES</span>
               </h2>
@@ -429,7 +431,7 @@ const Game = () => {
             </div>
 
             {/* YOUR TICKET CARD (Tambola Matrix Grid) */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative">
+            <div className="premium-card relative">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-black text-blue-900 uppercase tracking-wider">
                   YOUR TICKET
@@ -480,7 +482,7 @@ const Game = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
               
               {/* Card 1: Auto Mark */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-2">
+              <div className="premium-card !p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
                     🤖
@@ -499,7 +501,7 @@ const Game = () => {
               </div>
 
               {/* Card 2: Sound */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-2">
+              <div className="premium-card !p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
                     🔊
@@ -518,7 +520,7 @@ const Game = () => {
               </div>
 
               {/* Card 3: Quick View */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-2">
+              <div className="premium-card !p-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
                     👁️
@@ -533,7 +535,7 @@ const Game = () => {
               {/* Card 4: Fullscreen */}
               <div 
                 onClick={toggleFullscreen}
-                className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 transition-colors"
+                className="premium-card !p-4 flex items-center justify-between gap-2 cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
@@ -554,7 +556,7 @@ const Game = () => {
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
             {/* WINNERS CARD */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div className="premium-card flex flex-col justify-between">
               <div>
                 <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <span>🏆 WINNERS</span>
@@ -597,7 +599,7 @@ const Game = () => {
             </div>
 
             {/* FULL HOUSE BANNER CARD */}
-            <div className="bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 p-6 rounded-3xl border border-purple-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+            <div className="premium-card bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 relative overflow-hidden flex flex-col justify-between min-h-[180px]">
               <div className="absolute right-3 bottom-2 text-6xl opacity-90 drop-shadow-md pointer-events-none">
                 🏆
               </div>
@@ -620,7 +622,7 @@ const Game = () => {
             </div>
 
             {/* BOARD EXPANDABLE CARD (1-90) */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+            <div className="premium-card">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">
                   Number Board (1-90)
@@ -655,7 +657,7 @@ const Game = () => {
         <div className="md:hidden flex flex-col gap-5">
           
           {/* 1. CURRENT DRAW CARD */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center relative">
+          <div className="premium-card flex flex-col items-center justify-center text-center relative">
             <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <span>✦</span> CURRENT DRAW <span>✦</span>
             </p>
@@ -674,7 +676,7 @@ const Game = () => {
           </div>
 
           {/* 2. TICKET CARD */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative">
+          <div className="premium-card relative">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">YOUR TICKET</h2>
               <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">Active</span>
@@ -715,7 +717,7 @@ const Game = () => {
           </div>
 
           {/* 3. CLAIM PRIZES CARD */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="premium-card">
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🎁 CLAIM PRIZES</h2>
             <div className="grid grid-cols-2 gap-2.5 w-full">
               {(prizes || []).filter(p => p.enabled).map((prize, idx) => {
@@ -749,7 +751,7 @@ const Game = () => {
           </div>
 
           {/* 4. NUMBER BOARD CARD (1-90) */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="premium-card">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">NUMBER BOARD (1-90)</h2>
               <button 
@@ -775,7 +777,7 @@ const Game = () => {
           </div>
 
           {/* 5. WINNERS CARD */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="premium-card">
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🏆 WINNERS</h2>
             <div className="flex flex-col gap-2.5">
               {prizes.filter(p => p.enabled).map((prize, idx) => {
@@ -796,7 +798,7 @@ const Game = () => {
           </div>
 
           {/* 6. GAME INFO CARD */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
+          <div className="premium-card flex flex-col gap-2.5">
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-1">GAME INFO</h2>
             <div className="flex flex-col gap-2 text-xs">
               <div className="flex justify-between items-center py-1 border-b border-slate-100">
@@ -821,7 +823,7 @@ const Game = () => {
           </div>
 
           {/* 7. REST OF CARDS (RECENT NUMBERS, FULL HOUSE BANNER, CONTROLS) */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+          <div className="premium-card">
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">RECENT NUMBERS 🕒</h2>
             <div className="grid grid-cols-5 gap-2">
               {drawnNumbers.slice(-10).reverse().map((num, i) => (
@@ -833,7 +835,7 @@ const Game = () => {
           </div>
 
           {/* FULL HOUSE BANNER */}
-          <div className="bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 p-5 rounded-3xl border border-purple-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="premium-card bg-gradient-to-br from-purple-100 via-indigo-50 to-purple-50 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
             <div className="absolute right-3 bottom-2 text-5xl opacity-90 pointer-events-none">🏆</div>
             <div>
               <span className="text-xs font-black text-purple-900 uppercase tracking-wider block">Full House</span>
@@ -844,14 +846,14 @@ const Game = () => {
 
           {/* CONTROLS */}
           <div className="grid grid-cols-2 gap-2.5 w-full">
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="premium-card !p-3.5 flex items-center justify-between">
               <span className="text-xs font-black text-slate-800">🤖 Auto Mark</span>
               <button onClick={() => setAutoMark(!autoMark)} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${autoMark ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
                 <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>
               </button>
             </div>
 
-            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="premium-card !p-3.5 flex items-center justify-between">
               <span className="text-xs font-black text-slate-800">🔊 Sound</span>
               <button onClick={toggleVoice} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${isVoiceEnabled ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
                 <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>

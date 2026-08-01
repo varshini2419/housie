@@ -178,9 +178,14 @@ io.on('connection', (socket) => {
             const ticket = await Ticket.findOne({ ticketCode, sessionId });
             if (!ticket) return socket.emit('claim_result', { success: false, message: 'Ticket not found' });
 
-            const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
+            const isValid = validateClaim(prize.type || prize.name, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
 
             if (isValid) {
+                // Sync marked numbers for ticket in DB
+                const flatTicketNums = ticket.ticketMatrix.flat().filter(n => n !== 0);
+                const drawnTicketNums = flatTicketNums.filter(n => state.drawnNumbers.includes(n));
+                ticket.markedNumbers = Array.from(new Set([...(ticket.markedNumbers || []), ...drawnTicketNums]));
+
                 // Update prize status
                 sessionPrizes[prizeIndex].status = 'COMPLETED';
                 sessionPrizes[prizeIndex].winner = ticket.playerName || 'Player';
