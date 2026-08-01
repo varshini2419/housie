@@ -211,18 +211,22 @@ const Game = () => {
   const isMarked = (num) => markedNumbers.includes(num);
 
   const claimPrize = (prizeId) => {
-    if (gameState !== 'LIVE') return;
-    socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
+    if (gameState !== 'LIVE' && gameState !== 'PAUSED') return;
+    if (socketRef.current) {
+      socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
+    }
   };
 
   const handleMarkNumber = (num) => {
-    if (gameState !== 'LIVE') return;
+    if (gameState !== 'LIVE' && gameState !== 'PAUSED') return;
     if (num === 0) return;
     if (!isDrawn(num)) return;
     if (isMarked(num)) return;
     
     setMarkedNumbers(prev => Array.from(new Set([...prev, num])));
-    socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
+    if (socketRef.current) {
+      socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
+    }
   };
 
   const toggleFullscreen = () => {
@@ -394,7 +398,13 @@ const Game = () => {
               </h2>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
-                {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
+                {(prizes && prizes.length > 0 ? prizes : [
+                  { id: 'p1', name: 'Jaldi 5', status: 'AVAILABLE', enabled: true },
+                  { id: 'p2', name: 'First Line', status: 'AVAILABLE', enabled: true },
+                  { id: 'p3', name: 'Second Line', status: 'AVAILABLE', enabled: true },
+                  { id: 'p4', name: 'Third Line', status: 'AVAILABLE', enabled: true },
+                  { id: 'p5', name: 'Full House', status: 'AVAILABLE', enabled: true }
+                ]).filter(p => p.enabled !== false).map((prize, idx) => {
                   const isWon = prize.status === 'COMPLETED';
                   const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
                   const isFullHouse = prize.name.toLowerCase().includes('full house');
@@ -402,7 +412,7 @@ const Game = () => {
                   return (
                     <button
                       key={`claim-grid-${prize.id}`}
-                      disabled={isWon || gameState !== 'LIVE'}
+                      disabled={isWon || (gameState !== 'LIVE' && gameState !== 'PAUSED')}
                       onClick={() => claimPrize(prize.id)}
                       className={`p-3.5 rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-200 border text-center cursor-pointer min-h-[105px]
                         ${isWon 
@@ -719,7 +729,13 @@ const Game = () => {
           <div className="premium-card">
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🎁 CLAIM PRIZES</h2>
             <div className="grid grid-cols-2 gap-2.5 w-full">
-              {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
+              {(prizes && prizes.length > 0 ? prizes : [
+                { id: 'p1', name: 'Jaldi 5', status: 'AVAILABLE', enabled: true },
+                { id: 'p2', name: 'First Line', status: 'AVAILABLE', enabled: true },
+                { id: 'p3', name: 'Second Line', status: 'AVAILABLE', enabled: true },
+                { id: 'p4', name: 'Third Line', status: 'AVAILABLE', enabled: true },
+                { id: 'p5', name: 'Full House', status: 'AVAILABLE', enabled: true }
+              ]).filter(p => p.enabled !== false).map((prize, idx) => {
                 const isWon = prize.status === 'COMPLETED';
                 const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
                 const isFullHouse = prize.name.toLowerCase().includes('full house');
@@ -727,7 +743,7 @@ const Game = () => {
                 return (
                   <button
                     key={`mob-claim-${prize.id}`}
-                    disabled={isWon || gameState !== 'LIVE'}
+                    disabled={isWon || (gameState !== 'LIVE' && gameState !== 'PAUSED')}
                     onClick={() => claimPrize(prize.id)}
                     className={`p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 border text-center transition-all cursor-pointer min-h-[90px]
                       ${isWon 

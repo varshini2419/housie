@@ -149,8 +149,8 @@ io.on('connection', (socket) => {
         if (!state) return socket.emit('claim_result', { success: false, message: 'Game not active' });
 
         const game = await GameSession.findById(sessionId);
-        if (!game || game.gameStatus !== 'LIVE') {
-            return socket.emit('claim_result', { success: false, message: 'Game is not LIVE' });
+        if (!game || (game.gameStatus !== 'LIVE' && game.gameStatus !== 'PAUSED')) {
+            return socket.emit('claim_result', { success: false, message: 'Game is not active' });
         }
 
         const defaultPrizes = [
