@@ -610,7 +610,7 @@ const Game = () => {
         </div>
       </div>
 
-      <WinnerPopup winner={activeWinner} countdown={pauseCountdown} />
+      <WinnerPopup winner={activeWinner} countdown={pauseCountdown} onClose={handlePopupClose} />
     </div>
   );
 };

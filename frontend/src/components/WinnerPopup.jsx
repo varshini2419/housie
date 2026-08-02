@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WinnerPopup = ({ winner, countdown }) => {
+const WinnerPopup = ({ winner, countdown, onClose }) => {
 
   const displayName = winner?.winnerName && winner.winnerName.trim() !== '' && winner.winnerName !== 'Player' 
     ? winner.winnerName 
@@ -33,6 +33,19 @@ const WinnerPopup = ({ winner, countdown }) => {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="relative z-10 bg-white/80 backdrop-blur-3xl p-8 sm:p-12 rounded-[2rem] border border-white/60 shadow-[0_30px_80px_rgba(0,0,0,0.1),_inset_0_1px_1px_rgba(255,255,255,1)] flex flex-col items-center text-center max-w-lg w-full"
           >
+            {/* Close Button */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/30 hover:bg-white/80 transition-all duration-200 shadow-sm hover:shadow-md text-gray-400 hover:text-gray-700 z-50 focus:outline-none"
+                aria-label="Close popup"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+
             {/* Trophy Icon */}
             <motion.div 
               initial={{ scale: 0, rotate: -180 }}
