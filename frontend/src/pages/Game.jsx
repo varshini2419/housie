@@ -31,6 +31,7 @@ const Game = () => {
 
   const [winnerQueue, setWinnerQueue] = useState([]);
   const [activeWinner, setActiveWinner] = useState(null);
+  const [hasCountdownStarted, setHasCountdownStarted] = useState(false);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
@@ -130,8 +131,18 @@ const Game = () => {
 
   const handlePopupClose = useCallback(() => {
     setActiveWinner(null);
+    setHasCountdownStarted(false);
     setWinnerQueue(prev => prev.slice(1));
   }, []);
+
+  useEffect(() => {
+    if (pauseCountdown > 0 && activeWinner) {
+      setHasCountdownStarted(true);
+    }
+    if (pauseCountdown === 0 && hasCountdownStarted && activeWinner) {
+      handlePopupClose();
+    }
+  }, [pauseCountdown, activeWinner, hasCountdownStarted, handlePopupClose]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -599,7 +610,7 @@ const Game = () => {
         </div>
       </div>
 
-      <WinnerPopup winner={activeWinner} onClose={handlePopupClose} />
+      <WinnerPopup winner={activeWinner} countdown={pauseCountdown} />
     </div>
   );
 };

@@ -246,14 +246,19 @@ io.on('connection', (socket) => {
                                 
                                 const intervalId = setInterval(() => {
                                     countdown--;
-                                    if (countdown > 0) {
+                                    if (countdown >= 0) {
                                         io.to(sessionId).emit('pause_countdown_tick', { countdown });
-                                    } else {
+                                    }
+                                    if (countdown <= 0) {
                                         clearInterval(intervalId);
                                     }
                                 }, 1000);
 
                                 await new Promise(r => setTimeout(r, 10000));
+                                clearInterval(intervalId);
+                                if (countdown > 0) {
+                                    io.to(sessionId).emit('pause_countdown_tick', { countdown: 0 });
+                                }
                                 
                                 pauseQueues[sessionId]--;
                             }

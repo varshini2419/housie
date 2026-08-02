@@ -1,30 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WinnerPopup = ({ winner, onClose }) => {
-  const [countdown, setCountdown] = useState(10);
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (winner) {
-      setShow(true);
-      setCountdown(10);
-      
-      const interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            setShow(false);
-            setTimeout(onClose, 500); // Wait for exit animation
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [winner, onClose]);
+const WinnerPopup = ({ winner, countdown }) => {
 
   const displayName = winner?.winnerName && winner.winnerName.trim() !== '' && winner.winnerName !== 'Player' 
     ? winner.winnerName 
@@ -32,7 +9,7 @@ const WinnerPopup = ({ winner, onClose }) => {
 
   return (
     <AnimatePresence>
-      {show && winner && (
+      {winner && (
         <motion.div 
           className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4"
           initial={{ opacity: 0 }}
@@ -84,15 +61,15 @@ const WinnerPopup = ({ winner, onClose }) => {
             {/* Prize Name */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
-              className={`bg-[#00C16E]/10 border border-[#00C16E]/20 px-6 py-3 rounded-2xl ${winner.prizeItem ? 'mb-4' : 'mb-6'}`}
+              className={`bg-[#00C16E]/10 border border-[#00C16E]/20 px-6 py-3 rounded-2xl ${winner?.prizeItem ? 'mb-4' : 'mb-6'}`}
             >
               <p className="text-2xl sm:text-3xl font-extrabold text-[#00a85e]">
-                🏆 {winner.prizeName}
+                🏆 {winner?.prizeName}
               </p>
             </motion.div>
 
             {/* Prize Item (Optional) */}
-            {winner.prizeItem && (
+            {winner?.prizeItem && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}
                 className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-8 py-3.5 rounded-2xl mb-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)] flex flex-col items-center max-w-full"
@@ -101,7 +78,7 @@ const WinnerPopup = ({ winner, onClose }) => {
                   <span className="text-lg">🎁</span> Prize
                 </p>
                 <p className="text-xl sm:text-2xl font-black text-[#F59E0B] truncate max-w-[250px] sm:max-w-[300px]">
-                  {winner.prizeItem}
+                  {winner?.prizeItem}
                 </p>
               </motion.div>
             )}
