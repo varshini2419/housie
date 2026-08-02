@@ -13,7 +13,6 @@ const Game = () => {
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
   const socketRef = useRef(null);
-  const seenWinners = useRef(new Set());
 
   const [gameState, setGameState] = useState('WAITING');
   const [currentNumber, setCurrentNumber] = useState(null);
@@ -30,25 +29,97 @@ const Game = () => {
   const [isBoardExpanded, setIsBoardExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
-  const [winnerQueue, setWinnerQueue] = useState([]);
+  // Single source of truth for popup: mirror server pause currentWinner + countdown
   const [activeWinner, setActiveWinner] = useState(null);
-  const [hasReceivedTick, setHasReceivedTick] = useState(false);
   const [popupInstanceId, setPopupInstanceId] = useState(0);
   const activeWinnerRef = useRef(null);
-  const closingPopupRef = useRef(false);
-  const handlePopupCloseRef = useRef(null);
-  const pauseCountdownRef = useRef(0);
   const dismissedWinnerKeyRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const lastAnnouncedKeyRef = useRef(null);
+  const syncPopupFromServerRef = useRef(null);
+  const handlePopupCloseRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
-  useEffect(() => {
-    activeWinnerRef.current = activeWinner;
-  }, [activeWinner]);
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const handlePopupClose = useCallback(() => {
+    const current = activeWinnerRef.current;
+    if (!current) return;
+    const key = `${current.prizeId}-${current.winnerTicket}-${current.prizeName}`;
+    dismissedWinnerKeyRef.current = key;
+    clearCloseTimer();
+    activeWinnerRef.current = null;
+    setActiveWinner(null);
+    console.log('[POPUP] popup closed', key);
+  }, [clearCloseTimer]);
+
+  // Authoritative show: only from server pause ticks / reconnect restore
+  const syncPopupFromServer = useCallback((currentWinner, countdown) => {
+    if (!currentWinner) return;
+    const key = `${currentWinner.prizeId}-${currentWinner.winnerTicket}-${currentWinner.prizeName}`;
+
+    // Local ✕: hide for this pause winner only until a different winner arrives
+    if (dismissedWinnerKeyRef.current === key) {
+      console.log('[POPUP] skip dismissed', key);
+      return;
+    }
+
+    if (dismissedWinnerKeyRef.current && dismissedWinnerKeyRef.current !== key) {
+      dismissedWinnerKeyRef.current = null;
+    }
+
+    const prevKey = activeWinnerRef.current
+      ? `${activeWinnerRef.current.prizeId}-${activeWinnerRef.current.winnerTicket}-${activeWinnerRef.current.prizeName}`
+      : null;
+
+    if (prevKey !== key) {
+      setPopupInstanceId((id) => id + 1);
+      activeWinnerRef.current = currentWinner;
+      setActiveWinner(currentWinner);
+      console.log('[POPUP] activeWinner updated', currentWinner.prizeName, currentWinner.winnerTicket);
+
+      if (lastAnnouncedKeyRef.current !== key) {
+        lastAnnouncedKeyRef.current = key;
+        const isPlayer = !currentWinner.winnerName || currentWinner.winnerName.trim() === '' || currentWinner.winnerName === 'Player';
+        const text = isPlayer
+          ? `Congratulations! Ticket Number ${currentWinner.winnerTicket} won ${currentWinner.prizeName}.`
+          : `Congratulations ${currentWinner.winnerName}! You won ${currentWinner.prizeName}.`;
+        announceWinner(text);
+      }
+    }
+
+    setPauseCountdown(countdown);
+
+    // Fallback close from whatever countdown was received (not dependent on tick 10)
+    clearCloseTimer();
+    if (countdown <= 0) {
+      console.log('[POPUP] auto-close on countdown <= 0');
+      handlePopupClose();
+      return;
+    }
+    closeTimerRef.current = setTimeout(() => {
+      console.log('[POPUP] auto-close via fallback timer', countdown);
+      handlePopupClose();
+    }, (countdown + 0.5) * 1000);
+  }, [announceWinner, clearCloseTimer, handlePopupClose]);
 
   useEffect(() => {
-    pauseCountdownRef.current = pauseCountdown;
-  }, [pauseCountdown]);
+    syncPopupFromServerRef.current = syncPopupFromServer;
+  }, [syncPopupFromServer]);
+
+  useEffect(() => {
+    handlePopupCloseRef.current = handlePopupClose;
+  }, [handlePopupClose]);
+
+  useEffect(() => {
+    return () => clearCloseTimer();
+  }, [clearCloseTimer]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -89,89 +160,30 @@ const Game = () => {
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    const isSameWinner = (a, b) =>
-      a && b && a.prizeId === b.prizeId && a.winnerTicket === b.winnerTicket
-      && (a.prizeName == null || b.prizeName == null || a.prizeName === b.prizeName);
-
-    // Every successful claim must reach the popup queue exactly once (all prize types).
-    const enqueueWinner = (winnerData, source) => {
-      if (!winnerData?.prizeId && !winnerData?.prizeName) return;
-      const winnerKey = `${winnerData.prizeId}-${winnerData.winnerTicket}-${winnerData.prizeName}`;
-
-      // Local ✕ dismiss: keep hidden for this pause winner only (does not affect server)
-      if (dismissedWinnerKeyRef.current === winnerKey) {
-        return;
-      }
-
-      const active = activeWinnerRef.current;
-
-      if (isSameWinner(active, winnerData)) {
-        seenWinners.current.add(winnerKey);
-        return;
-      }
-
-      setWinnerQueue(prev => {
-        const exists = prev.some(w => isSameWinner(w, winnerData));
-        if (exists) {
-          console.log('[POPUP] winner already queued', source, winnerData.prizeName);
-          return prev;
-        }
-        const next = [...prev, winnerData];
-        console.log('[POPUP] winnerQueue updated', source, winnerData.prizeName, 'len=', next.length);
-        return next;
-      });
-      seenWinners.current.add(winnerKey);
-    };
-
-    const ensureWinnerVisible = (currentWinner) => {
-      if (!currentWinner) return;
-      const winnerKey = `${currentWinner.prizeId}-${currentWinner.winnerTicket}-${currentWinner.prizeName}`;
-      if (dismissedWinnerKeyRef.current === winnerKey) return;
-
-      enqueueWinner(currentWinner, 'pause_tick');
-
-      const active = activeWinnerRef.current;
-      if (!active && !closingPopupRef.current) {
-        // Reconnect / missed activation: show server current winner immediately.
-        // Do not arm hasReceivedTick here — a stale pauseCountdown of 0 would
-        // instantly close the popup before the next tick arrives.
-        closingPopupRef.current = false;
-        setPopupInstanceId(id => id + 1);
-        setActiveWinner(currentWinner);
-        activeWinnerRef.current = currentWinner;
-        console.log('[POPUP] activeWinner forced', currentWinner.prizeName);
-      }
-    };
-
-    socketRef.current.on('game_paused', ({ winners, countdown, currentWinner }) => {
+    socketRef.current.on('game_paused', ({ countdown, currentWinner }) => {
       setGameState('PAUSED');
-      if (countdown !== undefined) setPauseCountdown(countdown);
-      if (currentWinner) {
-        ensureWinnerVisible(currentWinner);
+      console.log('[POPUP] game_paused', { countdown, prize: currentWinner?.prizeName });
+      // Authoritative restore when server includes winner (join / pause snapshot)
+      if (currentWinner && countdown !== undefined && countdown > 0) {
+        syncPopupFromServerRef.current?.(currentWinner, countdown);
+      } else if (countdown !== undefined) {
+        setPauseCountdown(countdown);
       }
     });
     
     socketRef.current.on('pause_countdown_tick', ({ countdown, currentWinner }) => {
       console.log('[POPUP] countdown updated', countdown, currentWinner?.prizeName);
-      setPauseCountdown(countdown);
-      pauseCountdownRef.current = countdown;
-
+      // Single authoritative popup activation path for all clients
       if (countdown <= 0) {
-        // Terminal tick: close popup. Do NOT call ensureWinnerVisible — that can
-        // recreate activeWinner after/during close and leave the popup stuck open.
-        setHasReceivedTick(true);
-        setTimeout(() => {
-          if (handlePopupCloseRef.current) {
-            console.log('[POPUP] auto-close on countdown 0');
-            handlePopupCloseRef.current();
-          }
-        }, 0);
+        setPauseCountdown(0);
+        console.log('[POPUP] auto-close triggered by terminal tick');
+        handlePopupCloseRef.current?.();
         return;
       }
-
-      setHasReceivedTick(true);
       if (currentWinner) {
-        ensureWinnerVisible(currentWinner);
+        syncPopupFromServerRef.current?.(currentWinner, countdown);
+      } else {
+        setPauseCountdown(countdown);
       }
     });
     
@@ -180,9 +192,18 @@ const Game = () => {
     });
 
     socketRef.current.on('game_resumed', () => {
+      console.log('[POPUP] game_resumed');
       setGameState('LIVE');
-      // Do NOT clear winnerQueue/activeWinner here — a late resume can wipe a
-      // newly claimed prize popup (e.g. Second Line after First Line).
+      // Pause sequence finished — clear any leftover popup (server is authoritative)
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      dismissedWinnerKeyRef.current = null;
+      lastAnnouncedKeyRef.current = null;
+      activeWinnerRef.current = null;
+      setActiveWinner(null);
+      setPauseCountdown(0);
     });
     socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
@@ -191,16 +212,13 @@ const Game = () => {
       navigate('/');
     });
 
+    // claim_result: toast + prizes only — does NOT create popup (avoids dual-entry races)
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
       console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
       if (success) {
-        enqueueWinner(
-          { prizeId, prizeName, winnerTicket, winnerName, prizeItem },
-          'claim_result'
-        );
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
             return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem };
@@ -211,75 +229,13 @@ const Game = () => {
     });
 
     return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, [sessionId, ticket?.ticketCode, navigate]);
-
-  useEffect(() => {
-    if (!activeWinner && winnerQueue.length > 0) {
-      const next = winnerQueue[0];
-      const nextKey = `${next.prizeId}-${next.winnerTicket}-${next.prizeName}`;
-      // Skip locally dismissed winner; advance queue
-      if (dismissedWinnerKeyRef.current === nextKey) {
-        setWinnerQueue(prev => prev.slice(1));
-        return;
-      }
-      // New winner (different from dismissed) — clear dismiss so it can show
-      if (dismissedWinnerKeyRef.current && dismissedWinnerKeyRef.current !== nextKey) {
-        dismissedWinnerKeyRef.current = null;
-      }
-      closingPopupRef.current = false;
-      console.log('[POPUP] activeWinner updated', next.prizeName, next.winnerTicket);
-      setPopupInstanceId(id => id + 1);
-      setHasReceivedTick(false);
-      setActiveWinner(next);
-      activeWinnerRef.current = next;
-      
-      const isPlayer = !next.winnerName || next.winnerName.trim() === '' || next.winnerName === 'Player';
-      const text = isPlayer
-        ? `Congratulations! Ticket Number ${next.winnerTicket} won ${next.prizeName}.`
-        : `Congratulations ${next.winnerName}! You won ${next.prizeName}.`;
-      
-      announceWinner(text);
-    } else if (!activeWinner && winnerQueue.length === 0) {
-      closingPopupRef.current = false;
-    }
-  }, [winnerQueue, activeWinner, announceWinner]);
-
-  const handlePopupClose = useCallback(() => {
-    if (closingPopupRef.current) return;
-    if (!activeWinnerRef.current) return;
-    const current = activeWinnerRef.current;
-    dismissedWinnerKeyRef.current = `${current.prizeId}-${current.winnerTicket}-${current.prizeName}`;
-    closingPopupRef.current = true;
-    console.log('[POPUP] popup closed');
-    setActiveWinner(null);
-    activeWinnerRef.current = null;
-    setHasReceivedTick(false);
-    setWinnerQueue(prev => (prev.length > 0 ? prev.slice(1) : prev));
-  }, []);
-
-  useEffect(() => {
-    handlePopupCloseRef.current = handlePopupClose;
-  }, [handlePopupClose]);
-
-  // Auto-close: immediate when countdown hits 0, plus a local fallback timer so
-  // missing the final tick (or joining mid-countdown) still dismisses the popup.
-  useEffect(() => {
-    if (!activeWinner || !hasReceivedTick) return;
-
-    if (pauseCountdown <= 0) {
-      handlePopupClose();
-      return;
-    }
-
-    const timerId = setTimeout(() => {
-      console.log('[POPUP] auto-close via fallback timer', pauseCountdown);
-      handlePopupClose();
-    }, (pauseCountdown + 0.35) * 1000);
-
-    return () => clearTimeout(timerId);
-  }, [pauseCountdown, activeWinner, hasReceivedTick, handlePopupClose]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);

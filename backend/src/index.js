@@ -251,7 +251,8 @@ io.on('connection', (socket) => {
                         remainingNumbers: activeGames[sessionId].availableNumbers.length
                     });
 
-                    // Let Socket.IO flush claim_result before pause/countdown work
+                    // Let Socket.IO flush claim_result to all clients before pause/countdown
+                    await new Promise(resolve => setImmediate(resolve));
                     await new Promise(resolve => setImmediate(resolve));
 
                     // Sequential 10-Second Pause Logic for Popups
@@ -286,6 +287,13 @@ io.on('connection', (socket) => {
 
                                 let countdown = 10;
                                 activePauseInfo[sessionId] = { countdown, currentWinner };
+                                // Authoritative pause snapshot for all clients (incl. winner + countdown)
+                                io.to(sessionId).emit('game_paused', {
+                                    status: 'PAUSED',
+                                    countdown,
+                                    currentWinner
+                                });
+                                console.log(`[PAUSE] game_paused emitted session=${sessionId}`, currentWinner.prizeName);
                                 io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
                                 console.log(`[PAUSE] countdown tick session=${sessionId} countdown=${countdown}`);
                                 
@@ -315,6 +323,7 @@ io.on('connection', (socket) => {
                                 const checkGame = await GameSession.findById(sessionId);
                                 if (checkGame && checkGame.gameStatus === 'PAUSED') {
                                     await resumeGame(sessionId, io);
+                                    console.log(`[PAUSE] game_resumed emitted session=${sessionId}`);
                                 }
                             } catch (e) {
                                 console.error('Failed to auto-resume:', e);
