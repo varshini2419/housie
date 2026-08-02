@@ -182,6 +182,12 @@ io.on('connection', (socket) => {
                 const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
 
                 if (isValid) {
+                    // 1. Stop the game timer immediately to prevent race conditions
+                    if (state.timerId) {
+                        clearTimeout(state.timerId);
+                        state.timerId = null;
+                    }
+
                     // Update prize status
                     sessionPrizes[prizeIndex].status = 'COMPLETED';
                     sessionPrizes[prizeIndex].winner = ticket.playerName || 'Player';
@@ -222,7 +228,7 @@ io.on('connection', (socket) => {
                         remainingNumbers: activeGames[sessionId].availableNumbers.length
                     });
 
-                    // Sequential 6-Second Pause Logic for Popups
+                    // Sequential 10-Second Pause Logic for Popups
                     if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;
                     pauseQueues[sessionId]++;
 
@@ -235,7 +241,7 @@ io.on('connection', (socket) => {
                                     // Ignore if already paused
                                 }
                                 
-                                let countdown = 6;
+                                let countdown = 10;
                                 io.to(sessionId).emit('pause_countdown_tick', { countdown });
                                 
                                 const intervalId = setInterval(() => {
@@ -247,7 +253,7 @@ io.on('connection', (socket) => {
                                     }
                                 }, 1000);
 
-                                await new Promise(r => setTimeout(r, 6000));
+                                await new Promise(r => setTimeout(r, 10000));
                                 
                                 pauseQueues[sessionId]--;
                             }

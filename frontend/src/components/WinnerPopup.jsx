@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const WinnerPopup = ({ winner, onClose }) => {
-  const [countdown, setCountdown] = useState(6);
+  const [countdown, setCountdown] = useState(10);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (winner) {
       setShow(true);
-      setCountdown(6);
+      setCountdown(10);
       
       const interval = setInterval(() => {
         setCountdown((prev) => {

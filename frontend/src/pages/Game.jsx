@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -128,10 +128,10 @@ const Game = () => {
     }
   }, [winnerQueue, activeWinner, announceWinner]);
 
-  const handlePopupClose = () => {
+  const handlePopupClose = useCallback(() => {
     setActiveWinner(null);
     setWinnerQueue(prev => prev.slice(1));
-  };
+  }, []);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
