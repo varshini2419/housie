@@ -31,8 +31,20 @@ const Admin = () => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const [viewMode, setViewMode] = useState('dashboard');
-  const [liveSession, setLiveSession] = useState(null);
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('adminViewContext');
+    if (saved) {
+        try { return JSON.parse(saved).viewMode || 'dashboard'; } catch(e) {}
+    }
+    return 'dashboard';
+  });
+  const [liveSession, setLiveSession] = useState(() => {
+    const saved = localStorage.getItem('adminViewContext');
+    if (saved) {
+        try { return JSON.parse(saved).liveSession || null; } catch(e) {}
+    }
+    return null;
+  });
   const [sessionTickets, setSessionTickets] = useState([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [ticketError, setTicketError] = useState('');
@@ -51,6 +63,14 @@ const Admin = () => {
       fetchActiveSessions();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (viewMode === 'dashboard') {
+        localStorage.removeItem('adminViewContext');
+    } else {
+        localStorage.setItem('adminViewContext', JSON.stringify({ viewMode, liveSession }));
+    }
+  }, [viewMode, liveSession]);
 
   useEffect(() => {
     if (viewMode === 'monitor' && liveSession) {

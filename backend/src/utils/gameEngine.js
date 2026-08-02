@@ -32,18 +32,17 @@ const generateNumber = async (game, io) => {
 
     console.log(`[SCHEDULER] Generated Number: ${nextNum}`);
 
+    await GameSession.findByIdAndUpdate(game._id, {
+        currentNumber: nextNum,
+        drawnNumbers: state.drawnNumbers
+    });
+
     if (state.drawnNumbers.length % 5 === 0) {
-        await GameSession.findByIdAndUpdate(game._id, {
-            currentNumber: nextNum,
-            drawnNumbers: state.drawnNumbers
-        });
         await DrawHistory.findOneAndUpdate(
             { sessionId: game._id },
             { numbersCalled: state.drawnNumbers },
             { upsert: true }
         );
-    } else {
-        await GameSession.findByIdAndUpdate(game._id, { currentNumber: nextNum });
     }
 
     io.to(sId).emit('number_drawn', {

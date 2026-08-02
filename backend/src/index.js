@@ -76,6 +76,12 @@ io.on('connection', (socket) => {
     socket.on('join_game', async ({ sessionId, ticketCode, role }) => {
         const sId = String(sessionId);
         const state = await ensureActiveGame(sId, io);
+        
+        if (!state) {
+            socket.emit('game_deleted');
+            return;
+        }
+
         socket.join(sId);
         socket.sessionId = sId;
         socket.ticketCode = ticketCode;
