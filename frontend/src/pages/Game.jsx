@@ -337,14 +337,14 @@ const Game = () => {
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
             {/* CURRENT DRAW CARD */}
-            <div className="premium-card flex flex-col items-center justify-center text-center relative">
-              <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <div className="premium-card flex flex-col items-center justify-center text-center relative p-6">
+              <p className="text-xs font-bold text-blue-900 dark:text-blue-400 mb-2 uppercase tracking-widest flex items-center gap-1.5">
                 <span>✦</span> CURRENT DRAW <span>✦</span>
               </p>
 
-              <div className="relative my-2">
-                <div key={currentNumber} className={`w-36 h-36 rounded-full bg-white border-[3px] border-[#CBD5E1] flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
-                  <span className="text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
+              <div className="relative my-2 flex items-center justify-center">
+                <div key={currentNumber} className={`w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white border-[3px] border-[#CBD5E1] flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
+                  <span className="text-5xl sm:text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
                     {currentNumber || '-'}
                   </span>
                 </div>
@@ -696,14 +696,14 @@ const Game = () => {
         <div className="md:hidden flex flex-col gap-5">
           
           {/* 1. CURRENT DRAW CARD */}
-          <div className="premium-card flex flex-col items-center justify-center text-center relative">
-            <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+          <div className="premium-card flex flex-col items-center justify-center text-center relative p-5">
+            <p className="text-xs font-bold text-blue-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span>✦</span> CURRENT DRAW <span>✦</span>
             </p>
 
-            <div className="relative my-2">
-              <div key={`mob-current-${currentNumber}`} className={`w-36 h-36 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
-                <span className="text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
+            <div className="relative my-2 flex items-center justify-center">
+              <div key={`mob-current-${currentNumber}`} className={`w-32 h-32 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
+                <span className="text-5xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
                   {currentNumber || '-'}
                 </span>
               </div>
