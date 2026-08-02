@@ -29,10 +29,11 @@ const Game = () => {
   const [isBoardExpanded, setIsBoardExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
-  // Popup: claim_result = one-shot show insurance; ticks = countdown authority
+  // Popup: claim_result shows/queues; ticks sync countdown; dismiss is local-only
   const [activeWinner, setActiveWinner] = useState(null);
   const [popupInstanceId, setPopupInstanceId] = useState(0);
   const activeWinnerRef = useRef(null);
+  const pendingWinnersRef = useRef([]);
   const dismissedWinnerKeyRef = useRef(null);
   const closeTimerRef = useRef(null);
   const lastAnnouncedKeyRef = useRef(null);
@@ -62,16 +63,29 @@ const Game = () => {
     activeWinnerRef.current = null;
     setActiveWinner(null);
     console.log('[POPUP] popup closed', key);
+
+    // Promote next queued winner (every successful claim must appear once)
+    const next = pendingWinnersRef.current.shift();
+    if (next) {
+      const nextKey = makeWinnerKey(next);
+      if (nextKey && nextKey !== key) {
+        dismissedWinnerKeyRef.current = null;
+        setTimeout(() => {
+          syncPopupFromServerRef.current?.(next, 10, false);
+        }, 0);
+      }
+    }
   }, [clearCloseTimer]);
 
   /**
    * Show or refresh popup for a winner.
-   * - fromTick=false: claim_result fallback (default countdown 10 until ticks arrive)
-   * - fromTick=true: server countdown is authoritative; arms close only after a positive tick
+   * - fromTick=false: claim_result (default countdown 10 until ticks arrive)
+   * - fromTick=true: server countdown is authoritative
    */
   const syncPopupFromServer = useCallback((currentWinner, countdown, fromTick = false) => {
     if (!currentWinner) return;
     const key = makeWinnerKey(currentWinner);
+    if (!key) return;
 
     if (dismissedWinnerKeyRef.current === key) {
       console.log('[POPUP] skip dismissed', key);
@@ -81,6 +95,9 @@ const Game = () => {
     if (dismissedWinnerKeyRef.current && dismissedWinnerKeyRef.current !== key) {
       dismissedWinnerKeyRef.current = null;
     }
+
+    // Drop this winner from pending if server/claim is activating it now
+    pendingWinnersRef.current = pendingWinnersRef.current.filter((w) => makeWinnerKey(w) !== key);
 
     if (fromTick && countdown > 0) {
       hasReceivedPositiveTickRef.current = true;
@@ -112,7 +129,6 @@ const Game = () => {
 
     clearCloseTimer();
 
-    // Never close on stale 0 before a positive tick was seen for this pause
     if (fromTick && safeCountdown <= 0) {
       if (hasReceivedPositiveTickRef.current) {
         console.log('[POPUP] auto-close on countdown <= 0');
@@ -131,6 +147,28 @@ const Game = () => {
   // Keep refs current synchronously so the first socket event never misses
   syncPopupFromServerRef.current = syncPopupFromServer;
   handlePopupCloseRef.current = handlePopupClose;
+
+  /** Enqueue or show a winner from claim_result — never drop a successful claim */
+  const enqueueOrShowWinner = useCallback((winnerData) => {
+    const key = makeWinnerKey(winnerData);
+    if (!key) return;
+    if (dismissedWinnerKeyRef.current === key) return;
+
+    const activeKey = makeWinnerKey(activeWinnerRef.current);
+    if (activeKey === key) return;
+
+    if (!activeWinnerRef.current) {
+      console.log('[POPUP] claim_result show', winnerData.prizeName);
+      syncPopupFromServerRef.current?.(winnerData, 10, false);
+      return;
+    }
+
+    const alreadyPending = pendingWinnersRef.current.some((w) => makeWinnerKey(w) === key);
+    if (!alreadyPending) {
+      pendingWinnersRef.current.push(winnerData);
+      console.log('[POPUP] claim_result queued', winnerData.prizeName, 'pending=', pendingWinnersRef.current.length);
+    }
+  }, []);
 
   useEffect(() => {
     return () => clearCloseTimer();
@@ -211,7 +249,6 @@ const Game = () => {
     socketRef.current.on('game_resumed', () => {
       console.log('[POPUP] game_resumed');
       setGameState('LIVE');
-      // Pause sequence finished — clear leftover popup
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
@@ -219,6 +256,7 @@ const Game = () => {
       hasReceivedPositiveTickRef.current = false;
       dismissedWinnerKeyRef.current = null;
       lastAnnouncedKeyRef.current = null;
+      pendingWinnersRef.current = [];
       activeWinnerRef.current = null;
       setActiveWinner(null);
       setPauseCountdown(0);
@@ -230,7 +268,7 @@ const Game = () => {
       navigate('/');
     });
 
-    // claim_result: toast + prizes + one-shot popup insurance (ticks then own countdown)
+    // claim_result: toast + prizes + show/queue popup for every successful claim
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
       console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
@@ -244,14 +282,7 @@ const Game = () => {
           return p;
         }));
 
-        const winnerData = { prizeId, prizeName, winnerTicket, winnerName, prizeItem };
-        const key = makeWinnerKey(winnerData);
-        const activeKey = makeWinnerKey(activeWinnerRef.current);
-        // Show immediately if not already showing this winner (ticks will sync countdown)
-        if (key && activeKey !== key) {
-          console.log('[POPUP] claim_result show insurance', prizeName);
-          syncPopupFromServerRef.current?.(winnerData, 10, false);
-        }
+        enqueueOrShowWinner({ prizeId, prizeName, winnerTicket, winnerName, prizeItem });
       }
     });
 
@@ -262,7 +293,7 @@ const Game = () => {
       }
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [sessionId, ticket?.ticketCode, navigate]);
+  }, [sessionId, ticket?.ticketCode, navigate, enqueueOrShowWinner]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -271,6 +302,12 @@ const Game = () => {
     if (gameState !== 'LIVE') return;
     socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
   };
+
+  // Local only: close popup for this player and return to ticket tab — does not resume game
+  const handleBackToGame = useCallback(() => {
+    handlePopupClose();
+    setActiveTab('game');
+  }, [handlePopupClose]);
 
   const handleMarkNumber = (num) => {
     if (gameState !== 'LIVE') return;
@@ -734,6 +771,7 @@ const Game = () => {
         winner={activeWinner}
         countdown={pauseCountdown}
         onClose={handlePopupClose}
+        onBackToGame={handleBackToGame}
         instanceId={popupInstanceId}
       />
     </div>

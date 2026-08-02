@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WinnerPopup = ({ winner, countdown, onClose, instanceId = 0 }) => {
+const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0 }) => {
 
   useEffect(() => {
     if (winner) {
@@ -136,6 +136,18 @@ const WinnerPopup = ({ winner, countdown, onClose, instanceId = 0 }) => {
                 {countdown}
               </div>
             </motion.div>
+
+            {/* Local dismiss only — does not resume the game or notify other players */}
+            {(onBackToGame || onClose) && (
+              <motion.button
+                type="button"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+                onClick={onBackToGame || onClose}
+                className="mt-8 px-6 py-2.5 rounded-xl bg-[#4F8EF7]/10 border border-[#4F8EF7]/25 text-[#4F8EF7] text-sm font-bold tracking-wide hover:bg-[#4F8EF7]/20 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4F8EF7]/30"
+              >
+                Back to Game
+              </motion.button>
+            )}
             
           </motion.div>
         </motion.div>

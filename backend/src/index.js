@@ -233,6 +233,10 @@ io.on('connection', (socket) => {
                     await newWinner.save();
                     console.log(`[CLAIM] winner saved session=${sessionId} prize=${prize.name} ticket=${ticketCode}`);
                     
+                    const roomId = String(sessionId);
+                    // Ensure claimer is in the room so every client (including claimer) gets events
+                    socket.join(roomId);
+
                     const claimPayload = {
                         success: true,
                         message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
@@ -242,9 +246,9 @@ io.on('connection', (socket) => {
                         winnerName: ticket.playerName || 'Player', 
                         prizeItem: prize.prizeItem || null 
                     };
-                    io.to(String(sessionId)).emit('claim_result', claimPayload);
-                    console.log(`[CLAIM] claim_result emitted session=${sessionId}`, JSON.stringify(claimPayload));
-                    io.to(String(sessionId)).emit('game_sync', {
+                    io.to(roomId).emit('claim_result', claimPayload);
+                    console.log(`[CLAIM] claim_result emitted session=${roomId}`, JSON.stringify(claimPayload));
+                    io.to(roomId).emit('game_sync', {
                         status: game.gameStatus,
                         currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
                         drawnNumbers: activeGames[sessionId].drawnNumbers,
