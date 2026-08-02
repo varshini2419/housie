@@ -195,15 +195,7 @@ const ensureActiveGame = async (sessionId, io) => {
 };
 
 const triggerCountdown = (sessionId, io) => {
-    if (!sessionId) return;
-    const sIdStr = sessionId.toString();
-    const state = activeGames[sIdStr];
-    if (state && state.phase === 'SPEECH_WAIT') {
-        state.phase = 'COUNTDOWN';
-        state.tickCountdown = DRAW_COUNTDOWN_SECONDS; // 5
-        console.log(`[SCHEDULER] Voice Finished. Starting 5s Countdown immediately.`);
-        if (io) io.to(sIdStr).emit('countdown_update', { countdown: DRAW_COUNTDOWN_SECONDS });
-    }
+    // Master server timer is fully authoritative. Client speech_finished no longer forces timer jumps across players.
 };
 
 const startGame = async (sessionId, io) => {

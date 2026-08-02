@@ -129,9 +129,7 @@ const Admin = () => {
       });
 
       const handleSpeechFinished = (e) => {
-        if (socketRef.current) {
-          socketRef.current.emit('speech_finished', { sessionId: liveSession._id });
-        }
+        // Master server timer manages sequence automatically
       };
       window.addEventListener('speech_finished', handleSpeechFinished);
 
