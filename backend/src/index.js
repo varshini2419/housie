@@ -216,39 +216,50 @@ io.on('connection', (socket) => {
         console.log(`[CLAIM] received session=${sId} prize=${prizeId} ticket=${ticketCode}`);
 
         try {
-            const game = await GameSession.findById(sId);
-            if (!game || game.gameStatus !== 'LIVE') {
-                return sendError('Game is not LIVE');
-            }
-
-            const defaultPrizes = [
-                { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
-                { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
-            ];
-
-            const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
-
-            const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
-            if (prizeIndex === -1) return sendError('Prize not found');
-            
-            const prize = sessionPrizes[prizeIndex];
-            
-            if (prize.status !== 'AVAILABLE') {
-                return sendError('Prize is not available');
-            }
-
-            const hasWonSameCategory = game.prizes && game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
-            if (hasWonSameCategory) {
-                return sendError('You have already claimed a prize in this category');
-            }
-
             const mongoose = require('mongoose');
             const dbSession = await mongoose.startSession();
             try {
                 dbSession.startTransaction();
+                
+                const game = await GameSession.findById(sId).session(dbSession);
+                if (!game || game.gameStatus !== 'LIVE') {
+                    await dbSession.abortTransaction();
+                    dbSession.endSession();
+                    return sendError('Game is not LIVE');
+                }
+
+                const defaultPrizes = [
+                    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
+                    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
+                    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
+                    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
+                    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
+                ];
+
+                const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+
+                const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
+                if (prizeIndex === -1) {
+                    await dbSession.abortTransaction();
+                    dbSession.endSession();
+                    return sendError('Prize not found');
+                }
+                
+                const prize = sessionPrizes[prizeIndex];
+                
+                if (prize.status !== 'AVAILABLE') {
+                    await dbSession.abortTransaction();
+                    dbSession.endSession();
+                    return sendError('Prize is not available');
+                }
+
+                const hasWonSameCategory = game.prizes && game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
+                if (hasWonSameCategory) {
+                    await dbSession.abortTransaction();
+                    dbSession.endSession();
+                    return sendError('You have already claimed a prize in this category');
+                }
+
                 const ticket = await Ticket.findOne({ ticketCode, sessionId: sId }).session(dbSession);
                 if (!ticket) {
                     await dbSession.abortTransaction();
