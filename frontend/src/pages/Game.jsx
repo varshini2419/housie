@@ -13,6 +13,7 @@ const Game = () => {
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
   const socketRef = useRef(null);
+  const seenWinners = useRef(new Set());
 
   const [gameState, setGameState] = useState('WAITING');
   const [currentNumber, setCurrentNumber] = useState(null);
@@ -79,8 +80,15 @@ const Game = () => {
       if (countdown !== undefined) setPauseCountdown(countdown);
     });
     
-    socketRef.current.on('pause_countdown_tick', ({ countdown }) => {
+    socketRef.current.on('pause_countdown_tick', ({ countdown, currentWinner }) => {
       setPauseCountdown(countdown);
+      if (currentWinner) {
+        const winnerKey = `${currentWinner.prizeId}-${currentWinner.winnerTicket}`;
+        if (!seenWinners.current.has(winnerKey)) {
+          seenWinners.current.add(winnerKey);
+          setWinnerQueue(prev => [...prev, currentWinner]);
+        }
+      }
     });
     
     socketRef.current.on('countdown_update', ({ countdown }) => {
@@ -100,7 +108,11 @@ const Game = () => {
       setTimeout(() => setToastMsg(null), 4000);
 
       if (success) {
-        setWinnerQueue(prev => [...prev, { prizeName, winnerTicket, winnerName, prizeItem }]);
+        const winnerKey = `${prizeId}-${winnerTicket}`;
+        if (!seenWinners.current.has(winnerKey)) {
+          seenWinners.current.add(winnerKey);
+          setWinnerQueue(prev => [...prev, { prizeId, prizeName, winnerTicket, winnerName, prizeItem }]);
+        }
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
             return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem };
@@ -136,7 +148,7 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
-    if (activeWinner && pauseCountdown === 10) {
+    if (activeWinner && pauseCountdown > 0) {
       setHasReceivedTick(true);
     }
     if (activeWinner && hasReceivedTick && pauseCountdown === 0) {

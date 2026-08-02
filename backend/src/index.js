@@ -229,12 +229,22 @@ io.on('connection', (socket) => {
                     });
 
                     // Sequential 10-Second Pause Logic for Popups
-                    if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;
-                    pauseQueues[sessionId]++;
+                    if (!pauseQueues[sessionId]) pauseQueues[sessionId] = [];
+                    
+                    const currentWinnerData = {
+                        prizeId: prize.id,
+                        prizeName: prize.name,
+                        winnerTicket: ticketCode,
+                        winnerName: ticket.playerName || 'Player',
+                        prizeItem: prize.prizeItem || null
+                    };
+                    pauseQueues[sessionId].push(currentWinnerData);
 
-                    if (pauseQueues[sessionId] === 1) {
+                    if (pauseQueues[sessionId].length === 1) {
                         const processPauseQueue = async () => {
-                            while (pauseQueues[sessionId] > 0) {
+                            while (pauseQueues[sessionId].length > 0) {
+                                const currentWinner = pauseQueues[sessionId][0];
+                                
                                 try {
                                     await pauseGame(sessionId, io);
                                 } catch (e) {
@@ -242,13 +252,13 @@ io.on('connection', (socket) => {
                                 }
                                 
                                 let countdown = 10;
-                                io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                                io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
                                 
                                 await new Promise(resolve => {
                                     const intervalId = setInterval(() => {
                                         countdown--;
                                         if (countdown >= 0) {
-                                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                                            io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
                                         } else {
                                             clearInterval(intervalId);
                                             resolve();
@@ -256,7 +266,7 @@ io.on('connection', (socket) => {
                                     }, 1000);
                                 });
                                 
-                                pauseQueues[sessionId]--;
+                                pauseQueues[sessionId].shift();
                             }
                             
                             // Finished all queued pauses
