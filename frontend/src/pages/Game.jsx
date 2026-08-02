@@ -151,8 +151,20 @@ const Game = () => {
   /** Enqueue or show a winner from claim_result — never drop a successful claim */
   const enqueueOrShowWinner = useCallback((winnerData) => {
     const key = makeWinnerKey(winnerData);
-    if (!key) return;
-    if (dismissedWinnerKeyRef.current === key) return;
+    if (!key) {
+      console.warn('[POPUP] claim_result missing winner identity', winnerData);
+      return;
+    }
+
+    // A new distinct claim always clears dismiss from a previous prize
+    if (dismissedWinnerKeyRef.current && dismissedWinnerKeyRef.current !== key) {
+      dismissedWinnerKeyRef.current = null;
+    }
+    // Skip only if this player already dismissed THIS exact winner during its pause
+    if (dismissedWinnerKeyRef.current === key) {
+      console.log('[POPUP] skip locally dismissed claim', key);
+      return;
+    }
 
     const activeKey = makeWinnerKey(activeWinnerRef.current);
     if (activeKey === key) return;
@@ -256,10 +268,18 @@ const Game = () => {
       hasReceivedPositiveTickRef.current = false;
       dismissedWinnerKeyRef.current = null;
       lastAnnouncedKeyRef.current = null;
-      pendingWinnersRef.current = [];
       activeWinnerRef.current = null;
       setActiveWinner(null);
       setPauseCountdown(0);
+
+      // Do NOT wipe pending winners — flush next so no claim_result is lost at resume
+      const next = pendingWinnersRef.current.shift();
+      if (next) {
+        console.log('[POPUP] flush pending after resume', next.prizeName);
+        setTimeout(() => {
+          syncPopupFromServerRef.current?.(next, 10, false);
+        }, 0);
+      }
     });
     socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
@@ -282,7 +302,13 @@ const Game = () => {
           return p;
         }));
 
-        enqueueOrShowWinner({ prizeId, prizeName, winnerTicket, winnerName, prizeItem });
+        enqueueOrShowWinner({
+          prizeId: prizeId || prizeName,
+          prizeName,
+          winnerTicket,
+          winnerName,
+          prizeItem
+        });
       }
     });
 

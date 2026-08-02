@@ -240,7 +240,7 @@ io.on('connection', (socket) => {
                     const claimPayload = {
                         success: true,
                         message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
-                        prizeId: prize.id,
+                        prizeId: prize.id || prize.type || prize.name,
                         prizeName: prize.name,
                         winnerTicket: ticketCode,
                         winnerName: ticket.playerName || 'Player', 
@@ -264,7 +264,7 @@ io.on('connection', (socket) => {
                     if (!pauseQueues[sessionId]) pauseQueues[sessionId] = [];
                     
                     const currentWinnerData = {
-                        prizeId: prize.id,
+                        prizeId: prize.id || prize.type || prize.name,
                         prizeName: prize.name,
                         winnerTicket: ticketCode,
                         winnerName: ticket.playerName || 'Player',
