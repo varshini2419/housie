@@ -33,8 +33,15 @@ const Game = () => {
   const [winnerQueue, setWinnerQueue] = useState([]);
   const [activeWinner, setActiveWinner] = useState(null);
   const [hasReceivedTick, setHasReceivedTick] = useState(false);
+  const [popupInstanceId, setPopupInstanceId] = useState(0);
+  const activeWinnerRef = useRef(null);
+  const closingPopupRef = useRef(false);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
+
+  useEffect(() => {
+    activeWinnerRef.current = activeWinner;
+  }, [activeWinner]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -75,19 +82,59 @@ const Game = () => {
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
-    socketRef.current.on('game_paused', ({ winners, countdown }) => {
+    const ensureWinnerVisible = (currentWinner) => {
+      if (!currentWinner) return;
+      const winnerKey = `${currentWinner.prizeId}-${currentWinner.winnerTicket}`;
+      const active = activeWinnerRef.current;
+      const isSameActive = active
+        && active.prizeId === currentWinner.prizeId
+        && active.winnerTicket === currentWinner.winnerTicket;
+
+      if (isSameActive) return;
+
+      if (!seenWinners.current.has(winnerKey)) {
+        seenWinners.current.add(winnerKey);
+        setWinnerQueue(prev => {
+          const exists = prev.some(
+            w => w.prizeId === currentWinner.prizeId && w.winnerTicket === currentWinner.winnerTicket
+          );
+          return exists ? prev : [...prev, currentWinner];
+        });
+      } else {
+        // Reconnect / missed claim_result: force popup for the server's current pause winner
+        setWinnerQueue(prev => {
+          const exists = prev.some(
+            w => w.prizeId === currentWinner.prizeId && w.winnerTicket === currentWinner.winnerTicket
+          );
+          if (exists) return prev;
+          if (active) return prev;
+          return [currentWinner, ...prev];
+        });
+        if (!active) {
+          closingPopupRef.current = false;
+          setHasReceivedTick(true);
+          setPopupInstanceId(id => id + 1);
+          setActiveWinner(currentWinner);
+          activeWinnerRef.current = currentWinner;
+        }
+      }
+    };
+
+    socketRef.current.on('game_paused', ({ winners, countdown, currentWinner }) => {
       setGameState('PAUSED');
       if (countdown !== undefined) setPauseCountdown(countdown);
+      if (currentWinner) {
+        ensureWinnerVisible(currentWinner);
+      }
     });
     
     socketRef.current.on('pause_countdown_tick', ({ countdown, currentWinner }) => {
+      console.log('[POPUP] countdown updated', countdown, currentWinner?.prizeName);
       setPauseCountdown(countdown);
+      // Any tick (10..0) arms close logic — do not require receiving 10 first
+      setHasReceivedTick(true);
       if (currentWinner) {
-        const winnerKey = `${currentWinner.prizeId}-${currentWinner.winnerTicket}`;
-        if (!seenWinners.current.has(winnerKey)) {
-          seenWinners.current.add(winnerKey);
-          setWinnerQueue(prev => [...prev, currentWinner]);
-        }
+        ensureWinnerVisible(currentWinner);
       }
     });
     
@@ -95,7 +142,18 @@ const Game = () => {
       setNextDrawCountdown(countdown);
     });
 
-    socketRef.current.on('game_resumed', () => setGameState('LIVE'));
+    socketRef.current.on('game_resumed', () => {
+      setGameState('LIVE');
+      // Ensure popup cannot stick after resume
+      if (activeWinnerRef.current) {
+        closingPopupRef.current = false;
+        setActiveWinner(null);
+        activeWinnerRef.current = null;
+        setHasReceivedTick(false);
+        setWinnerQueue([]);
+        setPauseCountdown(0);
+      }
+    });
     socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
     socketRef.current.on('game_deleted', () => {
@@ -104,6 +162,7 @@ const Game = () => {
     });
 
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
+      console.log('[POPUP] claim_result received', { success, prizeId, winnerTicket });
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
@@ -111,7 +170,11 @@ const Game = () => {
         const winnerKey = `${prizeId}-${winnerTicket}`;
         if (!seenWinners.current.has(winnerKey)) {
           seenWinners.current.add(winnerKey);
-          setWinnerQueue(prev => [...prev, { prizeId, prizeName, winnerTicket, winnerName, prizeItem }]);
+          setWinnerQueue(prev => {
+            const next = [...prev, { prizeId, prizeName, winnerTicket, winnerName, prizeItem }];
+            console.log('[POPUP] winnerQueue updated', next.length);
+            return next;
+          });
         }
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
@@ -129,8 +192,13 @@ const Game = () => {
 
   useEffect(() => {
     if (!activeWinner && winnerQueue.length > 0) {
+      closingPopupRef.current = false;
       const next = winnerQueue[0];
+      console.log('[POPUP] activeWinner updated', next.prizeName, next.winnerTicket);
+      setPopupInstanceId(id => id + 1);
+      setHasReceivedTick(false);
       setActiveWinner(next);
+      activeWinnerRef.current = next;
       
       const isPlayer = !next.winnerName || next.winnerName.trim() === '' || next.winnerName === 'Player';
       const text = isPlayer
@@ -138,20 +206,24 @@ const Game = () => {
         : `Congratulations ${next.winnerName}! You won ${next.prizeName}.`;
       
       announceWinner(text);
+    } else if (!activeWinner && winnerQueue.length === 0) {
+      closingPopupRef.current = false;
     }
   }, [winnerQueue, activeWinner, announceWinner]);
 
   const handlePopupClose = useCallback(() => {
+    if (closingPopupRef.current) return;
+    closingPopupRef.current = true;
+    console.log('[POPUP] popup closed');
     setActiveWinner(null);
+    activeWinnerRef.current = null;
     setHasReceivedTick(false);
     setWinnerQueue(prev => prev.slice(1));
   }, []);
 
   useEffect(() => {
-    if (activeWinner && pauseCountdown > 0) {
-      setHasReceivedTick(true);
-    }
-    if (activeWinner && hasReceivedTick && pauseCountdown === 0) {
+    // Close when countdown completes, regardless of which tick was received first
+    if (activeWinner && hasReceivedTick && pauseCountdown <= 0) {
       handlePopupClose();
     }
   }, [pauseCountdown, activeWinner, hasReceivedTick, handlePopupClose]);
@@ -622,7 +694,12 @@ const Game = () => {
         </div>
       </div>
 
-      <WinnerPopup winner={activeWinner} countdown={pauseCountdown} onClose={handlePopupClose} />
+      <WinnerPopup
+        winner={activeWinner}
+        countdown={pauseCountdown}
+        onClose={handlePopupClose}
+        instanceId={popupInstanceId}
+      />
     </div>
   );
 };

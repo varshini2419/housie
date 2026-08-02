@@ -59,6 +59,16 @@ app.set('io', io);
 const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
 
 const pauseQueues = {};
+const pauseProcessing = {};
+const activePauseTimers = {};
+const activePauseInfo = {};
+
+const clearPauseTimer = (sessionId) => {
+    if (activePauseTimers[sessionId]) {
+        clearInterval(activePauseTimers[sessionId]);
+        activePauseTimers[sessionId] = null;
+    }
+};
 
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
@@ -114,6 +124,14 @@ io.on('connection', (socket) => {
                 markedNumbers: markedNums,
                 remainingNumbers: activeGames[sessionId].availableNumbers.length
             });
+
+            // Reconnect during pause: restore current winner + remaining countdown immediately
+            if (status === 'PAUSED' && activePauseInfo[sessionId]) {
+                const { countdown, currentWinner } = activePauseInfo[sessionId];
+                console.log(`[PAUSE] restore on join session=${sessionId} countdown=${countdown}`);
+                socket.emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
+                socket.emit('pause_countdown_tick', { countdown, currentWinner });
+            }
         }
     });
 
@@ -143,6 +161,7 @@ io.on('connection', (socket) => {
         if (!state.claimLocks) state.claimLocks = {};
         if (state.claimLocks[prizeId]) return socket.emit('claim_result', { success: false, message: 'Another player is claiming this prize' });
         state.claimLocks[prizeId] = true;
+        console.log(`[CLAIM] received session=${sessionId} prize=${prizeId} ticket=${ticketCode}`);
 
         try {
             const game = await GameSession.findById(sessionId);
@@ -210,6 +229,7 @@ io.on('connection', (socket) => {
 
                     const newWinner = new Winner({ sessionId, prizeType: prize.name, ticketCode });
                     await newWinner.save();
+                    console.log(`[CLAIM] winner saved session=${sessionId} prize=${prize.name} ticket=${ticketCode}`);
                     
                     io.to(sessionId).emit('claim_result', {
                         success: true,
@@ -220,6 +240,7 @@ io.on('connection', (socket) => {
                         winnerName: ticket.playerName || 'Player', 
                         prizeItem: prize.prizeItem || null 
                     });
+                    console.log(`[CLAIM] claim_result emitted session=${sessionId} prize=${prize.name}`);
                     io.to(sessionId).emit('game_sync', {
                         status: game.gameStatus,
                         currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
@@ -227,6 +248,9 @@ io.on('connection', (socket) => {
                         prizes: sessionPrizes,
                         remainingNumbers: activeGames[sessionId].availableNumbers.length
                     });
+
+                    // Let Socket.IO flush claim_result before pause/countdown work
+                    await new Promise(resolve => setImmediate(resolve));
 
                     // Sequential 10-Second Pause Logic for Popups
                     if (!pauseQueues[sessionId]) pauseQueues[sessionId] = [];
@@ -240,27 +264,38 @@ io.on('connection', (socket) => {
                     };
                     pauseQueues[sessionId].push(currentWinnerData);
 
-                    if (pauseQueues[sessionId].length === 1) {
+                    if (!pauseProcessing[sessionId]) {
+                        pauseProcessing[sessionId] = true;
                         const processPauseQueue = async () => {
-                            while (pauseQueues[sessionId].length > 0) {
+                            while (pauseQueues[sessionId] && pauseQueues[sessionId].length > 0) {
                                 const currentWinner = pauseQueues[sessionId][0];
                                 
                                 try {
-                                    await pauseGame(sessionId, io);
+                                    const liveCheck = await GameSession.findById(sessionId);
+                                    if (liveCheck && liveCheck.gameStatus === 'LIVE') {
+                                        await pauseGame(sessionId, io);
+                                        console.log(`[PAUSE] started session=${sessionId}`);
+                                    }
                                 } catch (e) {
                                     // Ignore if already paused
                                 }
                                 
+                                clearPauseTimer(sessionId);
+
                                 let countdown = 10;
+                                activePauseInfo[sessionId] = { countdown, currentWinner };
                                 io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
+                                console.log(`[PAUSE] countdown tick session=${sessionId} countdown=${countdown}`);
                                 
                                 await new Promise(resolve => {
-                                    const intervalId = setInterval(() => {
+                                    activePauseTimers[sessionId] = setInterval(() => {
                                         countdown--;
                                         if (countdown >= 0) {
+                                            activePauseInfo[sessionId] = { countdown, currentWinner };
                                             io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
+                                            console.log(`[PAUSE] countdown tick session=${sessionId} countdown=${countdown}`);
                                         } else {
-                                            clearInterval(intervalId);
+                                            clearPauseTimer(sessionId);
                                             resolve();
                                         }
                                     }, 1000);
@@ -268,6 +303,10 @@ io.on('connection', (socket) => {
                                 
                                 pauseQueues[sessionId].shift();
                             }
+                            
+                            delete activePauseInfo[sessionId];
+                            pauseProcessing[sessionId] = false;
+                            console.log(`[PAUSE] ended session=${sessionId}`);
                             
                             // Finished all queued pauses
                             try {
@@ -279,7 +318,8 @@ io.on('connection', (socket) => {
                                 console.error('Failed to auto-resume:', e);
                             }
                         };
-                        processPauseQueue();
+                        // Defer so claim_result delivery is not delayed by pause setup
+                        setImmediate(() => processPauseQueue());
                     }
 
                 } else {

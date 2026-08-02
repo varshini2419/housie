@@ -1,17 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WinnerPopup = ({ winner, countdown, onClose }) => {
+const WinnerPopup = ({ winner, countdown, onClose, instanceId = 0 }) => {
+
+  useEffect(() => {
+    if (winner) {
+      console.log('[POPUP] popup mounted', winner.prizeName, winner.winnerTicket, 'instance', instanceId);
+      return () => {
+        console.log('[POPUP] popup unmounted', winner.prizeName, winner.winnerTicket, 'instance', instanceId);
+      };
+    }
+  }, [winner, instanceId]);
 
   const displayName = winner?.winnerName && winner.winnerName.trim() !== '' && winner.winnerName !== 'Player' 
     ? winner.winnerName 
     : `Ticket #${winner?.winnerTicket}`;
 
+  // Unique key per popup instance so Framer Motion never reuses a stale lifecycle
+  const popupKey = winner
+    ? `winner-${instanceId}-${winner.prizeId}-${winner.winnerTicket}-${winner.prizeName}`
+    : 'winner-none';
+
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {winner && (
         <motion.div 
-          key={`winner-${winner.winnerTicket}-${winner.prizeName}`}
+          key={popupKey}
           className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
