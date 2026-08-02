@@ -27,6 +27,11 @@ const useSpeech = () => {
         console.log('[Voice Engine] Voices loaded successfully', voices.length);
       }
     };
+
+    const handleFirstInteraction = () => {
+      console.log('[Voice Engine] First user interaction detected, unlocking audio');
+      unlockAudio();
+    };
     
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel(); // Clear any zombie native queues from previous page loads
@@ -34,13 +39,17 @@ const useSpeech = () => {
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
       }
+      window.addEventListener('pointerdown', handleFirstInteraction, { once: true, passive: true });
+      window.addEventListener('keydown', handleFirstInteraction, { once: true, passive: true });
     }
     
     return () => {
        // Cleanup timeouts on unmount
        timeoutRefs.current.forEach(clearTimeout);
+       window.removeEventListener('pointerdown', handleFirstInteraction);
+       window.removeEventListener('keydown', handleFirstInteraction);
     };
-  }, []);
+  }, [unlockAudio]);
 
   // Save preference
   useEffect(() => {
