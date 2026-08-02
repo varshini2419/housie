@@ -244,21 +244,17 @@ io.on('connection', (socket) => {
                                 let countdown = 10;
                                 io.to(sessionId).emit('pause_countdown_tick', { countdown });
                                 
-                                const intervalId = setInterval(() => {
-                                    countdown--;
-                                    if (countdown >= 0) {
-                                        io.to(sessionId).emit('pause_countdown_tick', { countdown });
-                                    }
-                                    if (countdown <= 0) {
-                                        clearInterval(intervalId);
-                                    }
-                                }, 1000);
-
-                                await new Promise(r => setTimeout(r, 10000));
-                                clearInterval(intervalId);
-                                if (countdown > 0) {
-                                    io.to(sessionId).emit('pause_countdown_tick', { countdown: 0 });
-                                }
+                                await new Promise(resolve => {
+                                    const intervalId = setInterval(() => {
+                                        countdown--;
+                                        if (countdown >= 0) {
+                                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                                        } else {
+                                            clearInterval(intervalId);
+                                            resolve();
+                                        }
+                                    }, 1000);
+                                });
                                 
                                 pauseQueues[sessionId]--;
                             }

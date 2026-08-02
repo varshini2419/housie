@@ -11,6 +11,7 @@ const WinnerPopup = ({ winner, countdown, onClose }) => {
     <AnimatePresence>
       {winner && (
         <motion.div 
+          key={`winner-${winner.winnerTicket}-${winner.prizeName}`}
           className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
