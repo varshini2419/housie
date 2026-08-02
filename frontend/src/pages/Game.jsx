@@ -33,6 +33,7 @@ const Game = () => {
   const [activeWinner, setActiveWinner] = useState(null);
   const [popupInstanceId, setPopupInstanceId] = useState(0);
   const activeWinnerRef = useRef(null);
+  const tickZeroFallbackRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
@@ -68,6 +69,12 @@ const Game = () => {
 
     socketRef.current.on('game_sync', (data) => {
       setGameState(data.status);
+      if (data.status === 'LIVE') {
+        if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+        activeWinnerRef.current = null;
+        setActiveWinner(null);
+        setPauseCountdown(0);
+      }
       setCurrentNumber(data.currentNumber);
       setDrawnNumbers(data.drawnNumbers);
       setPrizes(data.prizes);
@@ -112,6 +119,18 @@ const Game = () => {
          activeWinnerRef.current = currentWinner;
          setActiveWinner(currentWinner);
       }
+      
+      if (countdown <= 0) {
+        if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+        tickZeroFallbackRef.current = setTimeout(() => {
+           if (activeWinnerRef.current) {
+               console.log('[POPUP] Safe fallback triggered: missed game_resumed');
+               activeWinnerRef.current = null;
+               setActiveWinner(null);
+               setGameState('LIVE');
+           }
+        }, 2500);
+      }
     });
     
     socketRef.current.on('countdown_update', ({ countdown }) => {
@@ -120,6 +139,7 @@ const Game = () => {
 
     socketRef.current.on('game_resumed', () => {
       console.log('[POPUP] game_resumed');
+      if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
       setGameState('LIVE');
       setPauseCountdown(0);
       activeWinnerRef.current = null;
@@ -149,6 +169,7 @@ const Game = () => {
     });
 
     return () => {
+      if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, [sessionId, ticket?.ticketCode, navigate, announceWinner]);

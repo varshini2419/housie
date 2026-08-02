@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGameStore from '../store/useGameStore';
+import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
 
 const Home = () => {
+  const { unlockAudio } = useSpeech();
   const [sessions, setSessions] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [ticketCode, setTicketCode] = useState('');
@@ -29,6 +31,8 @@ const Home = () => {
   };
 
   const handleJoin = async () => {
+    unlockAudio();
+    
     if (!selectedSessionId) {
       setError('Please select a session.');
       return;
