@@ -29,8 +29,9 @@ const generateNumber = async (game, io) => {
 
     const nextNum = state.availableNumbers.pop();
     state.drawnNumbers.push(nextNum);
+    state.tickId++;
 
-    console.log(`[SCHEDULER] Generated Number: ${nextNum}`);
+    console.log(`[SCHEDULER] Generated Number: ${nextNum} (Tick: ${state.tickId})`);
 
     await GameSession.findByIdAndUpdate(game._id, {
         currentNumber: nextNum,
@@ -48,7 +49,8 @@ const generateNumber = async (game, io) => {
     io.to(sId).emit('number_drawn', {
         number: nextNum,
         drawnNumbers: state.drawnNumbers,
-        remainingNumbers: state.availableNumbers.length
+        remainingNumbers: state.availableNumbers.length,
+        tickId: state.tickId
     });
 
     const updatedGame = await GameSession.findById(game._id);
@@ -169,7 +171,8 @@ const ensureActiveGame = async (sessionId, io) => {
             phase: 'COUNTDOWN',
             tickCountdown: 5,
             winners: winners,
-            onlinePlayers: new Set()
+            onlinePlayers: new Set(),
+            tickId: 0
         };
 
         if (game.gameStatus === 'LIVE' && io) {

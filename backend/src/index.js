@@ -129,15 +129,18 @@ io.on('connection', (socket) => {
                 drawnNumbers: activeGames[sId].drawnNumbers,
                 prizes: sessionPrizes,
                 markedNumbers: markedNums,
-                remainingNumbers: activeGames[sId].availableNumbers.length
+                remainingNumbers: activeGames[sId].availableNumbers.length,
+                tickId: activeGames[sId].tickId
             });
 
             // Reconnect during pause: restore current winner + remaining countdown immediately
             if (status === 'PAUSED' && activePauseInfo[sId]) {
                 const { countdown, currentWinner } = activePauseInfo[sId];
-                console.log(`[PAUSE] restore on join session=${sId} countdown=${countdown}`);
-                socket.emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
-                socket.emit('pause_countdown_tick', { countdown, currentWinner });
+                if (countdown > 1) {
+                    console.log(`[PAUSE] restore on join session=${sId} countdown=${countdown}`);
+                    socket.emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
+                    socket.emit('pause_countdown_tick', { countdown, currentWinner });
+                }
             }
         }
     });

@@ -42,6 +42,7 @@ const Game = () => {
   const socketRef = useRef(null);
 
   const [gameState, setGameState] = useState('WAITING');
+  const [syncStatus, setSyncStatus] = useState('CONNECTING');
   const [currentNumber, setCurrentNumber] = useState(null);
   const [drawnNumbers, setDrawnNumbers] = useState([]);
   const [markedNumbers, setMarkedNumbers] = useState([]);
@@ -63,6 +64,9 @@ const Game = () => {
   const activeWinnerRef = useRef(null);
   const tickZeroFallbackRef = useRef(null);
   const tickWatchdogRef = useRef(null);
+  const lastSyncTickRef = useRef(0);
+  const isJoiningRef = useRef(false);
+  const lastGameSyncRef = useRef(0);
   const [isTimerLagging, setIsTimerLagging] = useState(false);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
@@ -85,11 +89,14 @@ const Game = () => {
     socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
     socketRef.current.on('connect', () => {
+      if (isJoiningRef.current) return;
+      isJoiningRef.current = true;
       socketRef.current.emit('join_game', {
         sessionId,
         ticketCode: ticket.ticketCode,
         role: 'player'
       });
+      setTimeout(() => { isJoiningRef.current = false; }, 2000);
     });
 
     socketRef.current.on('disconnect', () => {
@@ -105,6 +112,13 @@ const Game = () => {
     });
 
     socketRef.current.on('game_sync', (data) => {
+      const now = Date.now();
+      if (now - lastGameSyncRef.current < 1000) return; // Ignore duplicate syncs from reconnect storms
+      lastGameSyncRef.current = now;
+      
+      if (data.tickId !== undefined) lastSyncTickRef.current = data.tickId;
+      setSyncStatus('SYNCED');
+
       setGameState(data.status);
       if (data.status === 'LIVE') {
         if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
@@ -122,7 +136,11 @@ const Game = () => {
       }
     });
 
-    socketRef.current.on('number_drawn', ({ number, drawnNumbers }) => {
+    socketRef.current.on('number_drawn', ({ number, drawnNumbers, tickId }) => {
+      if (tickId !== undefined) {
+          if (tickId < lastSyncTickRef.current) return; // Drop stale events
+          lastSyncTickRef.current = tickId;
+      }
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
       announceNumber(number);
@@ -408,6 +426,25 @@ const Game = () => {
           >
             <span className="text-xl">🎉</span>
             <span className="font-semibold text-sm">{toastMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {syncStatus !== 'SYNCED' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.5 } }}
+            className="fixed inset-0 bg-white/80 backdrop-blur-md z-[200] flex flex-col items-center justify-center"
+          >
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 border-4 border-[#00C16E] border-t-transparent rounded-full mb-6 shadow-[0_0_20px_rgba(0,193,110,0.3)]"
+            />
+            <p className="text-xl font-bold text-[#1B2430]">Synchronizing Game Board...</p>
+            <p className="text-sm font-semibold text-brand-text-muted mt-2">Connecting to Live Session</p>
           </motion.div>
         )}
       </AnimatePresence>
