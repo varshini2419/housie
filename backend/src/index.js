@@ -156,27 +156,35 @@ io.on('connection', (socket) => {
             );
             if (ticket) {
                 socket.emit('number_marked', { number });
+            } else {
+                socket.emit('mark_error', { number, message: 'Ticket not found or invalid session.' });
             }
         } catch (err) {
-            console.error('Error marking number:', err);
+            console.error(`[SOCKET] mark_error:`, err);
+            socket.emit('mark_error', { number, message: 'Server error processing mark.' });
         }
     });
 
-    socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }) => {
-        // CRITICAL: activeGames is always keyed by sessionId.toString() in ensureActiveGame
+    socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }, callback) => {
         const sId = String(sessionId);
         const state = activeGames[sId];
-        if (!state) return socket.emit('claim_result', { success: false, message: 'Game not active' });
+        
+        const sendError = (msg) => {
+            if (typeof callback === 'function') callback({ success: false, message: msg });
+            else socket.emit('claim_result', { success: false, message: msg });
+        };
+
+        if (!state) return sendError('Game not active');
 
         if (!state.claimLocks) state.claimLocks = {};
-        if (state.claimLocks[prizeId]) return socket.emit('claim_result', { success: false, message: 'Another player is claiming this prize' });
+        if (state.claimLocks[prizeId]) return sendError('Another player is claiming this prize');
         state.claimLocks[prizeId] = true;
         console.log(`[CLAIM] received session=${sId} prize=${prizeId} ticket=${ticketCode}`);
 
         try {
             const game = await GameSession.findById(sId);
             if (!game || game.gameStatus !== 'LIVE') {
-                return socket.emit('claim_result', { success: false, message: 'Game is not LIVE' });
+                return sendError('Game is not LIVE');
             }
 
             const defaultPrizes = [
@@ -190,23 +198,22 @@ io.on('connection', (socket) => {
             const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
 
             const prizeIndex = sessionPrizes.findIndex(p => p.id === prizeId);
-            if (prizeIndex === -1) return socket.emit('claim_result', { success: false, message: 'Prize not found' });
+            if (prizeIndex === -1) return sendError('Prize not found');
             
             const prize = sessionPrizes[prizeIndex];
             
             if (prize.status !== 'AVAILABLE') {
-                return socket.emit('claim_result', { success: false, message: 'Prize is not available' });
+                return sendError('Prize is not available');
             }
 
-            // Duplicate winner validation for same category
             const hasWonSameCategory = game.prizes && game.prizes.some(p => p.type === prize.type && p.winnerTicket === ticketCode);
             if (hasWonSameCategory) {
-                return socket.emit('claim_result', { success: false, message: 'You have already claimed a prize in this category' });
+                return sendError('You have already claimed a prize in this category');
             }
 
             try {
                 const ticket = await Ticket.findOne({ ticketCode, sessionId: sId });
-                if (!ticket) return socket.emit('claim_result', { success: false, message: 'Ticket not found' });
+                if (!ticket) return sendError('Ticket not found');
 
                 const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
                 console.log(`[CLAIM] validate prizeType=${prize.type} prizeId=${prize.id} valid=${isValid}`);

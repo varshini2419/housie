@@ -8,6 +8,33 @@ import WinnerPopup from '../components/WinnerPopup';
 import GameStatusTimer from '../components/GameStatusTimer';
 import { Check } from 'lucide-react';
 
+const MemoizedNumberChip = React.memo(({ num, isMarked, isPending, canMark, onMark }) => {
+  return (
+    <motion.div 
+      onClick={() => onMark(num)}
+      whileHover={canMark ? { scale: 1.1, y: -2 } : {}}
+      whileTap={canMark ? { scale: 0.95 } : {}}
+      className={`aspect-square flex items-center justify-center text-sm sm:text-xl font-bold rounded-xl sm:rounded-2xl relative select-none transition-all duration-300
+        ${num === 0 ? 'bg-transparent' : 'bg-white/80 border border-white/60 shadow-sm text-[#1B2430]'}
+        ${isMarked ? 'bg-gradient-to-br from-[#00C16E] to-[#00a85e] text-white border-none shadow-[0_4px_15px_rgba(0,193,110,0.4)] z-10' : ''}
+        ${isPending ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white border-none shadow-[0_4px_15px_rgba(245,158,11,0.4)] z-10 animate-pulse' : ''}
+        ${canMark && !isPending ? 'cursor-pointer ring-2 ring-[#4F8EF7]/50 shadow-[0_0_15px_rgba(79,142,247,0.3)]' : ''}
+      `}
+    >
+      {num === 0 ? '' : num}
+      {isMarked && (
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm text-[#00C16E]"
+        >
+          <Check size={12} strokeWidth={4} />
+        </motion.div>
+      )}
+    </motion.div>
+  );
+});
+
 const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
@@ -18,6 +45,7 @@ const Game = () => {
   const [currentNumber, setCurrentNumber] = useState(null);
   const [drawnNumbers, setDrawnNumbers] = useState([]);
   const [markedNumbers, setMarkedNumbers] = useState([]);
+  const [pendingMarks, setPendingMarks] = useState([]);
   const [onlineCount, setOnlineCount] = useState(1);
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
@@ -173,6 +201,17 @@ const Game = () => {
       navigate('/');
     });
 
+    socketRef.current.on('number_marked', ({ number }) => {
+      setPendingMarks(prev => prev.filter(n => n !== number));
+      setMarkedNumbers(prev => prev.includes(number) ? prev : [...prev, number]);
+    });
+
+    socketRef.current.on('mark_error', ({ number, message }) => {
+      setPendingMarks(prev => prev.filter(n => n !== number));
+      setToastMsg(message || 'Failed to mark number');
+      setTimeout(() => setToastMsg(null), 4000);
+    });
+
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
       console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
@@ -200,7 +239,12 @@ const Game = () => {
 
   const claimPrize = (prizeId) => {
     if (gameState !== 'LIVE') return;
-    socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
+    socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId }, (response) => {
+      if (!response.success) {
+        setToastMsg(response.message);
+        setTimeout(() => setToastMsg(null), 4000);
+      }
+    });
   };
 
   // Local only — does not resume pause / no socket emit
@@ -216,9 +260,9 @@ const Game = () => {
     if (gameState !== 'LIVE') return;
     if (num === 0) return;
     if (!isDrawn(num)) return;
-    if (isMarked(num)) return;
+    if (isMarked(num) || pendingMarks.includes(num)) return;
     
-    setMarkedNumbers(prev => [...prev, num]);
+    setPendingMarks(prev => [...prev, num]);
     socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
@@ -254,31 +298,18 @@ const Game = () => {
         {(ticket?.ticketMatrix || []).map((row, rIndex) => (
           row.map((num, cIndex) => {
             const marked = num !== 0 && isMarked(num);
+            const pending = num !== 0 && pendingMarks.includes(num);
             const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
             
             return (
-              <motion.div 
-                key={`${isDesktop ? 'd' : 'm'}-r${rIndex}-c${cIndex}`} 
-                onClick={() => handleMarkNumber(num)}
-                whileHover={canMark ? { scale: 1.1, y: -2 } : {}}
-                whileTap={canMark ? { scale: 0.95 } : {}}
-                className={`aspect-square flex items-center justify-center text-sm sm:text-xl font-bold rounded-xl sm:rounded-2xl relative select-none transition-all duration-300
-                  ${num === 0 ? 'bg-transparent' : 'bg-white/80 border border-white/60 shadow-sm text-[#1B2430]'}
-                  ${marked ? 'bg-gradient-to-br from-[#00C16E] to-[#00a85e] text-white border-none shadow-[0_4px_15px_rgba(0,193,110,0.4)] z-10' : ''}
-                  ${canMark ? 'cursor-pointer ring-2 ring-[#4F8EF7]/50 shadow-[0_0_15px_rgba(79,142,247,0.3)]' : ''}
-                `}
-              >
-                {num === 0 ? '' : num}
-                {marked && (
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm text-[#00C16E]"
-                  >
-                    <Check size={12} strokeWidth={4} />
-                  </motion.div>
-                )}
-              </motion.div>
+              <MemoizedNumberChip
+                key={`${isDesktop ? 'd' : 'm'}-r${rIndex}-c${cIndex}`}
+                num={num}
+                isMarked={marked}
+                isPending={pending}
+                canMark={canMark}
+                onMark={handleMarkNumber}
+              />
             );
           })
         ))}
