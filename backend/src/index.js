@@ -56,6 +56,16 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
+const mongoose = require('mongoose');
+mongoose.connection.on('disconnected', () => {
+    console.warn('[DB] MongoDB disconnected! Emitting system_status_warning.');
+    io.emit('system_status_warning', { message: 'Database connection lost. Game paused automatically.' });
+});
+mongoose.connection.on('reconnected', () => {
+    console.info('[DB] MongoDB reconnected. Emitting system_status_ok.');
+    io.emit('system_status_ok', { message: 'Database connection restored.' });
+});
+
 const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
 
 const pauseQueues = {};
@@ -85,8 +95,8 @@ io.on('connection', (socket) => {
         socket.join(sId);
         socket.sessionId = sId;
         socket.ticketCode = ticketCode;
-        
         if (role === 'player' && ticketCode) {
+            socket.join(ticketCode);
             if (activeGames[sId]) {
                 activeGames[sId].onlinePlayers.add(ticketCode);
             }
@@ -133,6 +143,25 @@ io.on('connection', (socket) => {
                 tickId: activeGames[sId].tickId
             });
 
+            // Hydrate activePauseInfo from DB on boot if missing
+            if (status === 'PAUSED' && !activePauseInfo[sId] && game && game.pauseState) {
+                activePauseInfo[sId] = game.pauseState;
+                // Restart the countdown broadcast loop for admins/late joiners if it was dead
+                let countdown = activePauseInfo[sId].countdown;
+                const currentWinner = activePauseInfo[sId].currentWinner;
+                const intervalId = setInterval(() => {
+                    countdown--;
+                    activePauseInfo[sId].countdown = countdown;
+                    io.to(sId).emit('pause_countdown_tick', { countdown, currentWinner });
+                    
+                    if (countdown <= 0) {
+                        clearInterval(intervalId);
+                        resumeGame(sId, io).catch(err => console.error("Auto-resume error:", err));
+                        delete activePauseInfo[sId];
+                    }
+                }, 1000);
+            }
+
             // Reconnect during pause: restore current winner + remaining countdown immediately
             if (status === 'PAUSED' && activePauseInfo[sId]) {
                 const { countdown, currentWinner } = activePauseInfo[sId];
@@ -159,6 +188,8 @@ io.on('connection', (socket) => {
             );
             if (ticket) {
                 socket.emit('number_marked', { number });
+                // Broadcast to other devices viewing the same ticket
+                socket.to(ticketCode).emit('ticket_marked', { number });
             } else {
                 socket.emit('mark_error', { number, message: 'Ticket not found or invalid session.' });
             }
@@ -214,9 +245,16 @@ io.on('connection', (socket) => {
                 return sendError('You have already claimed a prize in this category');
             }
 
+            const mongoose = require('mongoose');
+            const dbSession = await mongoose.startSession();
             try {
-                const ticket = await Ticket.findOne({ ticketCode, sessionId: sId });
-                if (!ticket) return sendError('Ticket not found');
+                dbSession.startTransaction();
+                const ticket = await Ticket.findOne({ ticketCode, sessionId: sId }).session(dbSession);
+                if (!ticket) {
+                    await dbSession.abortTransaction();
+                    dbSession.endSession();
+                    return sendError('Ticket not found');
+                }
 
                 const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
                 console.log(`[CLAIM] validate prizeType=${prize.type} prizeId=${prize.id} valid=${isValid}`);
@@ -244,11 +282,16 @@ io.on('connection', (socket) => {
 
                     state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
                     if (game.prizes && game.prizes.length > 0) {
-                        await game.save();
+                        game.stateVersion = (game.stateVersion || 0) + 1;
+                        await game.save({ session: dbSession });
                     }
 
                     const newWinner = new Winner({ sessionId: sId, prizeType: prize.name, ticketCode });
-                    await newWinner.save();
+                    await newWinner.save({ session: dbSession });
+                    
+                    await dbSession.commitTransaction();
+                    dbSession.endSession();
+                    
                     console.log(`[CLAIM] winner saved session=${sId} prize=${prize.name} ticket=${ticketCode}`);
                     
                     // Ensure claimer is in the normalized room

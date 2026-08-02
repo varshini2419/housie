@@ -224,6 +224,10 @@ const Game = () => {
       setMarkedNumbers(prev => prev.includes(number) ? prev : [...prev, number]);
     });
 
+    socketRef.current.on('ticket_marked', ({ number }) => {
+      setMarkedNumbers(prev => prev.includes(number) ? prev : [...prev, number]);
+    });
+
     socketRef.current.on('mark_error', ({ number, message }) => {
       setPendingMarks(prev => prev.filter(n => n !== number));
       setToastMsg(message || 'Failed to mark number');

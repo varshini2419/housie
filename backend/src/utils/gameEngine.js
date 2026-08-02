@@ -232,6 +232,13 @@ const pauseGame = async (sessionId, io, payload = { status: 'PAUSED' }) => {
     if (!game || game.gameStatus !== 'LIVE') throw new Error('Game is not LIVE');
 
     game.gameStatus = 'PAUSED';
+    if (payload && payload.countdown !== undefined) {
+        game.pauseState = {
+            countdown: payload.countdown,
+            currentWinner: payload.currentWinner
+        };
+    }
+    game.stateVersion = (game.stateVersion || 0) + 1;
     await game.save();
 
     const state = await ensureActiveGame(sessionId, null);
@@ -253,6 +260,8 @@ const resumeGame = async (sessionId, io) => {
     if (!game || game.gameStatus !== 'PAUSED') throw new Error('Game is not PAUSED');
 
     game.gameStatus = 'LIVE';
+    game.pauseState = undefined;
+    game.stateVersion = (game.stateVersion || 0) + 1;
     await game.save();
 
     if (io) io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });

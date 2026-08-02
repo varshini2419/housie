@@ -20,7 +20,12 @@ const GameSessionSchema = new mongoose.Schema({
     gameStatus: { type: String, enum: ['WAITING', 'LIVE', 'PAUSED', 'COMPLETED'], default: 'WAITING', index: true },
     currentNumber: { type: Number, default: null },
     drawnNumbers: { type: [Number], default: [] },
-    prizes: { type: [PrizeSchema], default: [] }
+    prizes: { type: [PrizeSchema], default: [] },
+    pauseState: { 
+        countdown: { type: Number },
+        currentWinner: { type: Object }
+    },
+    stateVersion: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('GameSession', GameSessionSchema);
