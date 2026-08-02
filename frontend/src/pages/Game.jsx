@@ -34,6 +34,8 @@ const Game = () => {
   const [popupInstanceId, setPopupInstanceId] = useState(0);
   const activeWinnerRef = useRef(null);
   const tickZeroFallbackRef = useRef(null);
+  const tickWatchdogRef = useRef(null);
+  const [isTimerLagging, setIsTimerLagging] = useState(false);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
@@ -62,6 +64,13 @@ const Game = () => {
       });
     });
 
+    socketRef.current.on('disconnect', () => {
+      console.log('[SOCKET] Disconnected');
+      if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
+      if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+      setIsTimerLagging(false);
+    });
+
     socketRef.current.on('player_count_update', ({ onlineCount, totalPlayers }) => {
       setOnlineCount(onlineCount);
       if (totalPlayers) setTotalJoined(totalPlayers);
@@ -71,6 +80,8 @@ const Game = () => {
       setGameState(data.status);
       if (data.status === 'LIVE') {
         if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+        if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
+        setIsTimerLagging(false);
         activeWinnerRef.current = null;
         setActiveWinner(null);
         setPauseCountdown(0);
@@ -115,6 +126,13 @@ const Game = () => {
     
     socketRef.current.on('pause_countdown_tick', ({ countdown, currentWinner }) => {
       setPauseCountdown(countdown);
+      
+      if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
+      setIsTimerLagging(false);
+      tickWatchdogRef.current = setTimeout(() => {
+          setIsTimerLagging(true);
+      }, 3000);
+      
       if (currentWinner && !activeWinnerRef.current) {
          activeWinnerRef.current = currentWinner;
          setActiveWinner(currentWinner);
@@ -140,6 +158,8 @@ const Game = () => {
     socketRef.current.on('game_resumed', () => {
       console.log('[POPUP] game_resumed');
       if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+      if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
+      setIsTimerLagging(false);
       setGameState('LIVE');
       setPauseCountdown(0);
       activeWinnerRef.current = null;
@@ -170,6 +190,7 @@ const Game = () => {
 
     return () => {
       if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
+      if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, [sessionId, ticket?.ticketCode, navigate, announceWinner]);
@@ -655,6 +676,7 @@ const Game = () => {
         onClose={handlePopupClose}
         onBackToGame={handleBackToGame}
         instanceId={popupInstanceId}
+        isTimerLagging={isTimerLagging}
       />
     </div>
   );

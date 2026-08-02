@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0 }) => {
+const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0, isTimerLagging = false }) => {
 
   useEffect(() => {
     if (winner) {
@@ -132,9 +132,10 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0 
               <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-2">
                 Resuming in...
               </p>
-              <div className="w-12 h-12 rounded-full border border-[#4F8EF7]/30 flex items-center justify-center text-xl font-bold text-[#4F8EF7] bg-[#4F8EF7]/10 tabular-nums">
+              <div className={`w-12 h-12 rounded-full border ${isTimerLagging ? 'border-[#F59E0B]/50 text-[#F59E0B] bg-[#F59E0B]/10 animate-pulse' : 'border-[#4F8EF7]/30 text-[#4F8EF7] bg-[#4F8EF7]/10'} flex items-center justify-center text-xl font-bold tabular-nums transition-colors duration-500`}>
                 {countdown}
               </div>
+              {isTimerLagging && <span className="text-[10px] text-[#F59E0B] font-bold mt-2 animate-pulse uppercase tracking-widest">Synchronizing...</span>}
             </motion.div>
 
             {/* Local dismiss only — does not resume the game or notify other players */}
