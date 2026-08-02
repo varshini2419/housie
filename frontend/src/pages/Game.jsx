@@ -24,6 +24,7 @@ const Game = () => {
   const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
   const [pauseCountdown, setPauseCountdown] = useState(0);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
+  const [timerData, setTimerData] = useState({});
   const isSpeakingStateRef = useRef(false);
 
   const setSpeaking = (val) => {
@@ -144,9 +145,10 @@ const Game = () => {
       }
     });
 
-    socketRef.current.on('countdown_update', ({ countdown }) => {
-      if (countdown !== null && countdown !== undefined) {
-        setNextDrawCountdown(countdown);
+    socketRef.current.on('countdown_update', (data) => {
+      if (data && data.countdown !== null && data.countdown !== undefined) {
+        setNextDrawCountdown(data.countdown);
+        setTimerData(data);
       }
     });
 
@@ -377,7 +379,7 @@ const Game = () => {
 
               {/* Status & Timer Footer */}
               <div className="mt-2 bg-white/90 border border-slate-200/90 px-4 py-2 rounded-2xl shadow-xs backdrop-blur-xs">
-                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={false} />
+                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} timerData={timerData} isMobile={false} />
               </div>
             </div>
 
@@ -768,7 +770,7 @@ const Game = () => {
 
             {/* Status & Timer Footer */}
             <div className="mt-2 bg-white/90 border border-slate-200/90 px-4 py-2 rounded-2xl shadow-xs backdrop-blur-xs">
-              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={true} />
+              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} timerData={timerData} isMobile={true} />
             </div>
           </div>
 

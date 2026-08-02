@@ -1,14 +1,27 @@
 import React from 'react';
 
-const GameStatusTimer = ({ gameState, nextDrawCountdown, pauseCountdown = 0, isSpeaking = false, isMobile = false }) => {
+const GameStatusTimer = ({ gameState, nextDrawCountdown, pauseCountdown = 0, isSpeaking = false, timerData = {}, isMobile = false }) => {
   if (gameState === 'LIVE') {
-    if (isSpeaking) {
-      return (
-        <span className="text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap text-indigo-600 animate-pulse">
-          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
-          <span>🔊 Announcing Number...</span>
-        </span>
-      );
+    const phase = timerData?.phase || (nextDrawCountdown !== null && nextDrawCountdown < 5 ? 'COUNTDOWN' : 'SPEECH_WAIT');
+    const subPhase = timerData?.subPhase || (isSpeaking ? 'SPEAKING' : 'PAUSE');
+
+    if (phase === 'SPEECH_WAIT') {
+      if (subPhase === 'SPEAKING' || isSpeaking) {
+        return (
+          <span className="text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap text-indigo-600 animate-pulse">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+            <span>🔊 Announcing Number...</span>
+          </span>
+        );
+      } else {
+        const pRemaining = timerData?.pauseRemaining !== undefined ? timerData.pauseRemaining : 2;
+        return (
+          <span className="text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap text-amber-700">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>⏳ Waiting {pRemaining > 0 ? `${pRemaining}s` : '1s'}...</span>
+          </span>
+        );
+      }
     }
 
     const countdownVal = (nextDrawCountdown !== null && nextDrawCountdown !== undefined) ? nextDrawCountdown : 5;

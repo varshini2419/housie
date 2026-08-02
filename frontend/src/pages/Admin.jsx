@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
+import GameStatusTimer from '../components/GameStatusTimer';
 
 const Admin = () => {
   const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -42,6 +43,7 @@ const Admin = () => {
   const [activityFeed, setActivityFeed] = useState([]);
   const [pauseCountdown, setPauseCountdown] = useState(0);
   const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
+  const [timerData, setTimerData] = useState({});
   const socketRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
@@ -98,8 +100,11 @@ const Admin = () => {
         setPauseCountdown(countdown);
       });
 
-      socketRef.current.on('countdown_update', ({ countdown }) => {
-        setNextDrawCountdown(countdown);
+      socketRef.current.on('countdown_update', (data) => {
+        if (data && data.countdown !== null && data.countdown !== undefined) {
+          setNextDrawCountdown(data.countdown);
+          setTimerData(data);
+        }
       });
 
       socketRef.current.on('game_resumed', () => {
@@ -754,12 +759,9 @@ const Admin = () => {
               <div className="glass-panel-secondary p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-bold text-brand-text-muted mb-2 uppercase tracking-widest">Current Drawn</p>
                 <p className="text-5xl font-black tracking-tight">{adminStats.currentNumber || '-'}</p>
-                {adminStats?.gameStatus === 'LIVE' && nextDrawCountdown !== null && (
-                  <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-brand-border shadow-sm w-max">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    Next draw in: {nextDrawCountdown}s
-                  </div>
-                )}
+                <div className="mt-4">
+                  <GameStatusTimer gameState={adminStats?.gameStatus} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} timerData={timerData} isMobile={false} />
+                </div>
               </div>
               
               <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col items-center justify-center text-center shadow-premium">

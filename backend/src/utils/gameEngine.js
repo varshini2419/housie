@@ -78,11 +78,11 @@ const generateNumber = async (game, io) => {
         });
     }).catch(err => console.error('Error in admin_stats:', err));
 
-    // Hold countdown display at 5s while voice is speaking
-    io.to(sId).emit('countdown_update', { countdown: 5 });
+    // Broadcast initial countdown state (SPEECH_WAIT: speech speaking + 2s pause)
+    io.to(sId).emit('countdown_update', { countdown: 5, phase: 'SPEECH_WAIT', subPhase: 'SPEAKING', pauseRemaining: 2 });
 
     state.phase = 'SPEECH_WAIT';
-    state.tickCountdown = 2; // 2s max limit for speech wait before countdown begins
+    state.tickCountdown = 4; // 2s for voice announcement + 2s post-speech wait = 4s total
 
     return true;
 };
@@ -102,13 +102,16 @@ const serverTick = async (sessionId, io) => {
     }
 
     if (state.phase === 'SPEECH_WAIT') {
-        io.to(sId).emit('countdown_update', { countdown: 5 });
         state.tickCountdown--;
+        const pauseSecs = Math.max(0, state.tickCountdown - 2);
+        const subPhase = state.tickCountdown > 2 ? 'SPEAKING' : 'PAUSE';
+        io.to(sId).emit('countdown_update', { countdown: 5, phase: 'SPEECH_WAIT', subPhase, pauseRemaining: pauseSecs });
+        
         if (state.tickCountdown <= 0) {
             state.phase = 'COUNTDOWN';
-            state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-            console.log(`[SCHEDULER] Voice Finished (Failsafe expired). Starting 5s Countdown.`);
-            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+            state.tickCountdown = DRAW_COUNTDOWN_SECONDS; // 5
+            console.log(`[SCHEDULER] Speech & 2s Pause complete. Starting 5s Countdown (5,4,3,2,1,0).`);
+            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown, phase: 'COUNTDOWN' });
         }
     } else if (state.phase === 'COUNTDOWN') {
         if (state.tickCountdown < 0) {
@@ -116,7 +119,7 @@ const serverTick = async (sessionId, io) => {
             const continues = await generateNumber(game, io);
             if (!continues) return; // Game ended
         } else {
-            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown, phase: 'COUNTDOWN' });
             console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
             state.tickCountdown--;
         }
