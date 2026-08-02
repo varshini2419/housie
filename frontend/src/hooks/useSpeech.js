@@ -46,16 +46,17 @@ const useSpeech = () => {
     };
   }, []);
 
-  // Unlock Chrome / Safari SpeechSynthesis audio on first user interaction
+  // Unlock Chrome / Safari SpeechSynthesis audio on user interaction
   const unlockAudio = useCallback(() => {
     if (!window.speechSynthesis) return;
     try {
       window.speechSynthesis.resume();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
       if (!initialized.current) {
         console.log('[Voice Engine] Unlocking Audio context');
-        const utterance = new SpeechSynthesisUtterance('');
-        utterance.volume = 0;
-        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.cancel();
         initialized.current = true;
       }
     } catch (e) {
@@ -98,9 +99,24 @@ const useSpeech = () => {
     const voices = window.speechSynthesis.getVoices();
     if (!voices || voices.length === 0) return null;
 
-    return voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Premium'))) 
-      || voices.find(v => v.lang.startsWith('en'))
-      || voices[0];
+    const enVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+    const candidateVoices = enVoices.length > 0 ? enVoices : voices;
+
+    // Prioritize local voices for instant synthesis without network dependency
+    const localVoice = candidateVoices.find(v => v.localService && (
+      v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Premium')
+    ));
+    if (localVoice) return localVoice;
+
+    const anyLocal = candidateVoices.find(v => v.localService);
+    if (anyLocal) return anyLocal;
+
+    const preferred = candidateVoices.find(v => (
+      v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Premium')
+    ));
+    if (preferred) return preferred;
+
+    return candidateVoices[0];
   };
 
   const speakUtterance = (text) => {
@@ -112,13 +128,14 @@ const useSpeech = () => {
 
       console.log(`[VOICE ENGINE] Speaking text: "${text}"`);
       
-      // Ensure Chrome speech engine is resumed
+      // Ensure Chrome speech engine is resumed and clear any hung queue
       try {
+        window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
       } catch (e) {}
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
+      utterance.rate = 0.95;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
@@ -164,12 +181,14 @@ const useSpeech = () => {
         finish();
       };
 
-      // Periodic resume fix for Chrome SpeechSynthesis bug where long audio pauses
+      // Periodic resume fix for Chrome SpeechSynthesis bug where audio pauses
       resumeInterval = setInterval(() => {
-        if (!finished && window.speechSynthesis && window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
+        if (!finished && window.speechSynthesis) {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
         }
-      }, 300);
+      }, 250);
 
       try {
         window.speechSynthesis.speak(utterance);
@@ -178,16 +197,17 @@ const useSpeech = () => {
         finish();
       }
       
-      // Failsafe timeout (4 seconds max per utterance)
+      // Failsafe timeout (2.5 seconds max per utterance for short number announcements)
       failsafeId = setTimeout(() => {
         if (!finished) {
           console.warn('[VOICE ENGINE] Utterance failsafe timeout triggered for:', text);
           try {
+            window.speechSynthesis.cancel();
             window.speechSynthesis.resume();
           } catch (e) {}
           finish();
         }
-      }, 4000);
+      }, 2500);
       
       timeoutRefs.current.push(failsafeId);
     });
@@ -206,18 +226,20 @@ const useSpeech = () => {
     isSpeaking.current = true;
     const item = speechQueue.current.shift();
     
+    let number = null;
     if (typeof item === 'object' && item.type === 'winner') {
       try {
         await speakUtterance(item.text);
       } catch (err) {
         console.error('[VOICE ENGINE] Winner announcement error:', err);
+      } finally {
+        isSpeaking.current = false;
+        if (speechQueue.current.length > 0) processQueue();
       }
-      isSpeaking.current = false;
-      if (speechQueue.current.length > 0) processQueue();
       return;
     }
 
-    const number = item;
+    number = item;
     currentSpokenNumber.current = number;
 
     window.dispatchEvent(new CustomEvent('speech_started', { detail: { number } }));
@@ -226,26 +248,28 @@ const useSpeech = () => {
 
     try {
       const num = Number(number);
-      if (num < 10) {
-        // Single digit: "Single number 5, 5"
-        await speakUtterance(`Single number ${num}, ${num}`);
-      } else {
-        // Two digits: "six five, sixty five"
-        const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
-        await speakUtterance(`${digits}, ${num}`);
+      if (!isNaN(num)) {
+        if (num < 10) {
+          // Single digit: "Single number 5, 5"
+          await speakUtterance(`Single number ${num}, ${num}`);
+        } else {
+          // Two digits: "six five, sixty five"
+          const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
+          await speakUtterance(`${digits}, ${num}`);
+        }
       }
     } catch (err) {
       console.error('[VOICE ENGINE] Speech execution error:', err);
-    }
+    } finally {
+      // Always dispatch speech_finished after speech completes or fails
+      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
 
-    // Always dispatch speech_finished after speech completes
-    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-
-    isSpeaking.current = false;
-    currentSpokenNumber.current = null;
-    
-    if (speechQueue.current.length > 0) {
-      processQueue();
+      isSpeaking.current = false;
+      currentSpokenNumber.current = null;
+      
+      if (speechQueue.current.length > 0) {
+        processQueue();
+      }
     }
   }, []);
 

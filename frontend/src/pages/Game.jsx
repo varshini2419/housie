@@ -145,10 +145,8 @@ const Game = () => {
     });
 
     socketRef.current.on('countdown_update', ({ countdown }) => {
-      if (!isSpeakingStateRef.current && countdown !== null && countdown !== undefined) {
-        if (countdown === 5 || nextDrawCountdown === null) {
-          setNextDrawCountdown(countdown);
-        }
+      if (countdown !== null && countdown !== undefined) {
+        setNextDrawCountdown(countdown);
       }
     });
 

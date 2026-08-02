@@ -309,10 +309,6 @@ io.on('connection', (socket) => {
         }
         console.log(`Client disconnected: ${socket.id}`);
     });
-
-    socket.on('speech_finished', ({ sessionId }) => {
-        triggerCountdown(sessionId, io);
-    });
 });
 
 app.use('/api/admin', require('./routes/adminRoutes'));

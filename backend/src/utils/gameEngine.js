@@ -82,7 +82,7 @@ const generateNumber = async (game, io) => {
     io.to(sId).emit('countdown_update', { countdown: 5 });
 
     state.phase = 'SPEECH_WAIT';
-    state.tickCountdown = 6; // 6s max failsafe limit if client speech engine stalls
+    state.tickCountdown = 2; // 2s max limit for speech wait before countdown begins
 
     return true;
 };
