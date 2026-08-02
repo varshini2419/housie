@@ -330,21 +330,53 @@ const Game = () => {
           {/* LEFT 3 COLUMNS SECTION */}
           <div className="lg:col-span-3 flex flex-col gap-5 sm:gap-6">
             
-            {/* CURRENT DRAW CARD */}
-            <div className="premium-card flex flex-col items-center justify-center text-center relative p-6">
-              <p className="text-xs font-bold text-blue-900 dark:text-blue-400 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-                <span>✦</span> CURRENT DRAW <span>✦</span>
-              </p>
+            {/* CURRENT DRAW CARD (REDESIGNED) */}
+            <div className="bg-gradient-to-b from-white to-slate-50/80 border border-slate-200/90 rounded-3xl p-6 shadow-xl shadow-blue-900/5 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-sm">
+              {/* Top Status Header Pill */}
+              <div className="flex items-center gap-2 bg-blue-50/90 border border-blue-100 px-3.5 py-1 rounded-full text-[11px] font-black tracking-widest uppercase text-blue-700 shadow-xs mb-2">
+                <span className={`w-2 h-2 rounded-full ${gameState === 'LIVE' ? 'bg-emerald-500 animate-pulse' : (gameState === 'PAUSED' ? 'bg-amber-500' : 'bg-slate-400')}`}></span>
+                <span>{gameState === 'LIVE' ? 'LIVE DRAW' : (gameState === 'PAUSED' ? 'GAME PAUSED' : 'CURRENT DRAW')}</span>
+              </div>
 
+              {/* Radial Progress Ring & Tambola Ball */}
               <div className="relative my-2 flex items-center justify-center">
-                <div key={currentNumber} className={`w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white border-[3px] border-[#CBD5E1] flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
-                  <span className="text-5xl sm:text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
-                    {currentNumber || '-'}
-                  </span>
+                <svg className="w-36 h-36 sm:w-40 sm:h-40 transform -rotate-90 drop-shadow-md" viewBox="0 0 120 120">
+                  <defs>
+                    <linearGradient id="ringGradientDesk" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#2563EB" />
+                      <stop offset="100%" stopColor="#4F46E5" />
+                    </linearGradient>
+                  </defs>
+                  {/* Background Track */}
+                  <circle cx="60" cy="60" r="52" stroke="#E2E8F0" strokeWidth="6" fill="transparent" />
+                  {/* Animated Progress Arc */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    stroke="url(#ringGradientDesk)"
+                    strokeWidth="6"
+                    strokeDasharray="326.72"
+                    strokeDashoffset={326.72 * (1 - Math.max(0, Math.min(5, nextDrawCountdown !== null ? nextDrawCountdown : 5)) / 5)}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    className="transition-all duration-750 ease-linear"
+                  />
+                </svg>
+
+                {/* Number Ball Center */}
+                <div key={currentNumber} className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white border border-slate-100 shadow-inner flex items-center justify-center relative">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-slate-100 to-white opacity-80"></div>
+                    <span className="text-5xl sm:text-6xl font-black text-slate-800 tracking-tighter leading-none relative z-10 animate-number-enter">
+                      {currentNumber || '-'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 bg-slate-100/90 border border-[#CBD5E1] px-4 py-1.5 rounded-full shadow-inner">
+              {/* Status & Timer Footer */}
+              <div className="mt-2 bg-white/90 border border-slate-200/90 px-4 py-2 rounded-2xl shadow-xs backdrop-blur-xs">
                 <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={false} />
               </div>
             </div>
@@ -689,21 +721,53 @@ const Game = () => {
         {/* ===================== MOBILE VIEW (REQUESTED CARD ORDER) ===================== */}
         <div className="md:hidden flex flex-col gap-5">
           
-          {/* 1. CURRENT DRAW CARD */}
-          <div className="premium-card flex flex-col items-center justify-center text-center relative p-5">
-            <p className="text-xs font-bold text-blue-900 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-              <span>✦</span> CURRENT DRAW <span>✦</span>
-            </p>
+          {/* 1. CURRENT DRAW CARD (REDESIGNED) */}
+          <div className="bg-gradient-to-b from-white to-slate-50/80 border border-slate-200/90 rounded-3xl p-5 shadow-xl shadow-blue-900/5 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-sm">
+            {/* Top Status Header Pill */}
+            <div className="flex items-center gap-2 bg-blue-50/90 border border-blue-100 px-3.5 py-1 rounded-full text-[11px] font-black tracking-widest uppercase text-blue-700 shadow-xs mb-2">
+              <span className={`w-2 h-2 rounded-full ${gameState === 'LIVE' ? 'bg-emerald-500 animate-pulse' : (gameState === 'PAUSED' ? 'bg-amber-500' : 'bg-slate-400')}`}></span>
+              <span>{gameState === 'LIVE' ? 'LIVE DRAW' : (gameState === 'PAUSED' ? 'GAME PAUSED' : 'CURRENT DRAW')}</span>
+            </div>
 
+            {/* Radial Progress Ring & Tambola Ball */}
             <div className="relative my-2 flex items-center justify-center">
-              <div key={`mob-current-${currentNumber}`} className={`w-32 h-32 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
-                <span className="text-5xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
-                  {currentNumber || '-'}
-                </span>
+              <svg className="w-36 h-36 transform -rotate-90 drop-shadow-md" viewBox="0 0 120 120">
+                <defs>
+                  <linearGradient id="ringGradientMob" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2563EB" />
+                    <stop offset="100%" stopColor="#4F46E5" />
+                  </linearGradient>
+                </defs>
+                {/* Background Track */}
+                <circle cx="60" cy="60" r="52" stroke="#E2E8F0" strokeWidth="6" fill="transparent" />
+                {/* Animated Progress Arc */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  stroke="url(#ringGradientMob)"
+                  strokeWidth="6"
+                  strokeDasharray="326.72"
+                  strokeDashoffset={326.72 * (1 - Math.max(0, Math.min(5, nextDrawCountdown !== null ? nextDrawCountdown : 5)) / 5)}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-750 ease-linear"
+                />
+              </svg>
+
+              {/* Number Ball Center */}
+              <div key={`mob-current-${currentNumber}`} className="absolute inset-0 flex items-center justify-center">
+                <div className="w-28 h-28 rounded-full bg-white border border-slate-100 shadow-inner flex items-center justify-center relative">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-slate-100 to-white opacity-80"></div>
+                  <span className="text-5xl font-black text-slate-800 tracking-tighter leading-none relative z-10 animate-number-enter">
+                    {currentNumber || '-'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 bg-slate-100/90 border border-slate-200/80 px-4 py-1.5 rounded-full shadow-inner">
+            {/* Status & Timer Footer */}
+            <div className="mt-2 bg-white/90 border border-slate-200/90 px-4 py-2 rounded-2xl shadow-xs backdrop-blur-xs">
               <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={true} />
             </div>
           </div>
