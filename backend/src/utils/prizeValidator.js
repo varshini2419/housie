@@ -18,7 +18,8 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers) => 
                     }
                 }
             }
-            return matchedCount === 5;
+            // Early Five: first player with at least 5 marked drawn numbers (not exactly 5)
+            return matchedCount >= 5;
         }
         case 'EarlySeven': {
             let matchedCount = 0;
@@ -30,7 +31,7 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers) => 
                     }
                 }
             }
-            return matchedCount === 7;
+            return matchedCount >= 7;
         }
         case 'FourCorners': {
             const top = getRowNumbers(0);
