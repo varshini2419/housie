@@ -6,30 +6,35 @@ const useSpeech = () => {
     return saved !== null ? JSON.parse(saved) : true;
   });
   
-  // Use a ref so socket listeners never have a stale closure
   const isVoiceEnabled = useRef(isVoiceEnabledState);
+
+  // Synchronize ref with state
+  useEffect(() => {
+    isVoiceEnabled.current = isVoiceEnabledState;
+    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
+  }, [isVoiceEnabledState]);
   
   const [voicesLoaded, setVoicesLoaded] = useState(false);
   const speechQueue = useRef([]);
   const isSpeaking = useRef(false);
   const initialized = useRef(false);
   const currentSpokenNumber = useRef(null);
-  const lastAnnouncedNumber = useRef(null); // CRITICAL: Global tracker to prevent duplicate announcements
-  const timeoutRefs = useRef([]); // To track and clear failsafe timeouts
-  const activeUtterances = useRef(new Set()); // CRITICAL: Prevent Garbage Collection of utterances
+  const lastAnnouncedNumber = useRef(null);
+  const timeoutRefs = useRef([]);
+  const activeUtterances = useRef(new Set());
 
-  // Initialize and load voices robustly (especially for Safari/iOS)
+  // Initialize voices robustly
   useEffect(() => {
     const loadVoices = () => {
+      if (!window.speechSynthesis) return;
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         setVoicesLoaded(true);
-        console.log('[Voice Engine] Voices loaded successfully', voices.length);
+        console.log('[Voice Engine] Loaded voices:', voices.length);
       }
     };
     
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel(); // Clear any zombie native queues from previous page loads
       loadVoices();
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -37,36 +42,50 @@ const useSpeech = () => {
     }
     
     return () => {
-       // Cleanup timeouts on unmount
        timeoutRefs.current.forEach(clearTimeout);
     };
   }, []);
 
-  // Save preference
-  useEffect(() => {
-    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
-  }, [isVoiceEnabledState]);
-
-  // Unlock iOS Safari SpeechSynthesis on first user interaction
+  // Unlock Chrome / Safari SpeechSynthesis audio on first user interaction
   const unlockAudio = useCallback(() => {
-    if (initialized.current || !window.speechSynthesis) return;
-    console.log('[Voice Engine] Unlocking Audio context (iOS/Safari compat)');
-    // Speak a space instead of empty string to avoid Safari lockups
-    const utterance = new SpeechSynthesisUtterance(' '); 
-    utterance.volume = 0; // Silent unlock
-    window.speechSynthesis.speak(utterance);
-    initialized.current = true;
+    if (!window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.resume();
+      if (!initialized.current) {
+        console.log('[Voice Engine] Unlocking Audio context');
+        const utterance = new SpeechSynthesisUtterance('');
+        utterance.volume = 0;
+        window.speechSynthesis.speak(utterance);
+        initialized.current = true;
+      }
+    } catch (e) {
+      console.warn('[Voice Engine] Audio unlock error:', e);
+    }
   }, []);
 
-  // Ensure unlock on toggle if not already unlocked
+  // Auto-unlock on window click or touch
+  useEffect(() => {
+    const handleInteraction = () => {
+      unlockAudio();
+    };
+    window.addEventListener('click', handleInteraction, { once: true });
+    window.addEventListener('touchstart', handleInteraction, { once: true });
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+  }, [unlockAudio]);
+
   const toggleVoice = () => {
     unlockAudio();
-    const next = !isVoiceEnabled.current;
-    isVoiceEnabled.current = next;
+    const next = !isVoiceEnabledState;
     setIsVoiceEnabledState(next);
+    isVoiceEnabled.current = next;
     
     if (!next && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
       speechQueue.current = [];
       isSpeaking.current = false;
       currentSpokenNumber.current = null;
@@ -75,68 +94,100 @@ const useSpeech = () => {
   };
 
   const getBestVoice = () => {
+    if (!window.speechSynthesis) return null;
     const voices = window.speechSynthesis.getVoices();
-    return voices.find(v => v.lang.startsWith('en-') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Premium'))) 
-      || voices.find(v => v.lang.startsWith('en-'));
+    if (!voices || voices.length === 0) return null;
+
+    return voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Premium'))) 
+      || voices.find(v => v.lang.startsWith('en'))
+      || voices[0];
   };
 
   const speakUtterance = (text) => {
     return new Promise((resolve) => {
-      console.log(`[VOICE TRACE] Creating utterance for text: "${text}"`);
+      if (!window.speechSynthesis) {
+        resolve();
+        return;
+      }
+
+      console.log(`[VOICE ENGINE] Speaking text: "${text}"`);
+      
+      // Ensure Chrome speech engine is resumed
+      try {
+        window.speechSynthesis.resume();
+      } catch (e) {}
+
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
+      utterance.rate = 0.9;
       utterance.pitch = 1.0;
-      utterance.volume = 1;
+      utterance.volume = 1.0;
       
       const preferredVoice = getBestVoice();
       if (preferredVoice) {
-          utterance.voice = preferredVoice;
+        utterance.voice = preferredVoice;
       }
 
       let finished = false;
       let failsafeId = null;
+      let resumeInterval = null;
       
-      activeUtterances.current.add(utterance); // Keep alive to prevent GC bug where onend never fires
+      activeUtterances.current.add(utterance);
       
       const finish = () => {
-          activeUtterances.current.delete(utterance); // Release for GC
-          if (finished) return;
-          finished = true;
-          
-          if (failsafeId) {
-              clearTimeout(failsafeId);
-              timeoutRefs.current = timeoutRefs.current.filter(id => id !== failsafeId);
-          }
-          
-          resolve();
+        activeUtterances.current.delete(utterance);
+        if (finished) return;
+        finished = true;
+        
+        if (failsafeId) {
+          clearTimeout(failsafeId);
+          timeoutRefs.current = timeoutRefs.current.filter(id => id !== failsafeId);
+        }
+
+        if (resumeInterval) {
+          clearInterval(resumeInterval);
+        }
+        
+        resolve();
       };
 
       utterance.onstart = () => {
-          console.log(`[VOICE TRACE] onstart fired for text: "${text}"`);
+        console.log(`[VOICE ENGINE] Started: "${text}"`);
       };
 
       utterance.onend = () => {
-          console.log(`[VOICE TRACE] onend fired for text: "${text}"`);
-          finish();
+        console.log(`[VOICE ENGINE] Ended: "${text}"`);
+        finish();
       };
       
       utterance.onerror = (e) => {
-          console.error(`[VOICE TRACE] onerror fired for text: "${text}"`, e);
-          finish();
+        console.warn(`[VOICE ENGINE] Speech error for "${text}":`, e);
+        finish();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Periodic resume fix for Chrome SpeechSynthesis bug where long audio pauses
+      resumeInterval = setInterval(() => {
+        if (!finished && window.speechSynthesis && window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      }, 300);
+
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error('[VOICE ENGINE] Error executing speak():', err);
+        finish();
+      }
       
-      // Failsafe for stuck speech engine
+      // Failsafe timeout (4 seconds max per utterance)
       failsafeId = setTimeout(() => {
-          if (!finished) {
-              console.warn('[Voice Engine] Utterance failsafe triggered for text:', text);
-              window.speechSynthesis.pause();
-              window.speechSynthesis.resume();
-              window.speechSynthesis.cancel();
-              finish();
-          }
-      }, 5000);
+        if (!finished) {
+          console.warn('[VOICE ENGINE] Utterance failsafe timeout triggered for:', text);
+          try {
+            window.speechSynthesis.resume();
+          } catch (e) {}
+          finish();
+        }
+      }, 4000);
       
       timeoutRefs.current.push(failsafeId);
     });
@@ -149,23 +200,21 @@ const useSpeech = () => {
     }
 
     if (isSpeaking.current) {
-      return; // Prevent concurrent processing
+      return;
     }
     
     isSpeaking.current = true;
-    window.speechSynthesis.cancel(); // Ensure no zombie native queues
-    
     const item = speechQueue.current.shift();
     
     if (typeof item === 'object' && item.type === 'winner') {
-        try {
-            await speakUtterance(item.text);
-        } catch (err) {
-            console.error('[Voice Engine] Winner announcement error:', err);
-        }
-        isSpeaking.current = false;
-        if (speechQueue.current.length > 0) processQueue();
-        return;
+      try {
+        await speakUtterance(item.text);
+      } catch (err) {
+        console.error('[VOICE ENGINE] Winner announcement error:', err);
+      }
+      isSpeaking.current = false;
+      if (speechQueue.current.length > 0) processQueue();
+      return;
     }
 
     const number = item;
@@ -176,52 +225,48 @@ const useSpeech = () => {
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
     try {
-        const num = Number(number);
-        if (num < 10) {
-            // Single digit: "Single number 5, 5"
-            await speakUtterance(`Single number ${num}, ${num}`);
-        } else {
-            // Two digits: "six five, sixty five" in a single smooth utterance
-            const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
-            await speakUtterance(`${digits}, ${num}`);
-        }
+      const num = Number(number);
+      if (num < 10) {
+        // Single digit: "Single number 5, 5"
+        await speakUtterance(`Single number ${num}, ${num}`);
+      } else {
+        // Two digits: "six five, sixty five"
+        const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
+        await speakUtterance(`${digits}, ${num}`);
+      }
     } catch (err) {
-        console.error('[Voice Engine] Queue processing error:', err);
+      console.error('[VOICE ENGINE] Speech execution error:', err);
     }
 
-    // Dispatch speech_finished ONLY after speech utterance has completed
+    // Always dispatch speech_finished after speech completes
     window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
 
     isSpeaking.current = false;
     currentSpokenNumber.current = null;
     
     if (speechQueue.current.length > 0) {
-        processQueue();
+      processQueue();
     }
   }, []);
 
   const announceNumber = useCallback((number) => {
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
-        window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-        return;
+      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+      return;
     }
 
-    // STRICT GLOBAL DEDUPLICATION: Never announce the same number consecutively
-    if (lastAnnouncedNumber.current === number) {
-        return;
-    }
-    
     if (speechQueue.current.includes(number) || currentSpokenNumber.current === number) {
-        return;
+      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+      return;
     }
     
-    lastAnnouncedNumber.current = number; // Update global tracker
+    lastAnnouncedNumber.current = number;
     speechQueue.current.push(number);
     
     if (!isSpeaking.current) {
       const id = setTimeout(() => {
-          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
-          processQueue();
+        timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+        processQueue();
       }, 50);
       timeoutRefs.current.push(id);
     }
@@ -234,8 +279,8 @@ const useSpeech = () => {
     
     if (!isSpeaking.current) {
       const id = setTimeout(() => {
-          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
-          processQueue();
+        timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+        processQueue();
       }, 50);
       timeoutRefs.current.push(id);
     }
