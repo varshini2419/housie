@@ -128,14 +128,15 @@ const useSpeech = () => {
 
       console.log(`[VOICE ENGINE] Speaking text: "${text}"`);
       
-      // Ensure Chrome speech engine is resumed and clear any hung queue
+      // Ensure Chrome speech engine is resumed
       try {
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.resume();
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
       } catch (e) {}
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
+      utterance.rate = 0.92;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
@@ -188,26 +189,25 @@ const useSpeech = () => {
             window.speechSynthesis.resume();
           }
         }
-      }, 250);
+      }, 200);
 
       try {
         window.speechSynthesis.speak(utterance);
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
       } catch (err) {
         console.error('[VOICE ENGINE] Error executing speak():', err);
         finish();
       }
       
-      // Failsafe timeout (2.5 seconds max per utterance for short number announcements)
+      // Failsafe timeout (3.0 seconds max per utterance)
       failsafeId = setTimeout(() => {
         if (!finished) {
           console.warn('[VOICE ENGINE] Utterance failsafe timeout triggered for:', text);
-          try {
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.resume();
-          } catch (e) {}
           finish();
         }
-      }, 2500);
+      }, 3000);
       
       timeoutRefs.current.push(failsafeId);
     });
@@ -253,7 +253,7 @@ const useSpeech = () => {
           // Single digit: "Single number 5, 5"
           await speakUtterance(`Single number ${num}, ${num}`);
         } else {
-          // Two digits: "six five, sixty five"
+          // Two digits: "six one, sixty one"
           const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
           await speakUtterance(`${digits}, ${num}`);
         }
@@ -279,7 +279,8 @@ const useSpeech = () => {
       return;
     }
 
-    if (speechQueue.current.includes(number) || currentSpokenNumber.current === number) {
+    const numStr = String(number);
+    if (speechQueue.current.some(item => String(item) === numStr) || String(currentSpokenNumber.current) === numStr) {
       window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
       return;
     }
@@ -288,11 +289,7 @@ const useSpeech = () => {
     speechQueue.current.push(number);
     
     if (!isSpeaking.current) {
-      const id = setTimeout(() => {
-        timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
-        processQueue();
-      }, 50);
-      timeoutRefs.current.push(id);
+      processQueue();
     }
   }, [processQueue]);
 
