@@ -33,12 +33,6 @@ const Game = () => {
   const [activeWinner, setActiveWinner] = useState(null);
   const [popupInstanceId, setPopupInstanceId] = useState(0);
   const activeWinnerRef = useRef(null);
-  const pendingWinnersRef = useRef([]);
-  const localHiddenKeyRef = useRef(null); // Back to Game / ✕ — local only for that winner key
-  const closeTimerRef = useRef(null);
-  const armedByPositiveTickRef = useRef(false);
-  const showWinnerRef = useRef(null);
-  const hidePopupRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
 
@@ -49,132 +43,7 @@ const Game = () => {
     return `${id}-${w.winnerTicket}-${w.prizeName || ''}`;
   };
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  const promotePending = useCallback(() => {
-    const next = pendingWinnersRef.current.shift();
-    if (next) {
-      // showWinner clears local hide only when the next winner key differs
-      setTimeout(() => showWinnerRef.current?.(next, 10, 'queue'), 0);
-    }
-  }, []);
-
-  const hidePopup = useCallback((opts = {}) => {
-    const { localOnly = false } = opts;
-    const current = activeWinnerRef.current;
-    if (!current) {
-      promotePending();
-      return;
-    }
-    if (localOnly) {
-      localHiddenKeyRef.current = makeWinnerKey(current);
-    } else {
-      localHiddenKeyRef.current = null;
-    }
-    clearCloseTimer();
-    armedByPositiveTickRef.current = false;
-    activeWinnerRef.current = null;
-    setActiveWinner(null);
-    console.log('[POPUP] popup closed', makeWinnerKey(current), localOnly ? '(local)' : '');
-    promotePending();
-  }, [clearCloseTimer, promotePending]);
-
-  /**
-   * Single entry for showing a winner — used by claim_result, pause ticks, and queue flush.
-   * No prize-type branching. Local hide only suppresses the same winner key.
-   */
-  const showWinner = useCallback((winner, countdown = 10, source = 'claim') => {
-    if (!winner) return;
-    const key = makeWinnerKey(winner);
-    if (!key) {
-      console.warn('[POPUP] invalid winner payload', winner);
-      return;
-    }
-
-    if (localHiddenKeyRef.current === key) {
-      console.log('[POPUP] suppressed local hide', key, source);
-      return;
-    }
-    if (localHiddenKeyRef.current && localHiddenKeyRef.current !== key) {
-      localHiddenKeyRef.current = null;
-    }
-
-    pendingWinnersRef.current = pendingWinnersRef.current.filter((w) => makeWinnerKey(w) !== key);
-
-    const prevKey = makeWinnerKey(activeWinnerRef.current);
-    if (prevKey !== key) {
-      setPopupInstanceId((id) => id + 1);
-      activeWinnerRef.current = winner;
-      setActiveWinner(winner);
-      armedByPositiveTickRef.current = false;
-      console.log('[POPUP] activeWinner updated', winner.prizeName, source);
-
-      const isPlayer = !winner.winnerName || winner.winnerName.trim() === '' || winner.winnerName === 'Player';
-      announceWinner(
-        isPlayer
-          ? `Congratulations! Ticket Number ${winner.winnerTicket} won ${winner.prizeName}.`
-          : `Congratulations ${winner.winnerName}! You won ${winner.prizeName}.`
-      );
-    }
-
-    const n = typeof countdown === 'number' && !Number.isNaN(countdown) ? countdown : 10;
-    setPauseCountdown(n);
-
-    if (source === 'tick' && n > 0) {
-      armedByPositiveTickRef.current = true;
-    }
-
-    clearCloseTimer();
-    if (source === 'tick' && n <= 0) {
-      if (armedByPositiveTickRef.current) {
-        hidePopup({ localOnly: false });
-      }
-      return;
-    }
-
-    // Soft local fallback only — does not depend on receiving tick 10 first
-    const wait = (n > 0 ? n : 10) + 0.75;
-    closeTimerRef.current = setTimeout(() => {
-      console.log('[POPUP] auto-close fallback', wait);
-      hidePopup({ localOnly: false });
-    }, wait * 1000);
-  }, [announceWinner, clearCloseTimer, hidePopup]);
-
-  showWinnerRef.current = showWinner;
-  hidePopupRef.current = hidePopup;
-
-  const enqueueOrShowWinner = useCallback((winnerData) => {
-    const key = makeWinnerKey(winnerData);
-    if (!key) return;
-
-    if (localHiddenKeyRef.current === key) return;
-    if (localHiddenKeyRef.current && localHiddenKeyRef.current !== key) {
-      localHiddenKeyRef.current = null;
-    }
-
-    const activeKey = makeWinnerKey(activeWinnerRef.current);
-    if (activeKey === key) {
-      // Already showing — refresh countdown default if needed
-      return;
-    }
-
-    if (!activeWinnerRef.current) {
-      showWinnerRef.current?.(winnerData, 10, 'claim');
-      return;
-    }
-
-    if (!pendingWinnersRef.current.some((w) => makeWinnerKey(w) === key)) {
-      pendingWinnersRef.current.push(winnerData);
-      console.log('[POPUP] winnerQueue updated', winnerData.prizeName, pendingWinnersRef.current.length);
-    }
-  }, []);
-
-  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+  // Removed local popup timing and queuing. Backend handles it entirely.
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -218,26 +87,30 @@ const Game = () => {
     socketRef.current.on('game_paused', ({ countdown, currentWinner }) => {
       setGameState('PAUSED');
       if (currentWinner && countdown > 0) {
-        showWinnerRef.current?.(currentWinner, countdown, 'tick');
-      } else if (countdown !== undefined) {
+        const key = makeWinnerKey(currentWinner);
+        const prevKey = makeWinnerKey(activeWinnerRef.current);
+        if (prevKey !== key) {
+           setPopupInstanceId(id => id + 1);
+           activeWinnerRef.current = currentWinner;
+           setActiveWinner(currentWinner);
+           const isPlayer = !currentWinner.winnerName || currentWinner.winnerName.trim() === '' || currentWinner.winnerName === 'Player';
+           announceWinner(
+             isPlayer
+               ? `Congratulations! Ticket Number ${currentWinner.winnerTicket} won ${currentWinner.prizeName}.`
+               : `Congratulations ${currentWinner.winnerName}! You won ${currentWinner.prizeName}.`
+           );
+        }
+      }
+      if (countdown !== undefined) {
         setPauseCountdown(countdown);
       }
     });
     
     socketRef.current.on('pause_countdown_tick', ({ countdown, currentWinner }) => {
-      console.log('[POPUP] countdown updated', countdown, currentWinner?.prizeName);
-      if (countdown <= 0) {
-        setPauseCountdown(0);
-        if (armedByPositiveTickRef.current) {
-          hidePopupRef.current?.({ localOnly: false });
-        }
-        return;
-      }
-      if (currentWinner) {
-        showWinnerRef.current?.(currentWinner, countdown, 'tick');
-      } else {
-        armedByPositiveTickRef.current = true;
-        setPauseCountdown(countdown);
+      setPauseCountdown(countdown);
+      if (currentWinner && !activeWinnerRef.current) {
+         activeWinnerRef.current = currentWinner;
+         setActiveWinner(currentWinner);
       }
     });
     
@@ -248,20 +121,11 @@ const Game = () => {
     socketRef.current.on('game_resumed', () => {
       console.log('[POPUP] game_resumed');
       setGameState('LIVE');
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
-      armedByPositiveTickRef.current = false;
-      localHiddenKeyRef.current = null;
+      setPauseCountdown(0);
       activeWinnerRef.current = null;
       setActiveWinner(null);
-      setPauseCountdown(0);
-      const next = pendingWinnersRef.current.shift();
-      if (next) {
-        setTimeout(() => showWinnerRef.current?.(next, 10, 'queue'), 0);
-      }
     });
+
     socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
     socketRef.current.on('game_deleted', () => {
@@ -269,7 +133,6 @@ const Game = () => {
       navigate('/');
     });
 
-    // Same path for EVERY prize type
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
       console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
@@ -282,24 +145,13 @@ const Game = () => {
           }
           return p;
         }));
-        enqueueOrShowWinner({
-          prizeId: prizeId || prizeName,
-          prizeName,
-          winnerTicket,
-          winnerName,
-          prizeItem
-        });
       }
     });
 
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [sessionId, ticket?.ticketCode, navigate, enqueueOrShowWinner]);
+  }, [sessionId, ticket?.ticketCode, navigate, announceWinner]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
@@ -311,9 +163,10 @@ const Game = () => {
 
   // Local only — does not resume pause / no socket emit
   const handleBackToGame = useCallback(() => {
-    hidePopup({ localOnly: true });
+    activeWinnerRef.current = null;
+    setActiveWinner(null);
     setActiveTab('game');
-  }, [hidePopup]);
+  }, []);
 
   const handlePopupClose = handleBackToGame;
 

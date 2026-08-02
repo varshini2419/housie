@@ -221,11 +221,11 @@ const startGame = async (sessionId, io) => {
     state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
     state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
     
-    io.to(sessionId.toString()).emit('game_started');
+    if (io) io.to(sessionId.toString()).emit('game_started');
     return game;
 };
 
-const pauseGame = async (sessionId, io) => {
+const pauseGame = async (sessionId, io, payload = { status: 'PAUSED' }) => {
     const game = await GameSession.findById(sessionId);
     if (!game || game.gameStatus !== 'LIVE') throw new Error('Game is not LIVE');
 
@@ -239,7 +239,7 @@ const pauseGame = async (sessionId, io) => {
         state.timerId = null;
     }
 
-    io.to(sessionId.toString()).emit('game_paused', { status: 'PAUSED' });
+    if (io) io.to(sessionId.toString()).emit('game_paused', payload);
     return game;
 };
 
@@ -253,7 +253,7 @@ const resumeGame = async (sessionId, io) => {
     game.gameStatus = 'LIVE';
     await game.save();
 
-    io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });
+    if (io) io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });
 
     const state = await ensureActiveGame(sessionId, null);
     if (state) {
@@ -290,7 +290,7 @@ const endGame = async (sessionId, io) => {
         state.timerId = null;
     }
 
-    io.to(sessionId.toString()).emit('game_ended', { status: 'COMPLETED' });
+    if (io) io.to(sessionId.toString()).emit('game_ended', { status: 'COMPLETED' });
     return game;
 };
 

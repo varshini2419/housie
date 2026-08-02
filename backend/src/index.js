@@ -207,6 +207,7 @@ io.on('connection', (socket) => {
 
                 if (isValid) {
                     // 1. Stop the game timer immediately to prevent race conditions
+                    state.timerLock = true;
                     if (state.timerId) {
                         clearTimeout(state.timerId);
                         state.timerId = null;
@@ -225,11 +226,9 @@ io.on('connection', (socket) => {
                         sessionPrizes[nextPrizeIndex].status = 'AVAILABLE';
                     }
 
+                    state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
                     if (game.prizes && game.prizes.length > 0) {
                         await game.save();
-                    } else {
-                        // For legacy games, update state.winners to maintain backward compatibility
-                        state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
                     }
 
                     const newWinner = new Winner({ sessionId: sId, prizeType: prize.name, ticketCode });
@@ -289,25 +288,25 @@ io.on('connection', (socket) => {
                             while (pauseQueues[sId] && pauseQueues[sId].length > 0) {
                                 const currentWinner = pauseQueues[sId][0];
                                 
-                                try {
-                                    const liveCheck = await GameSession.findById(sId);
-                                    if (liveCheck && liveCheck.gameStatus === 'LIVE') {
-                                        await pauseGame(sId, io);
-                                        console.log(`[PAUSE] started session=${sId}`);
-                                    }
-                                } catch (e) {
-                                    console.warn('[PAUSE] pauseGame skipped/failed:', e?.message || e);
-                                }
-                                
                                 clearPauseTimer(sId);
 
                                 let countdown = 10;
                                 activePauseInfo[sId] = { countdown, currentWinner };
-                                io.to(sId).emit('game_paused', {
-                                    status: 'PAUSED',
-                                    countdown,
-                                    currentWinner
-                                });
+
+                                try {
+                                    const liveCheck = await GameSession.findById(sId);
+                                    if (liveCheck && liveCheck.gameStatus === 'LIVE') {
+                                        await pauseGame(sId, io, { status: 'PAUSED', countdown, currentWinner });
+                                        console.log(`[PAUSE] started session=${sId}`);
+                                    } else {
+                                        io.to(sId).emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
+                                    }
+                                } catch (e) {
+                                    console.warn('[PAUSE] pauseGame skipped/failed:', e?.message || e);
+                                    io.to(sId).emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
+                                }
+                                state.timerLock = false;
+
                                 console.log(`[PAUSE] game_paused emitted session=${sId}`, currentWinner.prizeName);
                                 io.to(sId).emit('pause_countdown_tick', { countdown, currentWinner });
                                 console.log(`[PAUSE] countdown tick session=${sId} countdown=${countdown}`);
