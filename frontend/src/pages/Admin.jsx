@@ -814,21 +814,23 @@ const Admin = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 glass-panel p-6 sm:p-8">
-              <h2 className="text-xs text-brand-text-muted mb-6 font-bold uppercase tracking-wider">Master Draw History</h2>
-              <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
-                {Array.from({length: 90}, (_, i) => i + 1).map(num => {
-                  const isDrawn = adminStats?.drawnNumbers?.includes(num);
-                  return (
-                    <div 
-                      key={num}
-                      className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                        board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
-                      `}
-                    >
-                      {num}
-                    </div>
-                  );
-                })}
+              <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Master Draw History</h2>
+              <div className="premium-inner-board p-4">
+                <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+                  {Array.from({length: 90}, (_, i) => i + 1).map(num => {
+                    const isDrawn = adminStats?.drawnNumbers?.includes(num);
+                    return (
+                      <div 
+                        key={num}
+                        className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
+                          board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
+                        `}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

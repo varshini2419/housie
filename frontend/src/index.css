@@ -53,12 +53,14 @@
   --ticket-bg: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
   --ticket-cell: #FFFFFF;
   --ticket-empty: rgba(248, 250, 252, 0.4);
-  --ticket-border: #E2E8F0;
+  --ticket-border: #94A3B8;
   --ticket-number: #0F172A;
   
   --board-cell-bg: #FFFFFF;
-  --board-cell-border: #E2E8F0;
-  --board-cell-text: #475569;
+  --board-cell-border: #94A3B8;
+  --board-cell-text: #0F172A;
+  --border-color: #CBD5E1;
+  --input-border: #CBD5E1;
 }
 
 .dark {
@@ -109,26 +111,64 @@ body {
   overflow-x: hidden;
 }
 
-/* Premium Light-Themed Card Container */
+/* Premium Apple-inspired Floating Card Container */
 .premium-card,
 .glass-panel {
   background: linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%);
-  border: 1px solid #DBEAFE;
+  border: 1px solid #CBD5E1;
   border-radius: 28px;
   box-shadow:
-    0 4px 12px rgba(15, 23, 42, 0.04),
-    0 12px 32px rgba(59, 130, 246, 0.08);
+    0 10px 30px -5px rgba(15, 23, 42, 0.04),
+    0 20px 45px -10px rgba(15, 23, 42, 0.03),
+    0 1px 2px rgba(15, 23, 42, 0.02);
   padding: 24px;
-  transition: all 0.25s ease;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, border-color 200ms ease;
+  position: relative;
+}
+
+/* Premium Inner Board Styling (Where numbers/tickets are placed inside cards) */
+.premium-inner-board {
+  background: 
+    radial-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, #F1F5F9 0%, #F8FAFC 100%);
+  background-size: 14px 14px, 100% 100%;
+  border: 1px solid #CBD5E1;
+  border-radius: 22px;
+  box-shadow: 
+    inset 0 3px 8px rgba(15, 23, 42, 0.06),
+    inset 0 1px 3px rgba(15, 23, 42, 0.04),
+    0 1px 2px rgba(255, 255, 255, 0.8);
+  position: relative;
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+.dark .premium-inner-board {
+  background: 
+    radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  background-size: 14px 14px, 100% 100%;
+  border: 1px solid #334155;
+  border-radius: 22px;
+  box-shadow: 
+    inset 0 3px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .premium-card:hover,
   .glass-panel:hover {
     transform: translateY(-2px);
+    border-color: #94A3B8;
     box-shadow:
-      0 8px 24px rgba(15, 23, 42, 0.08),
-      0 18px 40px rgba(59, 130, 246, 0.12);
+      0 16px 40px -6px rgba(15, 23, 42, 0.07),
+      0 28px 60px -10px rgba(15, 23, 42, 0.05);
+  }
+
+  .premium-inner-board:hover {
+    box-shadow: 
+      inset 0 3px 8px rgba(15, 23, 42, 0.06),
+      inset 0 1px 3px rgba(15, 23, 42, 0.04),
+      0 4px 14px rgba(15, 23, 42, 0.04);
   }
 }
 
@@ -323,28 +363,66 @@ select option {
 }
 
 .current-number-card.live-glow {
-  background: radial-gradient(circle at center, rgba(37, 99, 235, 0.15) 0%, var(--card-bg) 100%);
-  border-color: rgba(37, 99, 235, 0.5);
+  background: radial-gradient(circle at center, rgba(37, 99, 235, 0.08) 0%, var(--card-bg) 100%);
+  border-color: #3B82F6;
   box-shadow: 
-    0 15px 35px -10px rgba(37, 99, 235, 0.2),
-    0 0 30px -5px rgba(37, 99, 235, 0.3),
-    inset 0 0 20px rgba(37, 99, 235, 0.1);
+    0 12px 32px -5px rgba(37, 99, 235, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
 }
 .dark .current-number-card.live-glow {
-  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, #111827 100%);
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, #111827 100%);
   border-color: #3B82F6;
   color: #FFFFFF;
-  box-shadow: 0 0 40px -5px rgba(59,130,246,0.4), inset 0 0 20px rgba(59,130,246,0.2);
+  box-shadow: 0 0 25px -5px rgba(59,130,246,0.3);
 }
 
 @keyframes drawPulse {
-  0% { transform: scale(1); box-shadow: 0 0 20px -10px rgba(59,130,246,0.4); }
-  50% { transform: scale(1.03); box-shadow: 0 0 45px 0px rgba(59,130,246,0.5); }
-  100% { transform: scale(1); box-shadow: 0 0 35px -10px rgba(59,130,246,0.4); }
+  0% { transform: scale(1); box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12); }
+  50% { transform: scale(1.02); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18); }
+  100% { transform: scale(1); box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12); }
 }
 
 .animate-draw-pulse {
   animation: drawPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium Number Chips (Polished Game Token / Bingo Ball feel) */
+.premium-number-chip {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1.5px solid #94A3B8;
+  box-shadow: 
+    0 3px 8px rgba(15, 23, 42, 0.08),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(148, 163, 184, 0.12);
+  color: #0F172A; /* Dark navy */
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .premium-number-chip:hover:not(.ticket-cell-marked):not(.drawn),
+  .ticket-cell:hover:not(.ticket-cell-empty):not(.ticket-cell-marked),
+  .board-cell:hover:not(.drawn) {
+    transform: translateY(-2px) scale(1.03);
+    border-color: #64748B;
+    box-shadow: 
+      0 6px 16px rgba(15, 23, 42, 0.1),
+      inset 0 1.5px 1px rgba(255, 255, 255, 1);
+  }
+}
+
+.dark .premium-number-chip {
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  border: 1.5px solid #475569;
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.15);
+  color: #F8FAFC;
 }
 
 /* Tambola Ticket */
@@ -356,21 +434,26 @@ select option {
   padding: 0.5rem;
 }
 .ticket-cell {
-  background: linear-gradient(180deg, var(--ticket-cell) 0%, rgba(255,255,255,0.95) 100%);
-  border-color: var(--ticket-border);
-  color: var(--ticket-number);
-  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1.5px solid #94A3B8;
+  color: #0F172A;
+  font-weight: 800;
+  box-shadow: 
+    0 3px 8px rgba(15, 23, 42, 0.08),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(148, 163, 184, 0.12);
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dark .ticket-cell {
-  background: linear-gradient(180deg, var(--ticket-cell) 0%, rgba(31, 41, 55, 0.95) 100%);
-  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  border: 1.5px solid #475569;
+  color: #F8FAFC;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3), inset 0 1.5px 1px rgba(255,255,255,0.15);
 }
 .ticket-cell:hover:not(.ticket-cell-empty):not(.ticket-cell-marked) {
-  background-color: rgba(37, 99, 235, 0.05);
-  border-color: var(--accent-blue);
+  border-color: #3B82F6;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px -2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 5px 12px -2px rgba(37, 99, 235, 0.2), inset 0 1.5px 1px rgba(255, 255, 255, 1);
 }
 .ticket-cell-empty {
   background-color: var(--ticket-empty);
@@ -397,45 +480,57 @@ select option {
   border-color: rgba(16, 185, 129, 0.5);
 }
 
-/* Enhancing existing marked cell animation */
-.ticket-cell-marked {
-  background: linear-gradient(135deg, var(--accent-emerald) 0%, var(--accent-emerald-hover) 100%);
+/* Elegant Physical Bingo Marker Pressed Effect */
+.ticket-cell-marked,
+.pressed-marked {
+  background: linear-gradient(180deg, #059669 0%, #047857 100%);
   color: #FFFFFF;
-  border-color: rgba(16, 185, 129, 0.6);
+  border: 1.5px solid #064E3B;
+  border-radius: 9999px;
   box-shadow: 
-    0 6px 15px -3px rgba(16, 185, 129, 0.4),
-    0 0 15px 0 rgba(16, 185, 129, 0.25),
-    inset 0 1px 1px rgba(255,255,255,0.4);
-  transform: scale(1.08);
-  z-index: 10;
-  transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    inset 0 2.5px 5px rgba(0, 0, 0, 0.35),
+    inset 0 1px 2px rgba(0, 0, 0, 0.25),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(15, 23, 42, 0.08);
+  transform: translateY(1px) scale(0.98);
+  z-index: 5;
+  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Number Board */
 .board-cell {
-  background: linear-gradient(180deg, var(--board-cell-bg) 0%, rgba(255,255,255,0.95) 100%);
-  border: 1px solid var(--board-cell-border);
-  color: var(--board-cell-text);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1.5px solid #94A3B8;
+  color: #0F172A;
+  font-weight: 800;
   border-radius: 12px;
-  box-shadow: 0 1px 3px -1px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.5);
+  box-shadow: 
+    0 3px 8px rgba(15, 23, 42, 0.08),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(148, 163, 184, 0.12);
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dark .board-cell {
-  background: linear-gradient(180deg, var(--board-cell-bg) 0%, rgba(30, 41, 59, 0.95) 100%);
-  box-shadow: 0 1px 3px -1px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  border: 1.5px solid #475569;
+  color: #F8FAFC;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3), inset 0 1.5px 1px rgba(255,255,255,0.15);
 }
 .board-cell:hover:not(.drawn) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px -2px rgba(0,0,0,0.08);
+  box-shadow: 0 5px 12px -2px rgba(15, 23, 42, 0.12);
 }
 .board-cell.drawn {
-  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
   color: #FFFFFF;
-  border-color: rgba(37, 99, 235, 0.6);
+  border: 1.5px solid #1E40AF;
   box-shadow: 
-    0 4px 12px -2px rgba(37, 99, 235, 0.4),
-    inset 0 1px 1px rgba(255,255,255,0.3);
-  transform: scale(1.04);
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+  transform: translateY(1px) scale(0.97);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Utilities */

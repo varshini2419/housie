@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
+import useSoundEffects from '../hooks/useSoundEffects';
 import GameStatusTimer from '../components/GameStatusTimer';
 import WinnerPopup from '../components/WinnerPopup';
 
@@ -10,6 +11,7 @@ const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
+  const { playPop, playMark, playClaim, playTick } = useSoundEffects();
 
   const [gameState, setGameState] = useState('WAITING');
   const [currentNumber, setCurrentNumber] = useState(null);
@@ -34,6 +36,17 @@ const Game = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBoardExpanded, setIsBoardExpanded] = useState(true);
 
+  const autoMarkRef = useRef(autoMark);
+  const ticketRef = useRef(ticket);
+
+  useEffect(() => {
+    autoMarkRef.current = autoMark;
+  }, [autoMark]);
+
+  useEffect(() => {
+    ticketRef.current = ticket;
+  }, [ticket]);
+
   const [winnerQueue, setWinnerQueue] = useState([]);
   const [activeWinner, setActiveWinner] = useState(null);
 
@@ -57,11 +70,20 @@ const Game = () => {
     if (gameState !== 'LIVE' || isSpeakingState || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
 
     const timer = setInterval(() => {
-      setNextDrawCountdown(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+      setNextDrawCountdown(prev => {
+        if (prev !== null && prev > 0) {
+          const nextVal = prev - 1;
+          if (nextVal <= 3 && nextVal > 0 && isVoiceEnabledRef.current) {
+            playTick();
+          }
+          return nextVal;
+        }
+        return 0;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState, isSpeakingState, nextDrawCountdown !== null && nextDrawCountdown > 0]);
+  }, [gameState, isSpeakingState, nextDrawCountdown !== null && nextDrawCountdown > 0, playTick]);
 
   useEffect(() => {
     if (!ticket || !ticket.ticketCode) {
@@ -98,6 +120,10 @@ const Game = () => {
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
       setNextDrawCountdown(5);
+
+      if (isVoiceEnabledRef.current) {
+        playPop();
+      }
 
       // Auto Mark feature support
       if (autoMarkRef.current && ticketRef.current?.ticketMatrix) {
@@ -212,6 +238,7 @@ const Game = () => {
 
   const claimPrize = (prizeId) => {
     if (gameState !== 'LIVE' && gameState !== 'PAUSED') return;
+    if (isVoiceEnabledRef.current) playClaim();
     if (socketRef.current) {
       socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
     }
@@ -223,6 +250,7 @@ const Game = () => {
     if (!isDrawn(num)) return;
     if (isMarked(num)) return;
     
+    if (isVoiceEnabledRef.current) playMark();
     setMarkedNumbers(prev => Array.from(new Set([...prev, num])));
     if (socketRef.current) {
       socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
@@ -263,19 +291,19 @@ const Game = () => {
       )}
 
       {/* Header Bar */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs px-4 sm:px-8 py-3.5 flex justify-between items-center w-full">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#CBD5E1] shadow-xs px-4 sm:px-8 py-3.5 flex justify-between items-center w-full">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎉</span>
             <span className="font-black text-2xl text-blue-600 tracking-tight">Tambola</span>
           </div>
-          <span className="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/60 text-indigo-600 text-xs font-black shadow-xs">
+          <span className="px-3 py-1 rounded-full bg-indigo-50 border border-[#CBD5E1] text-indigo-600 text-xs font-black shadow-xs">
             #{ticket.ticketCode}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full items-center gap-1.5 shadow-xs">
+          <div className="flex bg-emerald-50 border border-[#CBD5E1] px-3 py-1.5 rounded-full items-center gap-1.5 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-emerald-700">{onlineCount} Online</span>
           </div>
@@ -284,13 +312,13 @@ const Game = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           <button 
             onClick={toggleVoice} 
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full text-base sm:text-lg shadow-xs transition-all active:scale-95 cursor-pointer border border-slate-200/80 text-slate-700"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full text-base sm:text-lg shadow-xs transition-all active:scale-95 cursor-pointer border border-[#CBD5E1] text-slate-700"
             title="Toggle Voice"
           >
             {isVoiceEnabled ? '🔊' : '🔈'}
           </button>
 
-          <div className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full border border-slate-200/80 cursor-pointer shadow-xs">
+          <div className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full border border-[#CBD5E1] cursor-pointer shadow-xs">
             <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
               👤
             </div>
@@ -315,15 +343,15 @@ const Game = () => {
               </p>
 
               <div className="relative my-2">
-                <div key={currentNumber} className={`w-36 h-36 rounded-full bg-white border-4 border-blue-500/80 flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
+                <div key={currentNumber} className={`w-36 h-36 rounded-full bg-white border-[3px] border-[#CBD5E1] flex items-center justify-center shadow-lg shadow-blue-500/20 relative ${gameState === "LIVE" ? "animate-draw-pulse" : ""}`}>
                   <span className="text-6xl font-black text-slate-800 tracking-tighter leading-none animate-number-enter">
                     {currentNumber || '-'}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-4 bg-slate-100/90 border border-slate-200/80 px-4 py-1.5 rounded-full shadow-inner">
-                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
+              <div className="mt-4 bg-slate-100/90 border border-[#CBD5E1] px-4 py-1.5 rounded-full shadow-inner">
+                <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={false} />
               </div>
             </div>
 
@@ -338,7 +366,7 @@ const Game = () => {
                 {drawnNumbers.slice(-10).reverse().map((num, i) => (
                   <div 
                     key={`left-rec-${num}-${i}`}
-                    className={`w-11 h-11 aspect-square rounded-full flex items-center justify-center font-black text-sm transition-all ${i === 0 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105' : 'bg-slate-100 text-slate-700 border border-slate-200/60'}`}
+                    className={`w-11 h-11 aspect-square rounded-full flex items-center justify-center font-black text-sm transition-all ${i === 0 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105' : 'premium-number-chip'}`}
                   >
                     {num}
                   </div>
@@ -416,12 +444,12 @@ const Game = () => {
                       onClick={() => claimPrize(prize.id)}
                       className={`p-3.5 rounded-2xl font-bold flex flex-col items-center justify-center gap-1.5 transition-all duration-200 border text-center cursor-pointer min-h-[105px]
                         ${isWon 
-                          ? (wonByMe ? 'bg-emerald-500 text-white border-transparent shadow-md shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed') 
+                          ? (wonByMe ? 'bg-emerald-500 text-white border-transparent shadow-md shadow-emerald-500/20' : 'bg-slate-50 text-slate-400 border-[#CBD5E1] cursor-not-allowed') 
                           : (isFullHouse 
                             ? 'bg-gradient-to-b from-amber-50 to-yellow-50/80 border-amber-200 hover:border-amber-400 text-amber-900 shadow-xs' 
                             : (idx === 0 
                               ? 'bg-blue-50/40 border-2 border-blue-500 text-blue-900 shadow-xs' 
-                              : 'bg-slate-50/70 border-slate-200/80 text-slate-800 hover:bg-blue-50/50 hover:border-blue-300'))}
+                              : 'bg-slate-50/70 border-[#CBD5E1] text-slate-800 hover:bg-blue-50/50 hover:border-blue-300'))}
                       `}
                     >
                       <span className="text-xs font-black flex items-center gap-1">
@@ -439,21 +467,21 @@ const Game = () => {
               </div>
             </div>
 
-            {/* YOUR TICKET CARD (Tambola Matrix Grid) */}
-            <div className="premium-card relative border-2 border-slate-800">
+            {/* YOUR TICKET CARD (Tambola Ticket Board) */}
+            <div className="premium-card relative">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-sm font-black text-blue-900 uppercase tracking-wider">
-                  YOUR TICKET
+                <h2 className="text-sm font-black text-blue-900 uppercase tracking-wider flex items-center gap-2">
+                  <span>🎟️ YOUR TICKET</span>
                 </h2>
-                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800 bg-slate-100 px-3 py-1 rounded-full border-2 border-slate-700">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-white px-3.5 py-1 rounded-full border border-[#CBD5E1] shadow-xs">
                   <span>Ticket #{ticket.ticketCode}</span>
-                  <span className="text-slate-500 text-[10px]">📋</span>
+                  <span className="text-slate-400 text-[10px]">📋</span>
                 </div>
               </div>
 
-              {/* Tambola Ticket Matrix */}
-              <div className="bg-[#F8FAFC] p-4 rounded-2xl border-2 border-slate-800 shadow-md">
-                <div className="grid grid-cols-9 gap-2.5 w-full">
+              {/* Premium Tambola Ticket Board Container */}
+              <div className="premium-inner-board p-5 sm:p-6">
+                <div className="grid grid-cols-9 gap-2.5 sm:gap-3 w-full">
                   {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                     row.map((num, cIndex) => {
                       const marked = num !== 0 && isMarked(num);
@@ -463,12 +491,12 @@ const Game = () => {
                         <div 
                           key={`mid-cell-${rIndex}-${cIndex}`}
                           onClick={() => handleMarkNumber(num)}
-                          className={`aspect-square flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-300 select-none
+                          className={`aspect-square flex items-center justify-center text-lg sm:text-xl font-black transition-all duration-200 select-none
                             ${num === 0 
                               ? 'bg-transparent border-none' 
                               : (marked 
-                                ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-2 border-emerald-600' 
-                                : 'bg-white text-slate-900 border-2 border-slate-700 shadow-xs rounded-2xl')}
+                                ? 'ticket-cell-marked' 
+                                : 'premium-number-chip rounded-2xl hover:border-blue-500')}
                             ${canMark ? 'cursor-pointer ring-2 ring-blue-500 animate-pulse' : ''}`}
                         >
                           {num === 0 ? '' : num}
@@ -602,7 +630,7 @@ const Game = () => {
                 </div>
               </div>
 
-              <button className="w-full mt-5 py-2.5 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold border border-blue-200/80 text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+              <button className="w-full mt-5 py-2.5 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold border border-[#CBD5E1] text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs">
                 👥 View All Winners
               </button>
             </div>
@@ -638,22 +666,24 @@ const Game = () => {
                 </h2>
                 <button 
                   onClick={() => setIsBoardExpanded(!isBoardExpanded)}
-                  className="text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 cursor-pointer"
+                  className="text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-[#CBD5E1] cursor-pointer"
                 >
                   {isBoardExpanded ? 'Hide' : 'Expand'}
                 </button>
               </div>
 
               {isBoardExpanded && (
-                <div className="grid grid-cols-10 gap-1.5 pt-3">
-                  {Array.from({length: 90}, (_, i) => i + 1).map(num => (
-                    <div 
-                      key={`mid-board-${num}`}
-                      className={`flex items-center justify-center aspect-square rounded-lg text-[10px] font-bold transition-all duration-300 ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}
-                    >
-                      {num}
-                    </div>
-                  ))}
+                <div className="premium-inner-board p-3.5 mt-3">
+                  <div className="grid grid-cols-10 gap-1.5">
+                    {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                      <div 
+                        key={`mid-board-${num}`}
+                        className={`flex items-center justify-center aspect-square rounded-lg text-[10px] font-bold transition-all duration-300 ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'premium-number-chip'}`}
+                      >
+                        {num}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -680,19 +710,22 @@ const Game = () => {
             </div>
 
             <div className="mt-4 bg-slate-100/90 border border-slate-200/80 px-4 py-1.5 rounded-full shadow-inner">
-              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={true} />
+              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} isMobile={true} />
             </div>
           </div>
 
           {/* 2. TICKET CARD */}
-          <div className="premium-card relative border-2 border-slate-800">
+          <div className="premium-card relative">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">YOUR TICKET</h2>
-              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border-2 border-emerald-600">Active</span>
+              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🎟️ YOUR TICKET</span>
+              </h2>
+              <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">Active • #{ticket.ticketCode}</span>
             </div>
 
-            <div className="bg-[#F8FAFC] p-2.5 rounded-2xl border-2 border-slate-800 shadow-md">
-              <div className="grid grid-cols-9 gap-1.5 w-full">
+            {/* Premium Tambola Ticket Board Container */}
+            <div className="premium-inner-board p-3.5 sm:p-4">
+              <div className="grid grid-cols-9 gap-1.5 sm:gap-2 w-full">
                 {(ticket?.ticketMatrix || []).map((row, rIndex) => (
                   row.map((num, cIndex) => {
                     const marked = num !== 0 && isMarked(num);
@@ -702,12 +735,12 @@ const Game = () => {
                       <div 
                         key={`mob-cell-${rIndex}-${cIndex}`}
                         onClick={() => handleMarkNumber(num)}
-                        className={`aspect-square flex items-center justify-center text-xs font-black transition-all select-none
+                        className={`aspect-square flex items-center justify-center text-xs sm:text-sm font-black transition-all select-none
                           ${num === 0 
                             ? 'bg-transparent border-none' 
                             : (marked 
-                              ? 'bg-emerald-500 text-white rounded-full font-black shadow-md shadow-emerald-500/40 scale-105 border-2 border-emerald-600' 
-                              : 'bg-white text-slate-900 border-2 border-slate-700 shadow-xs rounded-xl')}
+                              ? 'ticket-cell-marked' 
+                              : 'premium-number-chip rounded-xl hover:border-blue-500')}
                           ${canMark ? 'cursor-pointer ring-2 ring-blue-500 animate-pulse' : ''}`}
                       >
                         {num === 0 ? '' : num}
@@ -777,15 +810,17 @@ const Game = () => {
             </div>
 
             {isBoardExpanded && (
-              <div className="grid grid-cols-10 gap-1 pt-1">
-                {Array.from({length: 90}, (_, i) => i + 1).map(num => (
-                  <div 
-                    key={`mob-board-grid-${num}`}
-                    className={`flex items-center justify-center aspect-square rounded-md text-[9px] font-bold transition-all ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}
-                  >
-                    {num}
-                  </div>
-                ))}
+              <div className="premium-inner-board p-2.5 mt-2">
+                <div className="grid grid-cols-10 gap-1">
+                  {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                    <div 
+                      key={`mob-board-grid-${num}`}
+                      className={`flex items-center justify-center aspect-square rounded-md text-[9px] font-bold transition-all ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'premium-number-chip'}`}
+                    >
+                      {num}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -841,7 +876,7 @@ const Game = () => {
             <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">RECENT NUMBERS 🕒</h2>
             <div className="grid grid-cols-5 gap-2">
               {drawnNumbers.slice(-10).reverse().map((num, i) => (
-                <div key={`mob-rec-bottom-${num}-${i}`} className={`aspect-square rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700'}`}>
+                <div key={`mob-rec-bottom-${num}-${i}`} className={`aspect-square rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-blue-600 text-white shadow-sm' : 'premium-number-chip'}`}>
                   {num}
                 </div>
               ))}
