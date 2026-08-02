@@ -199,6 +199,7 @@ io.on('connection', (socket) => {
                 if (!ticket) return socket.emit('claim_result', { success: false, message: 'Ticket not found' });
 
                 const isValid = validateClaim(prize.type, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
+                console.log(`[CLAIM] validate prizeType=${prize.type} prizeId=${prize.id} valid=${isValid}`);
 
                 if (isValid) {
                     // 1. Stop the game timer immediately to prevent race conditions
@@ -231,7 +232,7 @@ io.on('connection', (socket) => {
                     await newWinner.save();
                     console.log(`[CLAIM] winner saved session=${sessionId} prize=${prize.name} ticket=${ticketCode}`);
                     
-                    io.to(sessionId).emit('claim_result', {
+                    const claimPayload = {
                         success: true,
                         message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
                         prizeId: prize.id,
@@ -239,8 +240,9 @@ io.on('connection', (socket) => {
                         winnerTicket: ticketCode,
                         winnerName: ticket.playerName || 'Player', 
                         prizeItem: prize.prizeItem || null 
-                    });
-                    console.log(`[CLAIM] claim_result emitted session=${sessionId} prize=${prize.name}`);
+                    };
+                    io.to(sessionId).emit('claim_result', claimPayload);
+                    console.log(`[CLAIM] claim_result emitted session=${sessionId}`, JSON.stringify(claimPayload));
                     io.to(sessionId).emit('game_sync', {
                         status: game.gameStatus,
                         currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,

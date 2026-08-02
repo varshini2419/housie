@@ -82,41 +82,48 @@ const Game = () => {
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
 
+    const isSameWinner = (a, b) =>
+      a && b && a.prizeId === b.prizeId && a.winnerTicket === b.winnerTicket
+      && (a.prizeName == null || b.prizeName == null || a.prizeName === b.prizeName);
+
+    // Every successful claim must reach the popup queue exactly once (all prize types).
+    const enqueueWinner = (winnerData, source) => {
+      if (!winnerData?.prizeId && !winnerData?.prizeName) return;
+      const winnerKey = `${winnerData.prizeId}-${winnerData.winnerTicket}-${winnerData.prizeName}`;
+      const active = activeWinnerRef.current;
+
+      if (isSameWinner(active, winnerData)) {
+        seenWinners.current.add(winnerKey);
+        return;
+      }
+
+      setWinnerQueue(prev => {
+        const exists = prev.some(w => isSameWinner(w, winnerData));
+        if (exists) {
+          console.log('[POPUP] winner already queued', source, winnerData.prizeName);
+          return prev;
+        }
+        const next = [...prev, winnerData];
+        console.log('[POPUP] winnerQueue updated', source, winnerData.prizeName, 'len=', next.length);
+        return next;
+      });
+      seenWinners.current.add(winnerKey);
+    };
+
     const ensureWinnerVisible = (currentWinner) => {
       if (!currentWinner) return;
-      const winnerKey = `${currentWinner.prizeId}-${currentWinner.winnerTicket}`;
+      enqueueWinner(currentWinner, 'pause_tick');
+
       const active = activeWinnerRef.current;
-      const isSameActive = active
-        && active.prizeId === currentWinner.prizeId
-        && active.winnerTicket === currentWinner.winnerTicket;
-
-      if (isSameActive) return;
-
-      if (!seenWinners.current.has(winnerKey)) {
-        seenWinners.current.add(winnerKey);
-        setWinnerQueue(prev => {
-          const exists = prev.some(
-            w => w.prizeId === currentWinner.prizeId && w.winnerTicket === currentWinner.winnerTicket
-          );
-          return exists ? prev : [...prev, currentWinner];
-        });
-      } else {
-        // Reconnect / missed claim_result: force popup for the server's current pause winner
-        setWinnerQueue(prev => {
-          const exists = prev.some(
-            w => w.prizeId === currentWinner.prizeId && w.winnerTicket === currentWinner.winnerTicket
-          );
-          if (exists) return prev;
-          if (active) return prev;
-          return [currentWinner, ...prev];
-        });
-        if (!active) {
-          closingPopupRef.current = false;
-          setHasReceivedTick(true);
-          setPopupInstanceId(id => id + 1);
-          setActiveWinner(currentWinner);
-          activeWinnerRef.current = currentWinner;
-        }
+      if (!active && !closingPopupRef.current) {
+        // Reconnect / missed activation: show server current winner immediately.
+        // Do not arm hasReceivedTick here — a stale pauseCountdown of 0 would
+        // instantly close the popup before the next tick arrives.
+        closingPopupRef.current = false;
+        setPopupInstanceId(id => id + 1);
+        setActiveWinner(currentWinner);
+        activeWinnerRef.current = currentWinner;
+        console.log('[POPUP] activeWinner forced', currentWinner.prizeName);
       }
     };
 
@@ -144,15 +151,8 @@ const Game = () => {
 
     socketRef.current.on('game_resumed', () => {
       setGameState('LIVE');
-      // Ensure popup cannot stick after resume
-      if (activeWinnerRef.current) {
-        closingPopupRef.current = false;
-        setActiveWinner(null);
-        activeWinnerRef.current = null;
-        setHasReceivedTick(false);
-        setWinnerQueue([]);
-        setPauseCountdown(0);
-      }
+      // Do NOT clear winnerQueue/activeWinner here — a late resume can wipe a
+      // newly claimed prize popup (e.g. Second Line after First Line).
     });
     socketRef.current.on('game_ended', () => setGameState('COMPLETED'));
 
@@ -162,20 +162,15 @@ const Game = () => {
     });
 
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
-      console.log('[POPUP] claim_result received', { success, prizeId, winnerTicket });
+      console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
 
       if (success) {
-        const winnerKey = `${prizeId}-${winnerTicket}`;
-        if (!seenWinners.current.has(winnerKey)) {
-          seenWinners.current.add(winnerKey);
-          setWinnerQueue(prev => {
-            const next = [...prev, { prizeId, prizeName, winnerTicket, winnerName, prizeItem }];
-            console.log('[POPUP] winnerQueue updated', next.length);
-            return next;
-          });
-        }
+        enqueueWinner(
+          { prizeId, prizeName, winnerTicket, winnerName, prizeItem },
+          'claim_result'
+        );
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId) {
             return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem };
