@@ -75,21 +75,22 @@ io.on('connection', (socket) => {
     
     socket.on('join_game', async ({ sessionId, ticketCode, role }) => {
         const state = await ensureActiveGame(sessionId, io);
-        socket.join(sessionId);
-        socket.sessionId = sessionId;
+        const roomId = String(sessionId);
+        socket.join(roomId);
+        socket.sessionId = roomId;
         socket.ticketCode = ticketCode;
         
         if (role === 'player' && ticketCode) {
             if (activeGames[sessionId]) {
                 activeGames[sessionId].onlinePlayers.add(ticketCode);
             }
-            io.to(sessionId).emit('player_joined_status', { ticketCode, status: 'PLAYING' });
+            io.to(roomId).emit('player_joined_status', { ticketCode, status: 'PLAYING' });
         }
         
         if (activeGames[sessionId]) {
             const game = await GameSession.findById(sessionId);
             const totalPlayers = game ? game.totalPlayers : 0;
-            io.to(sessionId).emit('player_count_update', {
+            io.to(roomId).emit('player_count_update', {
                 onlineCount: activeGames[sessionId].onlinePlayers.size,
                 totalPlayers: totalPlayers
             });
@@ -128,7 +129,7 @@ io.on('connection', (socket) => {
             // Reconnect during pause: restore current winner + remaining countdown immediately
             if (status === 'PAUSED' && activePauseInfo[sessionId]) {
                 const { countdown, currentWinner } = activePauseInfo[sessionId];
-                console.log(`[PAUSE] restore on join session=${sessionId} countdown=${countdown}`);
+                console.log(`[PAUSE] restore on join session=${roomId} countdown=${countdown}`);
                 socket.emit('game_paused', { status: 'PAUSED', countdown, currentWinner });
                 socket.emit('pause_countdown_tick', { countdown, currentWinner });
             }
@@ -241,9 +242,9 @@ io.on('connection', (socket) => {
                         winnerName: ticket.playerName || 'Player', 
                         prizeItem: prize.prizeItem || null 
                     };
-                    io.to(sessionId).emit('claim_result', claimPayload);
+                    io.to(String(sessionId)).emit('claim_result', claimPayload);
                     console.log(`[CLAIM] claim_result emitted session=${sessionId}`, JSON.stringify(claimPayload));
-                    io.to(sessionId).emit('game_sync', {
+                    io.to(String(sessionId)).emit('game_sync', {
                         status: game.gameStatus,
                         currentNumber: activeGames[sessionId].drawnNumbers.slice(-1)[0] || null,
                         drawnNumbers: activeGames[sessionId].drawnNumbers,
@@ -270,6 +271,7 @@ io.on('connection', (socket) => {
                     if (!pauseProcessing[sessionId]) {
                         pauseProcessing[sessionId] = true;
                         const processPauseQueue = async () => {
+                            const roomId = String(sessionId);
                             while (pauseQueues[sessionId] && pauseQueues[sessionId].length > 0) {
                                 const currentWinner = pauseQueues[sessionId][0];
                                 
@@ -280,30 +282,31 @@ io.on('connection', (socket) => {
                                         console.log(`[PAUSE] started session=${sessionId}`);
                                     }
                                 } catch (e) {
-                                    // Ignore if already paused
+                                    // Ignore if already paused — still emit countdown so UI shows
+                                    console.warn('[PAUSE] pauseGame skipped/failed:', e?.message || e);
                                 }
                                 
                                 clearPauseTimer(sessionId);
 
                                 let countdown = 10;
                                 activePauseInfo[sessionId] = { countdown, currentWinner };
-                                // Authoritative pause snapshot for all clients (incl. winner + countdown)
-                                io.to(sessionId).emit('game_paused', {
+                                // Always emit winner+countdown so every client can show the popup
+                                io.to(roomId).emit('game_paused', {
                                     status: 'PAUSED',
                                     countdown,
                                     currentWinner
                                 });
-                                console.log(`[PAUSE] game_paused emitted session=${sessionId}`, currentWinner.prizeName);
-                                io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
-                                console.log(`[PAUSE] countdown tick session=${sessionId} countdown=${countdown}`);
+                                console.log(`[PAUSE] game_paused emitted session=${roomId}`, currentWinner.prizeName);
+                                io.to(roomId).emit('pause_countdown_tick', { countdown, currentWinner });
+                                console.log(`[PAUSE] countdown tick session=${roomId} countdown=${countdown}`);
                                 
                                 await new Promise(resolve => {
                                     activePauseTimers[sessionId] = setInterval(() => {
                                         countdown--;
                                         if (countdown >= 0) {
                                             activePauseInfo[sessionId] = { countdown, currentWinner };
-                                            io.to(sessionId).emit('pause_countdown_tick', { countdown, currentWinner });
-                                            console.log(`[PAUSE] countdown tick session=${sessionId} countdown=${countdown}`);
+                                            io.to(roomId).emit('pause_countdown_tick', { countdown, currentWinner });
+                                            console.log(`[PAUSE] countdown tick session=${roomId} countdown=${countdown}`);
                                         } else {
                                             clearPauseTimer(sessionId);
                                             resolve();
