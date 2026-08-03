@@ -172,8 +172,10 @@ const Game = () => {
     });
 
     socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
-      setToastMsg(message);
-      setTimeout(() => setToastMsg(null), 4000);
+      if (!success) {
+        setToastMsg(message);
+        setTimeout(() => setToastMsg(null), 4000);
+      }
 
       if (success) {
         setWinnerQueue(prev => [...prev, { prizeName, winnerTicket, winnerName, prizeItem }]);
