@@ -9,11 +9,14 @@ const PrizeSchema = new mongoose.Schema({
     winner: { type: String, default: null }, // Store Player Name
     winnerTicket: { type: String, default: null },
     prizeItem: { type: String, default: null },
+    sponsor: { type: String, default: null },
     claimedAt: { type: Date, default: null },
     status: { type: String, enum: ['LOCKED', 'AVAILABLE', 'COMPLETED'], default: 'AVAILABLE' }
 }, { _id: false });
 
 const GameSessionSchema = new mongoose.Schema({
+    sessionId: { type: String, unique: true, sparse: true },
+    password: { type: String },
     sessionName: { type: String, required: true },
     startTime: { type: Date, required: true },
     totalPlayers: { type: Number, required: true },

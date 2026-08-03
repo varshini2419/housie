@@ -234,7 +234,7 @@ const Game = () => {
       setTimeout(() => setToastMsg(null), 4000);
     });
 
-    socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem }) => {
+    socketRef.current.on('claim_result', ({ success, message, prizeId, prizeName, winnerTicket, winnerName, prizeItem, sponsor }) => {
       console.log('[POPUP] claim_result received', { success, prizeId, prizeName, winnerTicket });
       setToastMsg(message);
       setTimeout(() => setToastMsg(null), 4000);
@@ -242,7 +242,7 @@ const Game = () => {
       if (success) {
         setPrizes(prevPrizes => prevPrizes.map(p => {
           if (p.id === prizeId || p.name === prizeName) {
-            return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem };
+            return { ...p, status: 'COMPLETED', winnerTicket, winner: winnerName, prizeItem: prizeItem || p.prizeItem, sponsor: sponsor || p.sponsor };
           }
           return p;
         }));
@@ -366,6 +366,11 @@ const Game = () => {
               <span className={`text-[10px] font-medium leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-white/90' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-white/90' : 'text-[#6B7280]')}`}>
                 🎁 {prize.prizeItem || 'Prize to be announced'}
               </span>
+              {prize.sponsor && (
+                <span className={`text-[9px] font-bold leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-white/80' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-white/80' : 'text-[#9CA3AF]')}`}>
+                  🤝 {prize.sponsor}
+                </span>
+              )}
               {isWon && <span className="text-[9px] font-black uppercase tracking-wider mt-0.5 opacity-80">{prize.winner}</span>}
               {!isWon && isLocked && <span className="text-[9px] uppercase opacity-60 mt-0.5 font-bold">Locked 🔒</span>}
             </motion.button>
@@ -392,6 +397,13 @@ const Game = () => {
                 <div className="mb-4 flex flex-col">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">🎁 Prize</span>
                   <span className="text-sm font-semibold text-[#6B7280]">{prize.prizeItem}</span>
+                </div>
+              )}
+
+              {prize.sponsor && (
+                <div className="mb-4 flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">🤝 Sponsor</span>
+                  <span className="text-sm font-semibold text-[#6B7280]">{prize.sponsor}</span>
                 </div>
               )}
 

@@ -26,130 +26,138 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
       {winner && (
         <motion.div 
           key={popupKey}
-          className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4"
+          className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4 overflow-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.6 }}
         >
-          {/* Blurred Backdrop */}
-          <div className="absolute inset-0 bg-white/20 backdrop-blur-2xl"></div>
+          {/* Deep Blur Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl"></div>
           
-          {/* CSS Confetti / Sparkles background handled in index.css via classes */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center opacity-70">
+          {/* CSS Confetti / Sparkles background */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center opacity-100 z-0">
              <div className="confetti-overlay"></div>
           </div>
 
-          {/* Main Glassmorphism Card */}
+          {/* Full-Screen Poster Canvas */}
           <motion.div 
-            initial={{ scale: 0.8, y: 40, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative z-10 bg-white/80 backdrop-blur-3xl p-8 sm:p-12 rounded-[2rem] border border-white/60 shadow-[0_30px_80px_rgba(0,0,0,0.1),_inset_0_1px_1px_rgba(255,255,255,1)] flex flex-col items-center text-center max-w-lg w-full"
+            initial={{ scale: 0.8, y: 100, rotateX: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, rotateX: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: -50, opacity: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 150 }}
+            className="relative z-10 bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-3xl rounded-[3rem] border border-white/60 shadow-[0_40px_100px_rgba(0,0,0,0.3),_inset_0_2px_4px_rgba(255,255,255,1)] flex flex-col items-center text-center w-full max-w-2xl overflow-hidden"
           >
+            {/* Top decorative banner */}
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#00C16E]/20 to-transparent"></div>
+
             {/* Close Button */}
             {onClose && (
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/30 hover:bg-white/80 transition-all duration-200 shadow-sm hover:shadow-md text-gray-400 hover:text-gray-700 z-50 focus:outline-none"
+                className="absolute top-6 right-6 p-3 rounded-full bg-black/5 hover:bg-black/10 transition-all duration-200 shadow-sm hover:shadow-md text-gray-500 hover:text-gray-800 z-50 focus:outline-none"
                 aria-label="Close popup"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
 
-            {/* Trophy Icon */}
-            <motion.div 
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.2 }}
-              className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center shadow-[0_15px_30px_rgba(245,158,11,0.4)] border-4 border-white"
-            >
-              <span className="text-5xl">🏆</span>
-            </motion.div>
-            
-            {/* Winner Name */}
-            <motion.h2 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="text-sm sm:text-base font-bold text-[#00C16E] uppercase tracking-widest mb-2"
-            >
-              Winner Announced!
-            </motion.h2>
-            
-            <motion.h1 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-[#1B2430] mb-6 leading-tight tracking-tight"
-            >
-              Congratulations!
-            </motion.h1>
-            
-            {/* Prize Name */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
-              className={`bg-[#00C16E]/10 border border-[#00C16E]/20 px-6 py-3 rounded-2xl ${winner?.prizeItem ? 'mb-4' : 'mb-6'}`}
-            >
-              <p className="text-2xl sm:text-3xl font-extrabold text-[#00a85e]">
-                🏆 {winner?.prizeName}
-              </p>
-            </motion.div>
-
-            {/* Prize Item (Optional) */}
-            {winner?.prizeItem && (
+            <div className="p-8 sm:p-14 w-full flex flex-col items-center relative z-20">
+              {/* Trophy Icon */}
               <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}
-                className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-8 py-3.5 rounded-2xl mb-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)] flex flex-col items-center max-w-full"
+                initial={{ scale: 0, rotate: -180, y: 50 }}
+                animate={{ scale: 1, rotate: 0, y: 0 }}
+                transition={{ type: "spring", damping: 12, stiffness: 150, delay: 0.2 }}
+                className="w-32 h-32 mb-8 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center shadow-[0_20px_50px_rgba(245,158,11,0.5)] border-4 border-white/90"
               >
-                <p className="text-[#d97706] text-[11px] uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <span className="text-lg">🎁</span> Prize
-                </p>
-                <p className="text-xl sm:text-2xl font-black text-[#F59E0B] truncate max-w-[250px] sm:max-w-[300px]">
-                  {winner?.prizeItem}
+                <span className="text-6xl drop-shadow-lg">🏆</span>
+              </motion.div>
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                className="flex flex-col items-center"
+              >
+                <h2 className="text-sm sm:text-base font-black text-[#00C16E] uppercase tracking-[0.3em] mb-3">
+                  🎉 Winner Announced 🎉
+                </h2>
+                <h1 className="text-5xl sm:text-7xl font-black text-[#1B2430] mb-8 leading-tight tracking-tighter drop-shadow-sm">
+                  {displayName}
+                </h1>
+              </motion.div>
+              
+              {/* Prize Details Section */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.5 }}
+                className="w-full flex flex-col items-center gap-4 mb-10"
+              >
+                {/* Prize Category */}
+                <div className="bg-[#00C16E]/10 border border-[#00C16E]/20 px-8 py-4 rounded-3xl w-full max-w-md shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#00C16E]/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+                  <p className="text-[#00C16E] text-xs uppercase font-black tracking-widest mb-1">Won Category</p>
+                  <p className="text-3xl sm:text-4xl font-extrabold text-[#00a85e] truncate">
+                    {winner?.prizeName}
+                  </p>
+                </div>
+
+                {/* Prize Item & Sponsor row */}
+                {(winner?.prizeItem || winner?.sponsor) && (
+                  <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                    {winner?.prizeItem && (
+                      <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 w-20 h-20 bg-[#F59E0B]/10 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2"></div>
+                        <p className="text-[#d97706] text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <span className="text-base">🎁</span> Prize
+                        </p>
+                        <p className="text-xl font-black text-[#F59E0B] truncate w-full text-center">
+                          {winner?.prizeItem}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {winner?.sponsor && (
+                      <div className="bg-[#4F8EF7]/10 border border-[#4F8EF7]/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-[#4F8EF7]/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+                        <p className="text-[#3B7CE6] text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <span className="text-base">🤝</span> Sponsor
+                        </p>
+                        <p className="text-xl font-black text-[#4F8EF7] truncate w-full text-center">
+                          {winner?.sponsor}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+              
+              {/* Countdown / Status Line */}
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+                className="flex items-center gap-4 bg-white/60 px-8 py-4 rounded-full border border-black/5 shadow-inner"
+              >
+                <div className={`w-3 h-3 rounded-full ${isTimerLagging ? 'bg-[#F59E0B]' : 'bg-[#00C16E]'} animate-pulse`}></div>
+                <p className="text-[#6B7280] text-sm font-bold uppercase tracking-wider">
+                  {isTimerLagging ? (
+                    <span className="text-[#F59E0B]">Synchronizing Game State...</span>
+                  ) : (
+                    <span>Game resuming in <span className="text-[#00C16E] font-black text-xl tabular-nums ml-1">{countdown}</span>s</span>
+                  )}
                 </p>
               </motion.div>
-            )}
 
-            {/* Winner Details */}
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
-              className="flex flex-col items-center mb-8"
-            >
-              <p className="text-[#6B7280] text-xs uppercase font-bold tracking-widest mb-1">
-                Winner
-              </p>
-              <span className="text-2xl font-black text-[#4F8EF7]">
-                {displayName}
-              </span>
-            </motion.div>
-            
-            {/* Countdown */}
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-              className="flex flex-col items-center"
-            >
-              <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest mb-2">
-                Resuming in...
-              </p>
-              <div className={`w-12 h-12 rounded-full border ${isTimerLagging ? 'border-[#F59E0B]/50 text-[#F59E0B] bg-[#F59E0B]/10 animate-pulse' : 'border-[#4F8EF7]/30 text-[#4F8EF7] bg-[#4F8EF7]/10'} flex items-center justify-center text-xl font-bold tabular-nums transition-colors duration-500`}>
-                {countdown}
-              </div>
-              {isTimerLagging && <span className="text-[10px] text-[#F59E0B] font-bold mt-2 animate-pulse uppercase tracking-widest">Synchronizing...</span>}
-            </motion.div>
-
-            {/* Local dismiss only — does not resume the game or notify other players */}
-            {(onBackToGame || onClose) && (
-              <motion.button
-                type="button"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-                onClick={onBackToGame || onClose}
-                className="mt-8 px-6 py-2.5 rounded-xl bg-[#4F8EF7]/10 border border-[#4F8EF7]/25 text-[#4F8EF7] text-sm font-bold tracking-wide hover:bg-[#4F8EF7]/20 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4F8EF7]/30"
-              >
-                Back to Game
-              </motion.button>
-            )}
-            
+              {/* Local dismiss only — does not resume the game or notify other players */}
+              {(onBackToGame || onClose) && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
+                  onClick={onBackToGame || onClose}
+                  className="absolute bottom-6 text-[#9CA3AF] text-xs font-bold tracking-wide hover:text-[#6B7280] transition-colors focus:outline-none underline underline-offset-4"
+                >
+                  Dismiss
+                </motion.button>
+              )}
+            </div>
           </motion.div>
         </motion.div>
       )}

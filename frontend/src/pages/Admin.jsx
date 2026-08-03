@@ -14,14 +14,15 @@ const Admin = () => {
   const [ticketCodeMode, setTicketCodeMode] = useState('RANDOM');
   const [startingRegisterNumber, setStartingRegisterNumber] = useState('');
   const [prizes, setPrizes] = useState([
-    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, prizeItem: '' },
-    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, prizeItem: '' },
-    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, prizeItem: '' },
-    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, prizeItem: '' },
-    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, prizeItem: '' }
+    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, prizeItem: '', sponsor: '' }
   ]);
   const [customPrizeName, setCustomPrizeName] = useState('');
   const [customPrizeItem, setCustomPrizeItem] = useState('');
+  const [customPrizeSponsor, setCustomPrizeSponsor] = useState('');
   const [customPrizeType, setCustomPrizeType] = useState('Jaldi5');
 
   const [activeSessions, setActiveSessions] = useState([]);
@@ -233,7 +234,7 @@ const Admin = () => {
 
       if (!res.ok) throw new Error(data.message || 'Failed to create game');
 
-      setSuccessMsg(`Session created successfully! Session ID: ${data.sessionId}`);
+      setSuccessMsg(`Session created successfully! Session ID: ${data.session.sessionId}`);
       setSessionName('');
       setStartTime('');
       fetchActiveSessions();
@@ -554,29 +555,47 @@ const Admin = () => {
                           placeholder="Add Prize Item" 
                           className="flex-1 p-2.5 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
                         />
+                        <span className="text-lg opacity-80 ml-2">🤝</span>
+                        <input 
+                          type="text" 
+                          value={prize.sponsor || ''} 
+                          onChange={(e) => {
+                            const newPrizes = [...prizes];
+                            newPrizes[idx].sponsor = e.target.value;
+                            setPrizes(newPrizes);
+                          }} 
+                          placeholder="Sponsor (e.g. NutriDelight)" 
+                          className="flex-1 p-2.5 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="glass-panel-secondary p-4 border border-brand-border flex flex-col sm:flex-row gap-2 mt-3">
-                  <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
-                  <input type="text" value={customPrizeItem} onChange={e => setCustomPrizeItem(e.target.value)} placeholder="Prize Item (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
-                  <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
-                    <option value="Jaldi5">Jaldi 5</option>
-                    <option value="FirstLine">First Line</option>
-                    <option value="SecondLine">Second Line</option>
-                    <option value="ThirdLine">Third Line</option>
-                    <option value="FullHouse">Full House</option>
-                  </select>
-                  <button type="button" onClick={() => {
-                    if(!customPrizeName.trim()) return;
-                    const sameType = prizes.filter(p => p.type === customPrizeType);
-                    const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
-                    setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true, prizeItem: customPrizeItem }]);
-                    setCustomPrizeName('');
-                    setCustomPrizeItem('');
-                  }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
+                <div className="glass-panel-secondary p-4 border border-brand-border flex flex-col gap-3 mt-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
+                    <input type="text" value={customPrizeItem} onChange={e => setCustomPrizeItem(e.target.value)} placeholder="Prize Item (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input type="text" value={customPrizeSponsor} onChange={e => setCustomPrizeSponsor(e.target.value)} placeholder="Sponsor (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
+                    <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
+                      <option value="Jaldi5">Jaldi 5</option>
+                      <option value="FirstLine">First Line</option>
+                      <option value="SecondLine">Second Line</option>
+                      <option value="ThirdLine">Third Line</option>
+                      <option value="FullHouse">Full House</option>
+                    </select>
+                    <button type="button" onClick={() => {
+                      if(!customPrizeName.trim()) return;
+                      const sameType = prizes.filter(p => p.type === customPrizeType);
+                      const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
+                      setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true, prizeItem: customPrizeItem, sponsor: customPrizeSponsor }]);
+                      setCustomPrizeName('');
+                      setCustomPrizeItem('');
+                      setCustomPrizeSponsor('');
+                    }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
+                  </div>
                 </div>
               </div>
               

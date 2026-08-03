@@ -18,6 +18,17 @@ const useSpeech = () => {
   const timeoutRefs = useRef([]); // To track and clear failsafe timeouts
   const activeUtterances = useRef(new Set()); // CRITICAL: Prevent Garbage Collection of utterances
 
+  // Unlock iOS Safari SpeechSynthesis on first user interaction
+  const unlockAudio = useCallback(() => {
+    if (initialized.current || !window.speechSynthesis) return;
+    console.log('[Voice Engine] Unlocking Audio context (iOS/Safari compat)');
+    // Speak a space instead of empty string to avoid Safari lockups
+    const utterance = new SpeechSynthesisUtterance(' '); 
+    utterance.volume = 0; // Silent unlock
+    window.speechSynthesis.speak(utterance);
+    initialized.current = true;
+  }, []);
+
   // Initialize and load voices robustly (especially for Safari/iOS)
   useEffect(() => {
     const loadVoices = () => {
@@ -56,16 +67,6 @@ const useSpeech = () => {
     localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
   }, [isVoiceEnabledState]);
 
-  // Unlock iOS Safari SpeechSynthesis on first user interaction
-  const unlockAudio = useCallback(() => {
-    if (initialized.current || !window.speechSynthesis) return;
-    console.log('[Voice Engine] Unlocking Audio context (iOS/Safari compat)');
-    // Speak a space instead of empty string to avoid Safari lockups
-    const utterance = new SpeechSynthesisUtterance(' '); 
-    utterance.volume = 0; // Silent unlock
-    window.speechSynthesis.speak(utterance);
-    initialized.current = true;
-  }, []);
 
   // Ensure unlock on toggle if not already unlocked
   const toggleVoice = () => {

@@ -124,11 +124,11 @@ io.on('connection', (socket) => {
             }
 
             const defaultPrizes = [
-                { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
-                { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
-                { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
+                { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null, sponsor: null },
+                { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null, sponsor: null }
             ];
             
             const sessionPrizes = game && game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
@@ -229,11 +229,11 @@ io.on('connection', (socket) => {
                 }
 
                 const defaultPrizes = [
-                    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
-                    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
-                    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
-                    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
-                    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
+                    { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null, sponsor: null },
+                    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null, sponsor: null },
+                    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null, sponsor: null }
                 ];
 
                 const sessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
@@ -315,7 +315,8 @@ io.on('connection', (socket) => {
                         prizeName: prize.name,
                         winnerTicket: ticketCode,
                         winnerName: ticket.playerName || 'Player', 
-                        prizeItem: prize.prizeItem || null 
+                        prizeItem: prize.prizeItem || null,
+                        sponsor: prize.sponsor || null
                     };
 
                     // Log room membership so we can verify every client is targeted
@@ -348,7 +349,8 @@ io.on('connection', (socket) => {
                         prizeName: prize.name,
                         winnerTicket: ticketCode,
                         winnerName: ticket.playerName || 'Player',
-                        prizeItem: prize.prizeItem || null
+                        prizeItem: prize.prizeItem || null,
+                        sponsor: prize.sponsor || null
                     };
                     pauseQueues[sId].push(currentWinnerData);
 
@@ -360,7 +362,7 @@ io.on('connection', (socket) => {
                                 
                                 clearPauseTimer(sId);
 
-                                let countdown = 10;
+                                let countdown = 5;
                                 activePauseInfo[sId] = { countdown, currentWinner };
 
                                 try {
