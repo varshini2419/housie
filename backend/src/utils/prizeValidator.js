@@ -21,7 +21,9 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
     const normalized = (prizeType || '').toString().replace(/\s+/g, '').toLowerCase();
 
     switch (normalized) {
-        case 'jaldi5': {
+        case 'jaldi5':
+        case 'early5':
+        case 'earlyfive': {
             let matchedCount = 0;
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 9; c++) {
@@ -65,6 +67,7 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
         }
         case 'thirdline':
         case 'bottomline':
+        case 'lastline':
         case 'line3': {
             return allDrawn(getRowNumbers(2));
         }
@@ -75,7 +78,7 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
         }
         default: {
             // Flexible fallback for custom or unmapped prize names
-            if (normalized.includes('jaldi5')) {
+            if (normalized.includes('jaldi5') || normalized.includes('early5')) {
                 let count = 0;
                 for (let r = 0; r < 3; r++) {
                     for (let c = 0; c < 9; c++) {
@@ -86,7 +89,7 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
             }
             if (normalized.includes('first') || normalized.includes('top')) return allDrawn(getRowNumbers(0));
             if (normalized.includes('second') || normalized.includes('middle')) return allDrawn(getRowNumbers(1));
-            if (normalized.includes('third') || normalized.includes('bottom')) return allDrawn(getRowNumbers(2));
+            if (normalized.includes('third') || normalized.includes('bottom') || normalized.includes('last')) return allDrawn(getRowNumbers(2));
             if (normalized.includes('full') || normalized.includes('housie')) {
                 const allNums = [...getRowNumbers(0), ...getRowNumbers(1), ...getRowNumbers(2)];
                 return allDrawn(allNums);
