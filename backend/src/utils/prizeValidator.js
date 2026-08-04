@@ -33,6 +33,7 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
                     }
                 }
             }
+            // Early Five: first player with at least 5 marked drawn numbers (not exactly 5)
             return matchedCount >= 5;
         }
         case 'earlyseven':

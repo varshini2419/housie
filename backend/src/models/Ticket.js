@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const TicketSchema = new mongoose.Schema({
     sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'GameSession', required: true, index: true },
+    playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player', default: null, index: true },
     ticketCode: { type: String, required: true, index: true },
     ticketMatrix: { type: [[Number]], required: true },
     markedNumbers: { type: [Number], default: [] },

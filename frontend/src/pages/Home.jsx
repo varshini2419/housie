@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Phone, Lock, ArrowRight, ShieldCheck, Gamepad2, HelpCircle } from 'lucide-react';
 import useGameStore from '../store/useGameStore';
-import ThemeToggle from '../components/ThemeToggle';
+import useSpeech from '../hooks/useSpeech';
+import AuthLayout from '../components/auth/AuthLayout';
+import FloatingInput from '../components/auth/FloatingInput';
+import CustomSessionSelect from '../components/auth/CustomSessionSelect';
 
 const Home = () => {
+  const { unlockAudio } = useSpeech();
   const [sessions, setSessions] = useState([]);
-  const [selectedSessionId, setSelectedSessionId] = useState('');
-  const [ticketCode, setTicketCode] = useState('');
+  const [formData, setFormData] = useState({
+    sessionId: '',
+    mobile: ''
+  });
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,30 +37,47 @@ const Home = () => {
     }
   };
 
-  const handleJoin = async () => {
-    if (!selectedSessionId) {
-      setError('Please select a session.');
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+  };
+
+  const handleSessionChange = (sessionId) => {
+    setFormData(prev => ({ ...prev, sessionId }));
+    if (error) setError('');
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    unlockAudio();
+
+    if (!formData.sessionId) {
+      setError('Please select an active session.');
       return;
     }
-    if (!ticketCode) {
-      setError('Please enter your Ticket Code.');
+    if (!formData.mobile) {
+      setError('Please enter your mobile number or ticket code.');
       return;
     }
-    
+
     setError('');
     setLoading(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/player/join`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/player/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: selectedSessionId, ticketCode: ticketCode.toUpperCase() })
+        body: JSON.stringify({ 
+          sessionId: formData.sessionId, 
+          mobile: formData.mobile 
+        })
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to join game');
+        throw new Error(data.message || 'Failed to sign in. Please check your details.');
       }
 
       setSession(data.session);
@@ -65,123 +91,138 @@ const Home = () => {
     }
   };
 
+  // Validation status helpers
+  const isMobileValid = formData.mobile.trim().length >= 4;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4 py-8 select-none">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
+    <AuthLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full auth-glass-card p-7 sm:p-8 relative overflow-hidden"
+      >
+        {/* Top Decorative Gradient Line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-pink-500 rounded-b-full shadow-sm" />
 
-      <div className="absolute top-6 right-6 z-20">
-        <ThemeToggle />
-      </div>
-
-      {/* Header Section */}
-      <div className="text-center mb-8 z-10 max-w-lg">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest mb-3 shadow-xs">
-          <span>✨</span> LIVE MULTIPLAYER TAMBOLA
-        </div>
-        <h1 className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight leading-tight">
-          JOIN GAME
-        </h1>
-        <p className="text-brand-text-muted mt-2 text-sm sm:text-base max-w-sm mx-auto font-medium">
-          Enter your session & ticket code to join the live room in real-time.
-        </p>
-      </div>
-
-      {/* Main Glassmorphic Join Card */}
-      <div className="glass-panel p-6 sm:p-8 w-full max-w-md relative z-10 border border-slate-200/90 dark:border-slate-700/80 rounded-[2.2rem] shadow-[0_20px_60px_rgba(0,0,0,0.07)] backdrop-blur-xl transition-all duration-300">
-        
-        {/* Top gradient indicator bar */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-6 text-sm font-semibold text-center animate-shake flex items-center justify-center gap-2 shadow-xs">
-            <span>⚠️</span> {error}
-          </div>
-        )}
-        
-        <div className="space-y-5">
-          {/* Select Session */}
-          <div>
-            <label className="block text-[11px] font-black text-brand-text-muted uppercase tracking-widest mb-2 ml-1 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <span>🎯</span> SELECT SESSION
-              </span>
-              {sessions.length > 0 && (
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  {sessions.length} Active
-                </span>
-              )}
-            </label>
-            
-            <div className="relative">
-              <select
-                value={selectedSessionId}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
-                className="w-full premium-input appearance-none cursor-pointer pr-10 font-semibold text-sm rounded-2xl border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/30 bg-white/90 dark:bg-slate-900/90"
-              >
-                <option value="" className="bg-white dark:bg-[#0F172A] text-slate-900 dark:text-white font-medium">
-                  -- Choose Active Session --
-                </option>
-                {sessions.map(session => (
-                  <option key={session._id} value={session._id} className="bg-white dark:bg-[#0F172A] text-slate-900 dark:text-white font-medium">
-                    {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
-                ▼
-              </div>
+        {/* Animated App Logo Area */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] p-0.5 shadow-lg shadow-indigo-500/25 mb-3 flex items-center justify-center cursor-pointer"
+          >
+            <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center">
+              <Gamepad2 className="w-7 h-7 text-[#6366F1]" />
             </div>
-          </div>
-          
-          {/* Ticket Code Input */}
-          <div>
-            <label className="block text-[11px] font-black text-brand-text-muted uppercase tracking-widest mb-2 ml-1 flex items-center gap-1.5">
-              <span>🎟️</span> TICKET CODE / MOBILE NUMBER
+          </motion.div>
+
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] dark:text-white">
+            Welcome Back
+          </h1>
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400 mt-1">
+            Sign in to continue to your game
+          </p>
+        </div>
+
+        {/* Global Error Notice */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              className="bg-red-500/10 border border-red-500/20 text-[#EF4444] px-4 py-3 rounded-xl mb-5 text-sm font-medium flex items-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          {/* Custom Session Dropdown */}
+          <CustomSessionSelect
+            sessions={sessions}
+            value={formData.sessionId}
+            onChange={handleSessionChange}
+            label="Choose Active Session"
+          />
+
+          {/* Mobile Number / Ticket Input */}
+          <FloatingInput
+            id="mobile"
+            name="mobile"
+            type="text"
+            label="Mobile Number / Password"
+            value={formData.mobile}
+            onChange={handleChange}
+            icon={Phone}
+            isValid={isMobileValid}
+            required
+            autoComplete="username"
+          />
+
+          {/* Remember Me & Help Links */}
+          <div className="flex items-center justify-between text-xs font-medium pt-1 px-1">
+            <label className="flex items-center gap-2 cursor-pointer text-[#64748B] dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#6366F1] focus:ring-[#6366F1]/30 cursor-pointer accent-[#6366F1]"
+              />
+              <span>Remember me</span>
             </label>
-            <input 
-              type="text" 
-              value={ticketCode}
-              onChange={(e) => setTicketCode(e.target.value.toUpperCase())}
-              placeholder="e.g. A102 or Registered Mobile" 
-              className="w-full premium-input text-center text-lg tracking-wider uppercase font-mono font-bold rounded-2xl border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/30 bg-white/90 dark:bg-slate-900/90"
-            />
+
+            <button
+              type="button"
+              onClick={() => alert('Contact your host or admin to retrieve your ticket details!')}
+              className="text-[#6366F1] dark:text-indigo-400 hover:text-[#4F46E5] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Need help?</span>
+            </button>
           </div>
 
-          {/* Submit Button */}
-          <button 
-            onClick={handleJoin}
+          {/* Full Width Primary CTA Button */}
+          <motion.button
+            type="submit"
             disabled={loading}
-            className="w-full mt-3 premium-btn-primary text-base sm:text-lg font-black tracking-wide py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 active:scale-[0.98] transition-all"
+            whileHover={{ y: -2, scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full h-[54px] rounded-[16px] bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white font-semibold text-[16px] shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-3"
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Verifying Ticket...
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Signing In...</span>
               </span>
             ) : (
-              <span>JOIN NOW →</span>
+              <span className="flex items-center gap-2">
+                <span>Sign In</span>
+                <ArrowRight className="w-4 h-4" />
+              </span>
             )}
-          </button>
+          </motion.button>
+        </form>
 
-          {/* Footer Registration Info Link */}
-          <div className="pt-2 text-center">
-            <p className="text-xs text-brand-text-muted font-medium">
-              Not yet registered?{' '}
-              <button 
-                type="button"
-                onClick={() => alert("Please contact the host or admin to register and obtain your Ticket Code!")}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-bold uppercase tracking-wider underline cursor-pointer transition-colors"
-              >
-                REGISTER HERE
-              </button>
-            </p>
-          </div>
+        {/* Register / Login Switch Link */}
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400">
+            Don't have an account?{' '}
+            <Link
+              to="/register"
+              className="text-[#8B5CF6] dark:text-purple-400 font-semibold hover:underline transition-all inline-flex items-center gap-1 group ml-1"
+            >
+              <span>Register</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </p>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </AuthLayout>
   );
 };
 

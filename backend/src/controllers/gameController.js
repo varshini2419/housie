@@ -38,8 +38,13 @@ exports.createSession = async (req, res) => {
         prizeItem: p.prizeItem || null 
     }));
 
+    const generatedSessionId = req.body.sessionId || Math.random().toString(36).substring(2, 8).toUpperCase();
+    const generatedPassword = req.body.password || Math.floor(1000 + Math.random() * 9000).toString();
+
     try {
         const newSession = new GameSession({
+            sessionId: generatedSessionId,
+            password: generatedPassword,
             sessionName,
             startTime,
             totalPlayers,

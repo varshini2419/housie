@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { joinGame, getAvailableSessions } = require('../controllers/playerController');
+const playerController = require('../controllers/playerController');
 
-router.get('/sessions', getAvailableSessions);
-router.post('/join', joinGame);
+router.get('/sessions', playerController.getAvailableSessions);
+router.post('/register', playerController.register);
+router.post('/login', playerController.login);
 
 module.exports = router;

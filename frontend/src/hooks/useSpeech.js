@@ -23,30 +23,7 @@ const useSpeech = () => {
   const timeoutRefs = useRef([]);
   const activeUtterances = useRef(new Set());
 
-  // Initialize voices robustly
-  useEffect(() => {
-    const loadVoices = () => {
-      if (!window.speechSynthesis) return;
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        setVoicesLoaded(true);
-        console.log('[Voice Engine] Loaded voices:', voices.length);
-      }
-    };
-    
-    if (window.speechSynthesis) {
-      loadVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-      }
-    }
-    
-    return () => {
-       timeoutRefs.current.forEach(clearTimeout);
-    };
-  }, []);
-
-  // Unlock Chrome / Safari SpeechSynthesis audio on user interaction
+  // Unlock iOS/Safari/Chrome SpeechSynthesis on user interaction
   const unlockAudio = useCallback(() => {
     if (!window.speechSynthesis) return;
     try {
@@ -64,16 +41,36 @@ const useSpeech = () => {
     }
   }, []);
 
-  // Auto-unlock on window click or touch
+  // Initialize and load voices robustly
   useEffect(() => {
-    const handleInteraction = () => {
+    const loadVoices = () => {
+      if (!window.speechSynthesis) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        setVoicesLoaded(true);
+        console.log('[Voice Engine] Loaded voices:', voices.length);
+      }
+    };
+    
+    const handleFirstInteraction = () => {
+      console.log('[Voice Engine] First user interaction detected, unlocking audio');
       unlockAudio();
     };
-    window.addEventListener('click', handleInteraction, { once: true });
-    window.addEventListener('touchstart', handleInteraction, { once: true });
+    
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      loadVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+      window.addEventListener('pointerdown', handleFirstInteraction, { once: true, passive: true });
+      window.addEventListener('keydown', handleFirstInteraction, { once: true, passive: true });
+    }
+    
     return () => {
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
+       timeoutRefs.current.forEach(clearTimeout);
+       window.removeEventListener('pointerdown', handleFirstInteraction);
+       window.removeEventListener('keydown', handleFirstInteraction);
     };
   }, [unlockAudio]);
 
@@ -102,7 +99,6 @@ const useSpeech = () => {
     const enVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
     const candidateVoices = enVoices.length > 0 ? enVoices : voices;
 
-    // Prioritize local voices for instant synthesis without network dependency
     const localVoice = candidateVoices.find(v => v.localService && (
       v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Premium')
     ));
@@ -128,7 +124,6 @@ const useSpeech = () => {
 
       console.log(`[VOICE ENGINE] Speaking text: "${text}"`);
       
-      // Ensure Chrome speech engine is resumed
       try {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
@@ -182,7 +177,6 @@ const useSpeech = () => {
         finish();
       };
 
-      // Periodic resume fix for Chrome SpeechSynthesis bug where audio pauses
       resumeInterval = setInterval(() => {
         if (!finished && window.speechSynthesis) {
           if (window.speechSynthesis.paused) {
@@ -201,7 +195,6 @@ const useSpeech = () => {
         finish();
       }
       
-      // Failsafe timeout (3.0 seconds max per utterance)
       failsafeId = setTimeout(() => {
         if (!finished) {
           console.warn('[VOICE ENGINE] Utterance failsafe timeout triggered for:', text);
@@ -250,10 +243,8 @@ const useSpeech = () => {
       const num = Number(number);
       if (!isNaN(num)) {
         if (num < 10) {
-          // Single digit: "Single number 5, 5"
           await speakUtterance(`Single number ${num}, ${num}`);
         } else {
-          // Two digits: "six one, sixty one"
           const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
           await speakUtterance(`${digits}, ${num}`);
         }
@@ -261,9 +252,7 @@ const useSpeech = () => {
     } catch (err) {
       console.error('[VOICE ENGINE] Speech execution error:', err);
     } finally {
-      // Always dispatch speech_finished after speech completes or fails
       window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-
       isSpeaking.current = false;
       currentSpokenNumber.current = null;
       
@@ -274,14 +263,14 @@ const useSpeech = () => {
   }, []);
 
   const announceNumber = useCallback((number) => {
+    window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
+
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
-      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
       return;
     }
 
     const numStr = String(number);
     if (speechQueue.current.some(item => String(item) === numStr) || String(currentSpokenNumber.current) === numStr) {
-      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
       return;
     }
     

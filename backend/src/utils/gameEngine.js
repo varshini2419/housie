@@ -29,14 +29,32 @@ const generateNumber = async (game, io) => {
 
     const nextNum = state.availableNumbers.pop();
     state.drawnNumbers.push(nextNum);
+    state.tickId++;
 
-    console.log(`[SCHEDULER] Generated Number: ${nextNum}`);
+    console.log(`[SCHEDULER] Generated Number: ${nextNum} (Tick: ${state.tickId})`);
 
+    await GameSession.findByIdAndUpdate(game._id, {
+        currentNumber: nextNum,
+        drawnNumbers: state.drawnNumbers
+    });
+
+<<<<<<< HEAD
     // Emit number_drawn immediately for instant socket delivery & countdown timer sync
+=======
+    if (state.drawnNumbers.length % 5 === 0) {
+        await DrawHistory.findOneAndUpdate(
+            { sessionId: game._id },
+            { numbersCalled: state.drawnNumbers },
+            { upsert: true }
+        );
+    }
+
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     io.to(sId).emit('number_drawn', {
         number: nextNum,
         drawnNumbers: state.drawnNumbers,
-        remainingNumbers: state.availableNumbers.length
+        remainingNumbers: state.availableNumbers.length,
+        tickId: state.tickId
     });
 
     // Save state to database asynchronously without blocking interval or socket timing
@@ -69,6 +87,7 @@ const generateNumber = async (game, io) => {
         status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
     }));
 
+<<<<<<< HEAD
     Ticket.countDocuments({ sessionId: game._id }).then(totalJoined => {
         io.to(sId).emit('admin_stats', {
             totalJoined,
@@ -84,6 +103,8 @@ const generateNumber = async (game, io) => {
     state.phase = 'SPEECH_WAIT';
     state.tickCountdown = 4; // 2s for voice announcement + 2s post-speech wait = 4s total
 
+=======
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     return true;
 };
 
@@ -101,6 +122,7 @@ const serverTick = async (sessionId, io) => {
         return;
     }
 
+<<<<<<< HEAD
     if (state.phase === 'SPEECH_WAIT') {
         state.tickCountdown--;
         const pauseSecs = Math.max(0, state.tickCountdown - 2);
@@ -118,6 +140,26 @@ const serverTick = async (sessionId, io) => {
             console.log(`[SCHEDULER] Countdown reached 0. Generating Next Number...`);
             const continues = await generateNumber(game, io);
             if (!continues) return; // Game ended
+=======
+    if (state.phase === 'COUNTDOWN' || state.phase === 'SPEECH_WAIT') {
+        io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
+        
+        console.log(`Game Running`);
+        console.log(`Admin Timer: ${state.tickCountdown}`);
+        console.log(`Player Timer: ${state.tickCountdown}`);
+        
+        if (state.tickCountdown <= 0) {
+            console.log(`Generating Next Number`);
+
+            const continues = await generateNumber(game, io);
+            
+            if (continues) {
+                state.phase = 'COUNTDOWN';
+                state.tickCountdown = 5;
+            } else {
+                return; // Game ended
+            }
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
         } else {
             io.to(sId).emit('countdown_update', { countdown: state.tickCountdown, phase: 'COUNTDOWN' });
             console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
@@ -182,9 +224,10 @@ const ensureActiveGame = async (sessionId, io) => {
             timerId: null,
             timerLock: false,
             phase: 'COUNTDOWN',
-            tickCountdown: DRAW_COUNTDOWN_SECONDS,
+            tickCountdown: 5,
             winners: winners,
-            onlinePlayers: new Set()
+            onlinePlayers: new Set(),
+            tickId: 0
         };
 
         if (game.gameStatus === 'LIVE' && io) {
@@ -227,10 +270,11 @@ const startGame = async (sessionId, io) => {
     state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
     state.timerId = setTimeout(() => serverTick(sessionId, io), 1000);
     
-    io.to(sessionId.toString()).emit('game_started');
+    if (io) io.to(sessionId.toString()).emit('game_started');
     return game;
 };
 
+<<<<<<< HEAD
 const autoPauseTimers = {};
 
 const triggerAutoPause = async (sessionId, io, durationSeconds = 10) => {
@@ -285,10 +329,20 @@ const triggerAutoPause = async (sessionId, io, durationSeconds = 10) => {
 };
 
 const pauseGame = async (sessionId, io) => {
+=======
+const pauseGame = async (sessionId, io, payload = { status: 'PAUSED' }) => {
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     const game = await GameSession.findById(sessionId);
     if (!game || game.gameStatus !== 'LIVE') throw new Error('Game is not LIVE');
 
     game.gameStatus = 'PAUSED';
+    if (payload && payload.countdown !== undefined) {
+        game.pauseState = {
+            countdown: payload.countdown,
+            currentWinner: payload.currentWinner
+        };
+    }
+    game.stateVersion = (game.stateVersion || 0) + 1;
     await game.save();
 
     const state = await ensureActiveGame(sessionId, null);
@@ -298,7 +352,7 @@ const pauseGame = async (sessionId, io) => {
         state.timerId = null;
     }
 
-    io.to(sessionId.toString()).emit('game_paused', { status: 'PAUSED' });
+    if (io) io.to(sessionId.toString()).emit('game_paused', payload);
     return game;
 };
 
@@ -310,9 +364,11 @@ const resumeGame = async (sessionId, io) => {
     if (!game || game.gameStatus !== 'PAUSED') throw new Error('Game is not PAUSED');
 
     game.gameStatus = 'LIVE';
+    game.pauseState = undefined;
+    game.stateVersion = (game.stateVersion || 0) + 1;
     await game.save();
 
-    io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });
+    if (io) io.to(sessionId.toString()).emit('game_resumed', { status: 'LIVE' });
 
     const state = await ensureActiveGame(sessionId, null);
     if (state) {
@@ -349,7 +405,7 @@ const endGame = async (sessionId, io) => {
         state.timerId = null;
     }
 
-    io.to(sessionId.toString()).emit('game_ended', { status: 'COMPLETED' });
+    if (io) io.to(sessionId.toString()).emit('game_ended', { status: 'COMPLETED' });
     return game;
 };
 
