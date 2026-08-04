@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import ThemeToggle from '../components/ThemeToggle';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Mail, Phone, ArrowRight, ShieldCheck, UserPlus } from 'lucide-react';
+import AuthLayout from '../components/auth/AuthLayout';
+import FloatingInput from '../components/auth/FloatingInput';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,16 +18,36 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
   };
+
+  // Field validation helpers
+  const validateEmail = (email) => {
+    return String(email)
+      .toLowerCase()
+      .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  };
+
+  const isNameValid = formData.fullName.trim().length >= 2;
+  const isEmailValid = Boolean(validateEmail(formData.email));
+  const isMobileValid = formData.mobile.trim().length >= 8;
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
-    if (!formData.fullName || !formData.email || !formData.mobile) {
-      setError('Please fill all fields.');
+
+    if (!formData.fullName.trim()) {
+      setError('Please enter your full name.');
       return;
     }
-    
+    if (!formData.email.trim() || !isEmailValid) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!formData.mobile.trim() || !isMobileValid) {
+      setError('Please enter a valid mobile number.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
@@ -38,10 +61,9 @@ const Register = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to register');
+        throw new Error(data.message || 'Failed to complete registration.');
       }
 
-      alert('Successfully Registered. Redirecting to Login...');
       navigate('/');
     } catch (err) {
       setError(err.message);
@@ -51,89 +73,132 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <AuthLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full auth-glass-card p-7 sm:p-8 relative overflow-hidden"
+      >
+        {/* Top Decorative Gradient Line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-pink-500 rounded-b-full shadow-sm" />
 
-      <div className="absolute top-8 right-8 z-20">
-        <ThemeToggle />
-      </div>
+        {/* Animated App Logo Area */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: -5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] p-0.5 shadow-lg shadow-indigo-500/25 mb-3 flex items-center justify-center cursor-pointer"
+          >
+            <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center">
+              <UserPlus className="w-7 h-7 text-[#6366F1]" />
+            </div>
+          </motion.div>
 
-      <div className="text-center mb-10 z-10">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          Player Registration
-        </h1>
-      </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] dark:text-white">
+            Create Account
+          </h1>
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400 mt-1">
+            Enter your details to get started
+          </p>
+        </div>
 
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
+        {/* Global Error Notice */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              className="bg-red-500/10 border border-red-500/20 text-[#EF4444] px-4 py-3 rounded-xl mb-5 text-sm font-medium flex items-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
-            {error}
-          </div>
-        )}
-        
+        {/* Registration Form */}
         <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Full Name
-            </label>
-            <input 
-              type="text" 
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="e.g. Rahul Kumar" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Email
-            </label>
-            <input 
-              type="email" 
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. rahul@gmail.com" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
+          {/* Full Name */}
+          <FloatingInput
+            id="fullName"
+            name="fullName"
+            type="text"
+            label="Full Name"
+            value={formData.fullName}
+            onChange={handleChange}
+            icon={User}
+            isValid={isNameValid}
+            required
+            autoComplete="name"
+          />
 
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Mobile Number
-            </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="e.g. 9876543210" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
+          {/* Email */}
+          <FloatingInput
+            id="email"
+            name="email"
+            type="email"
+            label="Email Address"
+            value={formData.email}
+            onChange={handleChange}
+            icon={Mail}
+            isValid={isEmailValid}
+            required
+            autoComplete="email"
+          />
 
-          <button 
+          {/* Mobile Number */}
+          <FloatingInput
+            id="mobile"
+            name="mobile"
+            type="tel"
+            label="Mobile Number"
+            value={formData.mobile}
+            onChange={handleChange}
+            icon={Phone}
+            isValid={isMobileValid}
+            required
+            autoComplete="tel"
+          />
+
+          {/* Full Width Primary CTA Button */}
+          <motion.button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
+            whileHover={{ y: -2, scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full h-[54px] rounded-[16px] bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white font-semibold text-[16px] shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-4"
           >
-            {loading ? 'Registering...' : 'REGISTER'}
-          </button>
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Creating Account...</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span>Create Account</span>
+                <ArrowRight className="w-4 h-4" />
+              </span>
+            )}
+          </motion.button>
         </form>
 
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm font-semibold text-blue-500 hover:text-blue-600 transition-colors">
-            Already registered? Login Here
-          </Link>
+        {/* Register / Login Switch Link */}
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400">
+            Already have an account?{' '}
+            <Link
+              to="/"
+              className="text-[#8B5CF6] dark:text-purple-400 font-semibold hover:underline transition-all inline-flex items-center gap-1 group ml-1"
+            >
+              <span>Sign in</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </p>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </AuthLayout>
   );
 };
 
