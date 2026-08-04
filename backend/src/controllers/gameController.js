@@ -31,10 +31,10 @@ exports.createSession = async (req, res) => {
 
     const initializedPrizes = sessionPrizes.map(p => ({
         ...p,
-        status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE',
-        winner: p.winner || null,
-        winnerTicket: p.winnerTicket || null,
-        claimedAt: p.claimedAt || null, 
+        status: p.sequence === 1 ? 'AVAILABLE' : 'LOCKED',
+        winner: null,
+        winnerTicket: null,
+        claimedAt: null, 
         prizeItem: p.prizeItem || null 
     }));
 

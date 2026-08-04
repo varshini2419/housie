@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
-import useSoundEffects from '../hooks/useSoundEffects';
-import GameStatusTimer from '../components/GameStatusTimer';
 import WinnerPopup from '../components/WinnerPopup';
+import GameStatusTimer from '../components/GameStatusTimer';
 import { Check } from 'lucide-react';
 
 const MemoizedNumberChip = React.memo(({ num, isMarked, isPending, canMark, onMark }) => {
@@ -40,7 +39,7 @@ const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { session, ticket } = useGameStore();
-  const { playPop, playMark, playClaim, playTick } = useSoundEffects();
+  const socketRef = useRef(null);
 
   const [gameState, setGameState] = useState('WAITING');
   const [syncStatus, setSyncStatus] = useState('CONNECTING');
@@ -52,34 +51,12 @@ const Game = () => {
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
   const [toastMsg, setToastMsg] = useState(null);
-  const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
+  const [nextDrawCountdown, setNextDrawCountdown] = useState(5);
   const [pauseCountdown, setPauseCountdown] = useState(0);
-  const [isSpeakingState, setIsSpeakingState] = useState(false);
-  const [timerData, setTimerData] = useState({});
-  const isSpeakingStateRef = useRef(false);
 
-  const setSpeaking = (val) => {
-    isSpeakingStateRef.current = val;
-    setIsSpeakingState(val);
-  };
-
-  // UI States
-  const [autoMark, setAutoMark] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isBoardExpanded, setIsBoardExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState('game'); // 'game', 'leaderboard', 'history'
+  const [isBoardExpanded, setIsBoardExpanded] = useState(false);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
-
-  const autoMarkRef = useRef(autoMark);
-  const ticketRef = useRef(ticket);
-
-  useEffect(() => {
-    autoMarkRef.current = autoMark;
-  }, [autoMark]);
-
-  useEffect(() => {
-    ticketRef.current = ticket;
-  }, [ticket]);
 
   // Unified popup pipeline (prize-independent): claim_result | pause tick → activeWinner → WinnerPopup
   const [activeWinner, setActiveWinner] = useState(null);
@@ -92,40 +69,7 @@ const Game = () => {
   const lastGameSyncRef = useRef(0);
   const [isTimerLagging, setIsTimerLagging] = useState(false);
 
-  const socketRef = useRef(null);
-
   const { isVoiceEnabled, toggleVoice, announceNumber, announceWinner, unlockAudio } = useSpeech();
-  const isVoiceEnabledRef = useRef(isVoiceEnabled);
-
-  useEffect(() => {
-    isVoiceEnabledRef.current = isVoiceEnabled;
-  }, [isVoiceEnabled]);
-
-  // Force pure light/white theme for User UI page
-  useEffect(() => {
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
-  }, []);
-
-  // Smooth local 1s countdown tick for guaranteed 5s -> 4s -> 3s -> 2s -> 1s -> 0s display
-  useEffect(() => {
-    if (gameState !== 'LIVE' || isSpeakingState || nextDrawCountdown === null || nextDrawCountdown <= 0) return;
-
-    const timer = setInterval(() => {
-      setNextDrawCountdown(prev => {
-        if (prev !== null && prev > 0) {
-          const nextVal = prev - 1;
-          if (nextVal <= 3 && nextVal > 0 && isVoiceEnabledRef.current) {
-            playTick();
-          }
-          return nextVal;
-        }
-        return 0;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [gameState, isSpeakingState, nextDrawCountdown !== null && nextDrawCountdown > 0, playTick]);
 
   const makeWinnerKey = (w) => {
     if (!w) return null;
@@ -188,7 +132,7 @@ const Game = () => {
       setDrawnNumbers(data.drawnNumbers);
       setPrizes(data.prizes);
       if (data.markedNumbers) {
-        setMarkedNumbers(prev => Array.from(new Set([...prev, ...data.markedNumbers])));
+        setMarkedNumbers(data.markedNumbers);
       }
     });
 
@@ -199,36 +143,7 @@ const Game = () => {
       }
       setCurrentNumber(number);
       setDrawnNumbers(drawnNumbers);
-      setNextDrawCountdown(5);
-
-      if (isVoiceEnabledRef.current) {
-        playPop();
-      }
-
-      // Auto Mark feature support
-      if (autoMarkRef.current && ticketRef.current?.ticketMatrix) {
-        const flatNums = ticketRef.current.ticketMatrix.flat();
-        if (flatNums.includes(number)) {
-          setMarkedNumbers(prev => Array.from(new Set([...prev, number])));
-          if (socketRef.current) {
-            socketRef.current.emit('mark_number', { sessionId, ticketCode: ticketRef.current.ticketCode, number });
-          }
-        }
-      }
-
-      if (isVoiceEnabledRef.current) {
-        setSpeaking(true);
-        announceNumber(number);
-      } else {
-        setSpeaking(false);
-      }
-    });
-
-    socketRef.current.on('countdown_update', (data) => {
-      if (data && data.countdown !== null && data.countdown !== undefined) {
-        setNextDrawCountdown(data.countdown);
-        setTimerData(data);
-      }
+      announceNumber(number);
     });
 
     socketRef.current.on('game_started', () => setGameState('LIVE'));
@@ -334,41 +249,24 @@ const Game = () => {
       }
     });
 
-    const handleSpeechFinished = () => {
-      setSpeaking(false);
-    };
-    window.addEventListener('speech_finished', handleSpeechFinished);
-
     return () => {
-      window.removeEventListener('speech_finished', handleSpeechFinished);
       if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
       if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
-      if (socketRef.current) {
-        socketRef.current.off('player_count_update');
-        socketRef.current.off('game_sync');
-        socketRef.current.off('number_drawn');
-        socketRef.current.off('countdown_update');
-        socketRef.current.off('game_started');
-        socketRef.current.off('game_paused');
-        socketRef.current.off('pause_countdown_tick');
-        socketRef.current.off('game_resumed');
-        socketRef.current.off('game_ended');
-        socketRef.current.off('game_deleted');
-        socketRef.current.off('claim_result');
-        socketRef.current.disconnect();
-      }
+      if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [sessionId, ticket, navigate, autoMark, markedNumbers, nextDrawCountdown]);
+  }, [sessionId, ticket?.ticketCode, navigate, announceWinner]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);
 
   const claimPrize = (prizeId) => {
-    if (gameState !== 'LIVE' && gameState !== 'PAUSED') return;
-    if (isVoiceEnabledRef.current) playClaim();
-    if (socketRef.current) {
-      socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId });
-    }
+    if (gameState !== 'LIVE') return;
+    socketRef.current.emit('claim_prize', { sessionId, ticketCode: ticket.ticketCode, prizeId }, (response) => {
+      if (!response.success) {
+        setToastMsg(response.message);
+        setTimeout(() => setToastMsg(null), 4000);
+      }
+    });
   };
 
   // Local only — does not resume pause / no socket emit
@@ -381,37 +279,24 @@ const Game = () => {
   const handlePopupClose = handleBackToGame;
 
   const handleMarkNumber = (num) => {
-    if (gameState !== 'LIVE' && gameState !== 'PAUSED') return;
+    if (gameState !== 'LIVE') return;
     if (num === 0) return;
     if (!isDrawn(num)) return;
     if (isMarked(num) || pendingMarks.includes(num)) return;
     
-    if (isVoiceEnabledRef.current) playMark();
-    setMarkedNumbers(prev => Array.from(new Set([...prev, num])));
     setPendingMarks(prev => [...prev, num]);
-    if (socketRef.current) {
-      socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
-      }
-    }
+    socketRef.current.emit('mark_number', { sessionId, ticketCode: ticket.ticketCode, number: num });
   };
 
   if (!ticket || !session) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] text-slate-800 p-8 text-center font-sans">
-        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-6 shadow-lg shadow-blue-500/20"></div>
-        <p className="text-xl font-bold text-slate-700 animate-pulse tracking-wide">Loading Game Session...</p>
-        <p className="text-xs text-slate-400 mt-3 font-medium uppercase tracking-wider">Please wait</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F8FC] p-8 text-center">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-[#00C16E] border-t-transparent rounded-full mb-6 shadow-[0_0_20px_rgba(0,193,110,0.3)]"
+        />
+        <p className="text-xl font-bold text-[#1B2430]">Loading Game Session</p>
       </div>
     );
   }
@@ -502,11 +387,26 @@ const Game = () => {
         🏆 Winners Board
       </h2>
       <div className="flex flex-col gap-4">
-        {(prizes || []).filter(p => p.enabled).map(prize => {
+        {prizes.filter(p => p.enabled).map(prize => {
           const isWon = prize.status === 'COMPLETED';
           return (
             <div key={`win-${prize.id}`} className={`flex flex-col p-5 rounded-3xl bg-white/50 border transition-all shadow-sm ${isWon ? 'border-[#00C16E]/30 bg-[#00C16E]/5' : 'border-white/60'}`}>
               <span className="text-sm font-bold text-[#1B2430] mb-3">🏆 {prize.name}</span>
+              
+              {prize.prizeItem && (
+                <div className="mb-4 flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">🎁 Prize</span>
+                  <span className="text-sm font-semibold text-[#6B7280]">{prize.prizeItem}</span>
+                </div>
+              )}
+
+              {prize.sponsor && (
+                <div className="mb-4 flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">🤝 Sponsor</span>
+                  <span className="text-sm font-semibold text-[#6B7280]">{prize.sponsor}</span>
+                </div>
+              )}
+
               {isWon ? (
                 <div className="flex flex-col pt-3 border-t border-[#1B2430]/5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-0.5">Winner</span>
@@ -524,8 +424,6 @@ const Game = () => {
       </div>
     </div>
   );
-
-
 
   return (
     <div className="min-h-screen relative pb-24 md:pb-8" onClick={unlockAudio}>
@@ -620,252 +518,239 @@ const Game = () => {
                   </motion.div>
                 </AnimatePresence>
               </div>
+              <p className="mt-6 text-[#6B7280] font-bold text-sm tracking-widest uppercase">
+                {currentNumber ? `Number ${currentNumber}` : 'Waiting...'}
+              </p>
               
-              {isBoardExpanded && (
-                <div className="premium-inner-board p-3.5 mt-3">
-                  <div className="grid grid-cols-10 gap-1.5">
-                    {Array.from({length: 90}, (_, i) => i + 1).map(num => (
-                      <div 
-                        key={`mid-board-${num}`}
-                        className={`flex items-center justify-center aspect-square rounded-lg text-[10px] font-bold transition-all duration-300 ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'premium-number-chip'}`}
+              <div className="mt-6">
+                <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
+              </div>
+            </motion.div>
+
+            {renderTicket(true)}
+          </div>
+
+          {/* Right Column - Prizes & Boards */}
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+            {renderPrizes()}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Recent Draws */}
+              <div className="glass-panel p-6">
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-sm font-bold text-[#6B7280] uppercase tracking-widest">Recent Draws</h2>
+                  <span className="text-xs font-bold text-[#4F8EF7] bg-[#4F8EF7]/10 px-3 py-1 rounded-full border border-[#4F8EF7]/20">
+                    {drawnNumbers.length} / 90
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2.5 mb-6">
+                  <AnimatePresence>
+                    {drawnNumbers.slice(-10).map(num => (
+                      <motion.div 
+                        key={`rec-${num}`} 
+                        initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br from-[#4F8EF7] to-[#3B7CE6] shadow-[0_10px_20px_rgba(79,142,247,0.3)]"
                       >
                         {num}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
+                  </AnimatePresence>
+                  {drawnNumbers.length === 0 && <span className="text-sm text-[#9CA3AF] italic">No numbers yet.</span>}
                 </div>
-              )}
-            </motion.div>
+                
+                <button onClick={() => setIsHistoryExpanded(!isHistoryExpanded)} className="w-full py-3 text-sm font-bold text-[#4F8EF7] bg-white/50 border border-white/60 rounded-2xl hover:bg-white/80 transition-colors shadow-sm">
+                  {isHistoryExpanded ? 'Collapse Full History' : 'View Full History'}
+                </button>
+                
+                <AnimatePresence>
+                  {isHistoryExpanded && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      className="mt-4 p-4 bg-white/40 rounded-2xl border border-white/50 max-h-48 overflow-y-auto grid grid-cols-8 gap-2 shadow-inner"
+                    >
+                      {drawnNumbers.map(num => (
+                        <div key={`hist-${num}`} className="flex items-center justify-center aspect-square rounded-xl text-xs font-bold bg-white text-[#1B2430] shadow-sm">
+                          {num}
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Number Board */}
+              <div className="glass-panel p-6 flex flex-col">
+                 <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-sm font-bold text-[#6B7280] uppercase tracking-widest">Number Board</h2>
+                  <button onClick={() => setIsBoardExpanded(!isBoardExpanded)} className="text-xs font-bold text-[#4F8EF7] bg-[#4F8EF7]/10 px-3 py-1 rounded-full">
+                    {isBoardExpanded ? 'Hide' : 'Expand'}
+                  </button>
+                </div>
+                <AnimatePresence>
+                  {isBoardExpanded && (
+                    <motion.div 
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="grid grid-cols-10 gap-1.5"
+                    >
+                      {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                        <div 
+                          key={`board-${num}`} 
+                          className={`flex items-center justify-center aspect-square rounded-lg text-xs font-bold transition-all duration-300 
+                            ${isDrawn(num) ? 'bg-gradient-to-br from-[#4F8EF7] to-[#3B7CE6] text-white shadow-md scale-105' : 'bg-white/50 text-[#9CA3AF] border border-white/60'}`}
+                        >
+                          {num}
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {renderWinnersBoard()}
+          </div>
+        </div>
+      </div>
+
+      {/* ===================== MOBILE VIEW ===================== */}
+      <div className="md:hidden flex flex-col w-full relative z-10 pb-28">
+        
+        {/* Mobile Sticky Glass Header */}
+        <div className="sticky top-0 z-50 glass-nav px-5 py-4 flex justify-between items-center w-full rounded-b-3xl">
+          <div className="flex items-center gap-3">
+            <span className="font-black text-[#1B2430] text-xl tracking-tight">Tambola</span>
+            <span className="px-2.5 py-1 rounded-full bg-[#4F8EF7]/10 text-[#4F8EF7] text-[10px] font-bold">
+              #{ticket.ticketCode}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex bg-[#00C16E]/10 px-3 py-1.5 rounded-full items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#00C16E] shadow-[0_0_8px_#00C16E] animate-pulse"></span>
+              <span className="text-[11px] font-bold text-[#00a85e]">{onlineCount}</span>
+            </div>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleVoice} 
+              className="w-9 h-9 flex items-center justify-center bg-white border border-white/60 shadow-sm rounded-full text-lg text-[#1B2430]"
+            >
+              {isVoiceEnabled ? '🔊' : '🔈'}
+            </motion.button>
           </div>
         </div>
 
-        {/* ===================== MOBILE VIEW ===================== */}
-        <div className="md:hidden flex flex-col gap-5 p-4 pb-28">
-          <div className="bg-gradient-to-b from-white to-slate-50/80 border border-slate-200/90 rounded-3xl p-5 shadow-xl shadow-blue-900/5 flex flex-col items-center justify-center text-center relative overflow-hidden backdrop-blur-sm">
-            <div className="flex items-center gap-2 bg-blue-50/90 border border-blue-100 px-3.5 py-1 rounded-full text-[11px] font-black tracking-widest uppercase text-blue-700 shadow-xs mb-2">
-              <span className={`w-2 h-2 rounded-full ${gameState === 'LIVE' ? 'bg-emerald-500 animate-pulse' : (gameState === 'PAUSED' ? 'bg-amber-500' : 'bg-slate-400')}`}></span>
-              <span>{gameState === 'LIVE' ? 'LIVE DRAW' : (gameState === 'PAUSED' ? 'GAME PAUSED' : 'CURRENT DRAW')}</span>
-            </div>
-
-            {/* Radial Progress Ring & Tambola Ball */}
-            <div className="relative my-2 flex items-center justify-center">
-              <svg className="w-36 h-36 transform -rotate-90 drop-shadow-md" viewBox="0 0 120 120">
-                <defs>
-                  <linearGradient id="ringGradientMob" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2563EB" />
-                    <stop offset="100%" stopColor="#4F46E5" />
-                  </linearGradient>
-                </defs>
-                {/* Background Track */}
-                <circle cx="60" cy="60" r="52" stroke="#E2E8F0" strokeWidth="6" fill="transparent" />
-                {/* Animated Progress Arc */}
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="52"
-                  stroke="url(#ringGradientMob)"
-                  strokeWidth="6"
-                  strokeDasharray="326.72"
-                  strokeDashoffset={326.72 * (1 - Math.max(0, Math.min(5, nextDrawCountdown !== null ? nextDrawCountdown : 5)) / 5)}
-                  strokeLinecap="round"
-                  fill="transparent"
-                  className="transition-all duration-750 ease-linear"
-                />
-              </svg>
-
-              {/* Number Ball Center */}
-              <div key={`mob-current-${currentNumber}`} className="absolute inset-0 flex items-center justify-center">
-                <div className="w-28 h-28 rounded-full bg-white border border-slate-100 shadow-inner flex items-center justify-center relative">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-slate-100 to-white opacity-80"></div>
-                  <span className="text-5xl font-black text-slate-800 tracking-tighter leading-none relative z-10 animate-number-enter">
-                    {currentNumber || '-'}
-                  </span>
-                </div>
+        {/* Tab Content */}
+        <div className="w-full px-4 pt-6">
+          
+          {/* TAB 1: GAME */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'game' ? 'block' : 'hidden'}`}>
+            
+            {/* Mobile Hero: Current Number */}
+            <div className="flex flex-col items-center justify-center relative">
+              <div className="relative">
+                <AnimatePresence mode="popLayout">
+                  <motion.div 
+                    key={currentNumber || 'wait'}
+                    initial={{ scale: 0.5, opacity: 0, rotateY: 90 }}
+                    animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+                    transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                    className={`w-40 h-40 rounded-[2rem] flex items-center justify-center bg-white/90 border-4 border-white/60 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative z-10 
+                      ${gameState === "LIVE" ? "shadow-[0_0_60px_rgba(79,142,247,0.3)] border-[#4F8EF7]/50" : ""}`}
+                  >
+                    <span className="text-[6.5rem] font-black text-[#1B2430] tracking-tighter leading-none mt-2">
+                      {currentNumber || '-'}
+                    </span>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+              
+              <div className="mt-6">
+                <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={true} />
               </div>
             </div>
 
-            {/* Status & Timer Footer */}
-            <div className="mt-2 bg-white/90 border border-slate-200/90 px-4 py-2 rounded-2xl shadow-xs backdrop-blur-xs">
-              <GameStatusTimer gameState={gameState} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isSpeaking={isSpeakingState} timerData={timerData} isMobile={true} />
+            {/* Mobile Recent Chips */}
+            <div className="w-full mt-2">
+              <div className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide snap-x px-2">
+                <AnimatePresence>
+                  {drawnNumbers.slice(-15).reverse().map((num, i) => (
+                    <motion.div 
+                      initial={{ scale: 0, x: -20 }} animate={{ scale: 1, x: 0 }}
+                      key={`mob-rec-${num}`} 
+                      className={`shrink-0 snap-start flex items-center justify-center font-bold shadow-md rounded-2xl 
+                        ${i === 0 ? 'w-14 h-14 text-white bg-gradient-to-br from-[#4F8EF7] to-[#3B7CE6] text-xl shadow-[0_10px_20px_rgba(79,142,247,0.3)]' : 'w-12 h-12 text-[#6B7280] bg-white/80 border border-white/60 text-base opacity-90'}`}
+                    >
+                      {num}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
+
+            {renderTicket(false)}
+            {renderPrizes()}
           </div>
 
-          {/* 2. TICKET CARD */}
-          <div className="premium-card relative">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
-                <span>🎟️ YOUR TICKET</span>
-              </h2>
-              <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 shadow-xs">Active • #{ticket.ticketCode}</span>
-            </div>
+          {/* TAB 2: LEADERBOARD */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'leaderboard' ? 'block' : 'hidden'}`}>
+            {renderWinnersBoard()}
+          </div>
 
-            {/* Premium Tambola Ticket Board Container */}
-            <div className="premium-inner-board p-3.5 sm:p-4">
-              <div className="grid grid-cols-9 gap-1.5 sm:gap-2 w-full">
-                {(ticket?.ticketMatrix || []).map((row, rIndex) => (
-                  row.map((num, cIndex) => {
-                    const marked = num !== 0 && isMarked(num);
-                    const canMark = num !== 0 && isDrawn(num) && !marked && (gameState === 'LIVE' || gameState === 'PAUSED');
-
-                    return (
-                      <div 
-                        key={`mob-cell-${rIndex}-${cIndex}`}
-                        onClick={() => handleMarkNumber(num)}
-                        className={`aspect-square flex items-center justify-center text-xs sm:text-sm font-black transition-all select-none
-                          ${num === 0 
-                            ? 'bg-transparent border-none' 
-                            : (marked 
-                              ? 'ticket-cell-marked' 
-                              : 'premium-number-chip rounded-xl hover:border-blue-500')}
-                          ${canMark ? 'cursor-pointer ring-2 ring-blue-500 animate-pulse' : ''}`}
-                      >
-                        {num === 0 ? '' : num}
-                      </div>
-                    );
-                  })
+          {/* TAB 3: HISTORY */}
+          <div className={`flex flex-col gap-6 ${activeTab === 'history' ? 'block' : 'hidden'}`}>
+            <div className="glass-panel p-6">
+               <div className="flex justify-between items-center mb-5">
+                <h2 className="text-sm font-bold text-[#6B7280] uppercase tracking-widest">Number Board (1-90)</h2>
+              </div>
+              <div className="grid grid-cols-10 gap-1.5">
+                {Array.from({length: 90}, (_, i) => i + 1).map(num => (
+                  <div 
+                    key={`mob-board-${num}`}
+                    className={`flex items-center justify-center aspect-square rounded-[8px] text-[10px] font-bold transition-all duration-300
+                      ${isDrawn(num) ? 'bg-gradient-to-br from-[#4F8EF7] to-[#3B7CE6] text-white shadow-md scale-110' : 'bg-white/50 text-[#9CA3AF] border border-white/60'}
+                    `}
+                  >
+                    {num}
+                  </div>
                 ))}
               </div>
             </div>
-
-            <div className="mt-3 flex items-center justify-center gap-4 text-[10px] font-bold text-slate-500">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Called</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-200"></span> Not Called</span>
-              <span className="flex items-center gap-1">⭐ Free Space</span>
-            </div>
           </div>
+        </div>
 
-          {/* 3. CLAIM PRIZES CARD */}
-          <div className="premium-card">
-            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🎁 CLAIM PRIZES</h2>
-            <div className="grid grid-cols-2 gap-2.5 w-full">
-              {(prizes && prizes.length > 0 ? prizes : [
-                { id: 'p1', name: 'Jaldi 5', status: 'AVAILABLE', enabled: true },
-                { id: 'p2', name: 'First Line', status: 'AVAILABLE', enabled: true },
-                { id: 'p3', name: 'Second Line', status: 'AVAILABLE', enabled: true },
-                { id: 'p4', name: 'Third Line', status: 'AVAILABLE', enabled: true },
-                { id: 'p5', name: 'Full House', status: 'AVAILABLE', enabled: true }
-              ]).filter(p => p.enabled !== false).map((prize, idx) => {
-                const isWon = prize.status === 'COMPLETED';
-                const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
-                const isFullHouse = prize.name.toLowerCase().includes('full house');
-
-                return (
-                  <button
-                    key={`mob-claim-${prize.id}`}
-                    disabled={isWon || (gameState !== 'LIVE' && gameState !== 'PAUSED')}
-                    onClick={() => claimPrize(prize.id)}
-                    className={`p-3 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 border text-center transition-all cursor-pointer min-h-[90px] ${isWon ? (wonByMe ? 'bg-emerald-500 text-white border-transparent' : 'bg-slate-50 text-slate-400 border-slate-200') : 'bg-slate-50 border-slate-200 text-slate-800'}`}
-                  >
-                    <span className="text-xs font-black">
-                      {isFullHouse ? '👑' : '🏆'} {prize.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4. NUMBER BOARD CARD (1-90) */}
-          <div className="premium-card">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider">NUMBER BOARD (1-90)</h2>
-              <button 
-                onClick={() => setIsBoardExpanded(!isBoardExpanded)}
-                className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100"
-              >
-                {isBoardExpanded ? 'Hide' : 'Expand'}
-              </button>
-            </div>
-
-            {isBoardExpanded && (
-              <div className="premium-inner-board p-2.5 mt-2">
-                <div className="grid grid-cols-10 gap-1">
-                  {Array.from({length: 90}, (_, i) => i + 1).map(num => (
-                    <div 
-                      key={`mob-board-grid-${num}`}
-                      className={`flex items-center justify-center aspect-square rounded-md text-[9px] font-bold transition-all ${isDrawn(num) ? 'bg-blue-600 text-white font-black shadow-xs' : 'premium-number-chip'}`}
-                    >
-                      {num}
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* Mobile Sticky Bottom Nav (Glass Pill) */}
+        <div className="fixed bottom-6 mb-[env(safe-area-inset-bottom,0px)] left-6 right-6 h-16 glass-nav rounded-full flex justify-between items-center px-2 z-50">
+          <button 
+            onClick={() => setActiveTab('game')} 
+            className="relative flex flex-col items-center justify-center w-1/3 h-full z-10"
+          >
+            {activeTab === 'game' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-1 bg-[#4F8EF7]/10 rounded-full border border-[#4F8EF7]/20 z-0" />
             )}
-          </div>
+            <span className={`text-xl mb-0.5 z-10 transition-transform ${activeTab === 'game' ? 'scale-110' : 'grayscale opacity-50'}`}>🎟️</span>
+            <span className={`text-[10px] font-bold z-10 ${activeTab === 'game' ? 'text-[#4F8EF7]' : 'text-[#9CA3AF]'}`}>Game</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('leaderboard')} 
+            className="relative flex flex-col items-center justify-center w-1/3 h-full z-10"
+          >
+            {activeTab === 'leaderboard' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-1 bg-[#4F8EF7]/10 rounded-full border border-[#4F8EF7]/20 z-0" />
+            )}
+            <span className={`text-xl mb-0.5 z-10 transition-transform ${activeTab === 'leaderboard' ? 'scale-110' : 'grayscale opacity-50'}`}>🏆</span>
+            <span className={`text-[10px] font-bold z-10 ${activeTab === 'leaderboard' ? 'text-[#4F8EF7]' : 'text-[#9CA3AF]'}`}>Leaderboard</span>
+          </button>
 
-          {/* 5. WINNERS CARD */}
-          <div className="premium-card">
-            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">🏆 WINNERS</h2>
-            <div className="flex flex-col gap-2.5">
-              {prizes.filter(p => p.enabled).map((prize, idx) => {
-                const isWon = prize.status === 'COMPLETED';
-                return (
-                  <div key={`mob-win-item-${prize.id}`} className={`p-3 rounded-2xl border flex items-center justify-between ${isWon ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200/60'}`}>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                      <span>{isWon ? '🏆' : '🕒'}</span>
-                      <span>{prize.name}</span>
-                    </div>
-                    <span className="text-[10px] font-semibold text-slate-500">
-                      {isWon ? prize.winner : 'Waiting...'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 6. GAME INFO CARD */}
-          <div className="premium-card flex flex-col gap-2.5">
-            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-1">GAME INFO</h2>
-            <div className="flex flex-col gap-2 text-xs">
-              <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="font-bold text-slate-500">🎮 Game ID</span>
-                <span className="font-mono font-bold text-slate-800">TB-2451</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="font-bold text-slate-500">👥 Players</span>
-                <span className="font-bold text-slate-800">{onlineCount}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-slate-100">
-                <span className="font-bold text-slate-500">🎟️ Tickets Sold</span>
-                <span className="font-bold text-slate-800">{totalJoined}</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="font-bold text-slate-500">☑️ Auto Mark</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${autoMark ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {autoMark ? 'ON' : 'OFF'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* REST OF CARDS */}
-          <div className="premium-card">
-            <h2 className="text-xs font-black text-blue-900 uppercase tracking-wider mb-3">RECENT NUMBERS 🕒</h2>
-            <div className="grid grid-cols-5 gap-2">
-              {drawnNumbers.slice(-10).reverse().map((num, i) => (
-                <div key={`mob-rec-bottom-${num}-${i}`} className={`aspect-square rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-blue-600 text-white shadow-sm' : 'premium-number-chip'}`}>
-                  {num}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5 w-full">
-            <div className="premium-card !p-3.5 flex items-center justify-between">
-              <span className="text-xs font-black text-slate-800">🤖 Auto Mark</span>
-              <button onClick={() => setAutoMark(!autoMark)} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${autoMark ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
-                <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>
-              </button>
-            </div>
-
-            <div className="premium-card !p-3.5 flex items-center justify-between">
-              <span className="text-xs font-black text-slate-800">🔊 Sound</span>
-              <button onClick={toggleVoice} className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${isVoiceEnabled ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
-                <div className="w-3.5 h-3.5 rounded-full bg-white shadow-md"></div>
-              </button>
-            </div>
-          </div>
+          <button 
+            onClick={() => setActiveTab('history')} 
+            className="relative flex flex-col items-center justify-center w-1/3 h-full z-10"
+          >
+             {activeTab === 'history' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-1 bg-[#4F8EF7]/10 rounded-full border border-[#4F8EF7]/20 z-0" />
+            )}
+            <span className={`text-xl mb-0.5 z-10 transition-transform ${activeTab === 'history' ? 'scale-110' : 'grayscale opacity-50'}`}>🔢</span>
+            <span className={`text-[10px] font-bold z-10 ${activeTab === 'history' ? 'text-[#4F8EF7]' : 'text-[#9CA3AF]'}`}>Board</span>
+          </button>
         </div>
       </div>
 
