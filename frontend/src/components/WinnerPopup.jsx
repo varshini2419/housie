@@ -46,10 +46,10 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
             animate={{ scale: 1, y: 0, rotateX: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: -50, opacity: 0 }}
             transition={{ type: "spring", damping: 20, stiffness: 150 }}
-            className="relative z-10 bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-3xl rounded-[3rem] border border-white/60 shadow-[0_40px_100px_rgba(0,0,0,0.3),_inset_0_2px_4px_rgba(255,255,255,1)] flex flex-col items-center text-center w-full max-w-2xl overflow-hidden"
+            className="relative z-10 bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-3xl rounded-[3rem] border border-brand-border shadow-[0_40px_100px_rgba(0,0,0,0.3),_inset_0_2px_4px_rgba(255,255,255,1)] flex flex-col items-center text-center w-full max-w-2xl overflow-hidden"
           >
             {/* Top decorative banner */}
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#00C16E]/20 to-transparent"></div>
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-brand-secondary/20 to-transparent"></div>
 
             {/* Close Button */}
             {onClose && (
@@ -70,7 +70,7 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                 initial={{ scale: 0, rotate: -180, y: 50 }}
                 animate={{ scale: 1, rotate: 0, y: 0 }}
                 transition={{ type: "spring", damping: 12, stiffness: 150, delay: 0.2 }}
-                className="w-32 h-32 mb-8 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#D97706] flex items-center justify-center shadow-[0_20px_50px_rgba(245,158,11,0.5)] border-4 border-white/90"
+                className="w-32 h-32 mb-8 rounded-full bg-gradient-to-br from-brand-warning to-brand-warning flex items-center justify-center shadow-[0_20px_50px_rgba(245,158,11,0.5)] border-4 border-white/90"
               >
                 <span className="text-6xl drop-shadow-lg">🏆</span>
               </motion.div>
@@ -79,10 +79,10 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                 className="flex flex-col items-center"
               >
-                <h2 className="text-sm sm:text-base font-black text-[#00C16E] uppercase tracking-[0.3em] mb-3">
+                <h2 className="text-sm sm:text-base font-black text-brand-secondary uppercase tracking-[0.3em] mb-3">
                   🎉 Winner Announced 🎉
                 </h2>
-                <h1 className="text-5xl sm:text-7xl font-black text-[#1B2430] mb-8 leading-tight tracking-tighter drop-shadow-sm">
+                <h1 className="text-5xl sm:text-7xl font-black text-brand-text mb-8 leading-tight tracking-tighter drop-shadow-sm">
                   {displayName}
                 </h1>
               </motion.div>
@@ -93,10 +93,10 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                 className="w-full flex flex-col items-center gap-4 mb-10"
               >
                 {/* Prize Category */}
-                <div className="bg-[#00C16E]/10 border border-[#00C16E]/20 px-8 py-4 rounded-3xl w-full max-w-md shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#00C16E]/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
-                  <p className="text-[#00C16E] text-xs uppercase font-black tracking-widest mb-1">Won Category</p>
-                  <p className="text-3xl sm:text-4xl font-extrabold text-[#00a85e] truncate">
+                <div className="bg-brand-secondary/10 border border-brand-secondary/20 px-8 py-4 rounded-3xl w-full max-w-md shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-brand-secondary/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+                  <p className="text-brand-secondary text-xs uppercase font-black tracking-widest mb-1">Won Category</p>
+                  <p className="text-3xl sm:text-4xl font-extrabold text-brand-secondary truncate">
                     {winner?.prizeName}
                   </p>
                 </div>
@@ -105,24 +105,24 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                 {(winner?.prizeItem || winner?.sponsor) && (
                   <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                     {winner?.prizeItem && (
-                      <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
-                        <div className="absolute bottom-0 left-0 w-20 h-20 bg-[#F59E0B]/10 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2"></div>
-                        <p className="text-[#d97706] text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <div className="bg-brand-warning/10 border border-brand-warning/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="absolute bottom-0 left-0 w-20 h-20 bg-brand-warning/10 rounded-full blur-2xl transform -translate-x-1/2 translate-y-1/2"></div>
+                        <p className="text-brand-warning text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
                           <span className="text-base">🎁</span> Prize
                         </p>
-                        <p className="text-xl font-black text-[#F59E0B] truncate w-full text-center">
+                        <p className="text-xl font-black text-brand-warning truncate w-full text-center">
                           {winner?.prizeItem}
                         </p>
                       </div>
                     )}
                     
                     {winner?.sponsor && (
-                      <div className="bg-[#4F8EF7]/10 border border-[#4F8EF7]/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-[#4F8EF7]/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
-                        <p className="text-[#3B7CE6] text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <div className="bg-brand-primary/10 border border-brand-primary/20 px-6 py-4 rounded-3xl shadow-sm flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-brand-primary/10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
+                        <p className="text-brand-primary text-[10px] uppercase font-black tracking-widest mb-1.5 flex items-center gap-1.5">
                           <span className="text-base">🤝</span> Sponsor
                         </p>
-                        <p className="text-xl font-black text-[#4F8EF7] truncate w-full text-center">
+                        <p className="text-xl font-black text-brand-primary truncate w-full text-center">
                           {winner?.sponsor}
                         </p>
                       </div>
@@ -136,12 +136,12 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
                 className="flex items-center gap-4 bg-white/60 px-8 py-4 rounded-full border border-black/5 shadow-inner"
               >
-                <div className={`w-3 h-3 rounded-full ${isTimerLagging ? 'bg-[#F59E0B]' : 'bg-[#00C16E]'} animate-pulse`}></div>
-                <p className="text-[#6B7280] text-sm font-bold uppercase tracking-wider">
+                <div className={`w-3 h-3 rounded-full ${isTimerLagging ? 'bg-brand-warning' : 'bg-brand-secondary'} animate-pulse`}></div>
+                <p className="text-brand-text-sec text-sm font-bold uppercase tracking-wider">
                   {isTimerLagging ? (
-                    <span className="text-[#F59E0B]">Synchronizing Game State...</span>
+                    <span className="text-brand-warning">Synchronizing Game State...</span>
                   ) : (
-                    <span>Game resuming in <span className="text-[#00C16E] font-black text-xl tabular-nums ml-1">{countdown}</span>s</span>
+                    <span>Game resuming in <span className="text-brand-secondary font-black text-xl tabular-nums ml-1">{countdown}</span>s</span>
                   )}
                 </p>
               </motion.div>
@@ -152,7 +152,7 @@ const WinnerPopup = ({ winner, countdown, onClose, onBackToGame, instanceId = 0,
                   type="button"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
                   onClick={onBackToGame || onClose}
-                  className="absolute bottom-6 text-[#9CA3AF] text-xs font-bold tracking-wide hover:text-[#6B7280] transition-colors focus:outline-none underline underline-offset-4"
+                  className="absolute bottom-6 text-brand-text-muted text-xs font-bold tracking-wide hover:text-brand-text-sec transition-colors focus:outline-none underline underline-offset-4"
                 >
                   Dismiss
                 </motion.button>

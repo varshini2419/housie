@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Phone, EyeOff, ChevronDown } from 'lucide-react';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
@@ -77,81 +78,92 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-28 -left-28 w-80 h-80 rounded-full bg-brand-primary/15 blur-[90px]"></div>
+      <div className="pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-brand-accent/15 blur-[90px]"></div>
 
-      <div className="absolute top-8 right-8 z-20">
+      <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-10 z-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4">
-          ✨ Live Multiplayer Tambola
+      <div className="relative z-10 w-full max-w-2xl">
+        <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full border border-brand-border/70 bg-white/80 text-sm font-semibold tracking-[0.22em] text-brand-primary shadow-sm">
+            ✨ LIVE MULTIPLAYER HOUSIE
+          </div>
+          <h1 className="mt-6 text-5xl sm:text-6xl font-extrabold tracking-tight text-slate-950 drop-shadow-[0_25px_45px_rgba(15,23,42,0.08)]">
+            JOIN GAME
+          </h1>
         </div>
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          JOIN GAME
-        </h1>
-      </div>
 
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
-        
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Select Session
-            </label>
-            <select
-              name="sessionId"
-              value={formData.sessionId}
-              onChange={handleChange}
-              className="w-full premium-input appearance-none cursor-pointer"
+        <div className="glass-panel auth-card p-8 sm:p-10 mx-auto">
+          {error && (
+            <div className="alert-error">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-3">
+              <label htmlFor="sessionId" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Select Session
+              </label>
+              <div className="input-group">
+                <select
+                  id="sessionId"
+                  name="sessionId"
+                  value={formData.sessionId}
+                  onChange={handleChange}
+                  className="input-field appearance-none"
+                >
+                  <option value="">-- Choose Active Session --</option>
+                  {sessions.map(session => (
+                    <option key={session._id} value={session._id}>
+                      {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="input-icon-right" />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="mobile" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Mobile Number (Password)
+              </label>
+              <div className="input-group">
+                <Phone className="input-icon" />
+                <input
+                  id="mobile"
+                  type="tel"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="Your Registered Mobile"
+                  className="input-field pl-12"
+                />
+                <EyeOff className="input-icon-right" />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="primary-action-btn w-full"
             >
-              <option value="" className="bg-brand-card">-- Choose Active Session --</option>
-              {sessions.map(session => (
-                <option key={session._id} value={session._id} className="bg-brand-card text-brand-text">
-                  {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Mobile Number (Password)
-            </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Your Registered Mobile" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
+              {loading ? 'Logging In...' : 'JOIN NOW'}
+            </button>
+          </form>
 
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
-          >
-            {loading ? 'Logging In...' : 'JOIN NOW'}
-          </button>
-        </form>
-
-        <div className="mt-8 text-center pt-6 border-t border-brand-border">
-          <p className="text-sm text-brand-text-muted mb-2">Not yet registered?</p>
-          <Link to="/register" className="text-sm font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider">
-            Register Here
-          </Link>
+          <div className="mt-8">
+            <div className="divider" />
+            <div className="mt-5 text-center text-sm text-slate-500">
+              Not yet registered?{' '}
+              <Link to="/register" className="font-semibold text-brand-primary hover:text-brand-primary-hover transition-colors">
+                REGISTER HERE
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

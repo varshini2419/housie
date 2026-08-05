@@ -149,13 +149,25 @@ io.on('connection', (socket) => {
                 // Restart the countdown broadcast loop for admins/late joiners if it was dead
                 let countdown = activePauseInfo[sId].countdown;
                 const currentWinner = activePauseInfo[sId].currentWinner;
-                const intervalId = setInterval(() => {
+
+                // Ensure any previous hydration timer is cleared to avoid duplicates
+                clearPauseTimer(sId);
+
+                // Store the interval in activePauseTimers so it can be centrally cleaned up
+                activePauseTimers[sId] = setInterval(() => {
                     countdown--;
+
+                    // Defensive: if the pause info was removed elsewhere, clear this interval and stop
+                    if (!activePauseInfo[sId]) {
+                        clearPauseTimer(sId);
+                        return;
+                    }
+
                     activePauseInfo[sId].countdown = countdown;
                     io.to(sId).emit('pause_countdown_tick', { countdown, currentWinner });
                     
                     if (countdown <= 0) {
-                        clearInterval(intervalId);
+                        clearPauseTimer(sId);
                         resumeGame(sId, io).catch(err => console.error("Auto-resume error:", err));
                         delete activePauseInfo[sId];
                     }
@@ -400,6 +412,8 @@ io.on('connection', (socket) => {
                                 pauseQueues[sId].shift();
                             }
                             
+                            // Ensure any active hydration/pause timers are cleared before removing state
+                            clearPauseTimer(sId);
                             delete activePauseInfo[sId];
                             pauseProcessing[sId] = false;
                             console.log(`[PAUSE] ended session=${sId}`);

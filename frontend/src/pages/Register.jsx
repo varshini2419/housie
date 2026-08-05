@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { User, Mail, Phone } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 
 const Register = () => {
@@ -51,86 +52,100 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      <div className="pointer-events-none absolute -top-28 -left-28 w-80 h-80 rounded-full bg-brand-primary/15 blur-[90px]"></div>
+      <div className="pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-brand-accent/15 blur-[90px]"></div>
 
-      <div className="absolute top-8 right-8 z-20">
+      <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-10 z-10">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          Player Registration
-        </h1>
-      </div>
-
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
-            {error}
+      <div className="relative z-10 w-full max-w-2xl">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full border border-brand-border/70 bg-white/80 text-sm font-semibold tracking-[0.22em] text-brand-primary shadow-sm">
+            ✨ NEW PLAYER
           </div>
-        )}
-        
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Full Name
-            </label>
-            <input 
-              type="text" 
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="e.g. Rahul Kumar" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Email
-            </label>
-            <input 
-              type="email" 
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. rahul@gmail.com" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
-          </div>
+          <h1 className="mt-6 text-5xl sm:text-5xl font-extrabold tracking-tight text-slate-950 drop-shadow-[0_25px_45px_rgba(15,23,42,0.08)]">
+            PLAYER REGISTRATION
+          </h1>
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Mobile Number
-            </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="e.g. 9876543210" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+        <div className="glass-panel auth-card p-8 sm:p-10 mx-auto">
+          {error && (
+            <div className="alert-error">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-5">
+            <div className="space-y-3">
+              <label htmlFor="fullName" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Full Name
+              </label>
+              <div className="input-group">
+                <User className="input-icon" />
+                <input
+                  id="fullName"
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="e.g. Rahul Kumar"
+                  className="input-field pl-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Email
+              </label>
+              <div className="input-group">
+                <Mail className="input-icon" />
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="e.g. rahul@gmail.com"
+                  className="input-field pl-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="mobile" className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Mobile Number
+              </label>
+              <div className="input-group">
+                <Phone className="input-icon" />
+                <input
+                  id="mobile"
+                  type="tel"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="e.g. 9876543210"
+                  className="input-field pl-12"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="primary-action-btn w-full"
+            >
+              {loading ? 'Registering...' : 'REGISTER'}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center text-sm text-slate-500">
+            <Link to="/" className="font-semibold text-brand-primary hover:text-brand-primary-hover transition-colors">
+              Already registered? LOGIN HERE
+            </Link>
           </div>
-
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
-          >
-            {loading ? 'Registering...' : 'REGISTER'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm font-semibold text-blue-500 hover:text-blue-600 transition-colors">
-            Already registered? Login Here
-          </Link>
         </div>
       </div>
     </div>

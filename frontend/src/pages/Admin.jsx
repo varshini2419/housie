@@ -384,7 +384,7 @@ const Admin = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
         {/* Background Ambient Orbs */}
         <div className="pointer-events-none absolute -top-40 -left-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
-        <div className="pointer-events-none absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
+        <div className="pointer-events-none absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-brand-primary/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
 
         <div className="absolute top-8 right-8 z-20">
           <ThemeToggle />
@@ -411,7 +411,7 @@ const Admin = () => {
                 placeholder="Admin username" 
                 value={username} 
                 onChange={e => setUsername(e.target.value)} 
-                className="w-full premium-input" 
+                className="w-full modern-input" 
               />
             </div>
             <div>
@@ -421,7 +421,7 @@ const Admin = () => {
                 placeholder="••••••••" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
-                className="w-full premium-input" 
+                className="w-full modern-input" 
               />
             </div>
             <button 
@@ -440,7 +440,7 @@ const Admin = () => {
     <div className="p-4 sm:p-8 max-w-6xl mx-auto min-h-screen bg-brand-bg text-brand-text relative">
       {/* Top Header */}
       <div className="glass-panel p-6 flex justify-between items-center mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+        <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600">
           Admin Dashboard
         </h1>
         <div className="flex items-center gap-4">
@@ -470,17 +470,17 @@ const Admin = () => {
             <form onSubmit={handleCreateGame} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Session Title</label>
-                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full premium-input" placeholder="E.G. Friday Evening Tambola" />
+                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full modern-input" placeholder="E.G. Friday Evening Housie" />
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Total Players</label>
-                  <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full premium-input" placeholder="10" />
+                  <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full modern-input" placeholder="10" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Start Time</label>
-                  <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full premium-input cursor-pointer" />
+                  <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full modern-input cursor-pointer" />
                 </div>
               </div>
 
@@ -508,7 +508,7 @@ const Admin = () => {
               {ticketCodeMode === 'PATTERN' && (
                 <div>
                   <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Starting Register Code</label>
-                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full premium-input font-mono" placeholder="E.G. A1 OR 24B91A0701" />
+                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full modern-input font-mono" placeholder="E.G. A1 OR 24B91A0701" />
                 </div>
               )}
 
@@ -594,7 +594,7 @@ const Admin = () => {
                       setCustomPrizeName('');
                       setCustomPrizeItem('');
                       setCustomPrizeSponsor('');
-                    }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
+                    }} className="bg-gradient-to-r from-brand-primary-hover to-brand-secondary hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
                   </div>
                 </div>
               </div>
@@ -622,7 +622,7 @@ const Admin = () => {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-extrabold text-brand-text text-base">{session.sessionName}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${session.gameStatus === 'LIVE' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : session.gameStatus === 'PAUSED' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${session.gameStatus === 'LIVE' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : session.gameStatus === 'PAUSED' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' : 'bg-brand-primary/10 text-brand-primary-hover border border-brand-primary/20'}`}>
                           {session.gameStatus}
                         </span>
                       </div>
@@ -632,7 +632,7 @@ const Admin = () => {
 
                     <div className="flex gap-2 w-full sm:w-auto">
                       <button onClick={() => viewSessionTickets(session)} className="flex-1 sm:flex-none bg-brand-card hover:bg-brand-bg border border-brand-border text-brand-text px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm">Tickets</button>
-                      <button onClick={() => monitorSession(session)} className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:shadow-md">Manage</button>
+                      <button onClick={() => monitorSession(session)} className="flex-1 sm:flex-none bg-gradient-to-r from-brand-primary-hover to-brand-secondary text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:shadow-md">Manage</button>
                       <button onClick={() => handleDeleteSession(session._id, session.sessionName)} className="flex-1 sm:flex-none bg-red-600/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer">Delete</button>
                     </div>
                   </div>
@@ -658,7 +658,7 @@ const Admin = () => {
             </div>
             <div className="flex gap-3">
               <button onClick={() => window.print()} className="bg-brand-bg hover:bg-brand-card border border-brand-border text-brand-text px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer">🖨️ Print</button>
-              <button onClick={copyAllTickets} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer">📋 Copy All</button>
+              <button onClick={copyAllTickets} className="bg-gradient-to-r from-brand-primary-hover to-brand-secondary text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer">📋 Copy All</button>
               <button onClick={exportCSV} className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer">📥 Export CSV</button>
             </div>
           </div>
@@ -786,7 +786,7 @@ const Admin = () => {
                 <p className="text-5xl font-black tracking-tight">{adminStats.currentNumber || '-'}</p>
                 {adminStats?.gameStatus === 'LIVE' && (
                   <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-brand-border shadow-sm w-max">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span className="w-2 h-2 rounded-full bg-brand-primary"></span>
                     Next draw in: {nextDrawCountdown !== null ? nextDrawCountdown : 5}s
                   </div>
                 )}
