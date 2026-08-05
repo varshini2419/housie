@@ -56,6 +56,9 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
+<<<<<<< HEAD
+const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown, triggerAutoPause } = require('./utils/gameEngine');
+=======
 const mongoose = require('mongoose');
 mongoose.connection.on('disconnected', () => {
     console.warn('[DB] MongoDB disconnected! Emitting system_status_warning.');
@@ -67,6 +70,7 @@ mongoose.connection.on('reconnected', () => {
 });
 
 const { activeGames, ensureActiveGame, pauseGame, resumeGame, triggerCountdown } = require('./utils/gameEngine');
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
 
 const pauseQueues = {};
 const pauseProcessing = {};
@@ -131,7 +135,11 @@ io.on('connection', (socket) => {
                 { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null, sponsor: null }
             ];
             
-            const sessionPrizes = game && game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+            const rawPrizes = game && game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+            const sessionPrizes = rawPrizes.map(p => ({
+                ...(p.toObject ? p.toObject() : p),
+                status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+            }));
 
             socket.emit('game_sync', {
                 status: status,
@@ -174,6 +182,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('speech_finished', ({ sessionId }) => {
+        if (sessionId) {
+            triggerCountdown(sessionId, io);
+        }
+    });
+
     socket.on('mark_number', async ({ sessionId, ticketCode, number }) => {
         const sId = String(sessionId);
         const state = await ensureActiveGame(sId, io);
@@ -199,6 +213,83 @@ io.on('connection', (socket) => {
         }
     });
 
+<<<<<<< HEAD
+    socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }) => {
+        const state = activeGames[sessionId];
+        if (!state) return socket.emit('claim_result', { success: false, message: 'Game not active' });
+
+        const game = await GameSession.findById(sessionId);
+        if (!game || (game.gameStatus !== 'LIVE' && game.gameStatus !== 'PAUSED')) {
+            return socket.emit('claim_result', { success: false, message: 'Game is not active' });
+        }
+
+        const defaultPrizes = [
+            { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
+            { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
+            { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
+            { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
+            { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
+        ];
+
+        const rawSessionPrizes = game.prizes && game.prizes.length > 0 ? game.prizes : defaultPrizes;
+        const sessionPrizes = rawSessionPrizes.map(p => ({
+            ...(p.toObject ? p.toObject() : p),
+            status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+        }));
+
+        const prizeIndex = sessionPrizes.findIndex(p => {
+            if (!p) return false;
+            const targetStr = (prizeId || '').toString().toLowerCase();
+            const pId = (p.id || '').toString().toLowerCase();
+            const pMongoId = (p._id || '').toString().toLowerCase();
+            const pName = (p.name || '').toString().toLowerCase();
+            const pType = (p.type || '').toString().toLowerCase();
+            return pId === targetStr || pMongoId === targetStr || pName === targetStr || pType === targetStr;
+        });
+
+        if (prizeIndex === -1) return socket.emit('claim_result', { success: false, message: 'Prize not found' });
+        
+        const prize = sessionPrizes[prizeIndex];
+        
+        if (prize.status === 'COMPLETED') {
+            return socket.emit('claim_result', { success: false, message: 'Prize has already been claimed' });
+        }
+
+        // Duplicate winner validation for same category
+        const hasWonSameCategory = game.prizes && game.prizes.some(p => (p.type === prize.type || p.name === prize.name) && p.winnerTicket === ticketCode && p.status === 'COMPLETED');
+        if (hasWonSameCategory) {
+            return socket.emit('claim_result', { success: false, message: 'You have already claimed a prize in this category' });
+        }
+
+        try {
+            const ticket = await Ticket.findOne({ ticketCode, sessionId });
+            if (!ticket) return socket.emit('claim_result', { success: false, message: 'Ticket not found' });
+
+            const isValid = validateClaim(prize.type || prize.name, ticket.ticketMatrix, state.drawnNumbers, ticket.markedNumbers);
+
+            if (isValid) {
+                // Sync marked numbers for ticket in DB
+                const flatTicketNums = ticket.ticketMatrix.flat().filter(n => n !== 0);
+                const drawnTicketNums = flatTicketNums.filter(n => state.drawnNumbers.includes(n));
+                ticket.markedNumbers = Array.from(new Set([...(ticket.markedNumbers || []), ...drawnTicketNums]));
+
+                // Update prize status
+                sessionPrizes[prizeIndex].status = 'COMPLETED';
+                sessionPrizes[prizeIndex].winner = ticket.playerName || 'Player';
+                sessionPrizes[prizeIndex].winnerTicket = ticketCode;
+                sessionPrizes[prizeIndex].claimedAt = new Date();
+                
+                // Unlock next prize in sequence
+                const nextSequence = prize.sequence + 1;
+                const nextPrizeIndex = sessionPrizes.findIndex(p => (p.type === prize.type || p.name === prize.name) && p.sequence === nextSequence);
+                if (nextPrizeIndex !== -1) {
+                    sessionPrizes[nextPrizeIndex].status = 'AVAILABLE';
+                }
+
+                game.prizes = sessionPrizes;
+                await game.save();
+                state.winners[prize.name] = { ticketCode, playerName: ticket.playerName || 'Player' };
+=======
     socket.on('claim_prize', async ({ sessionId, ticketCode, prizeId }, callback) => {
         const sId = String(sessionId);
         const state = activeGames[sId];
@@ -296,6 +387,7 @@ io.on('connection', (socket) => {
                         game.stateVersion = (game.stateVersion || 0) + 1;
                         await game.save({ session: dbSession });
                     }
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
 
                     const newWinner = new Winner({ sessionId: sId, prizeType: prize.name, ticketCode });
                     await newWinner.save({ session: dbSession });
@@ -308,6 +400,50 @@ io.on('connection', (socket) => {
                     // Ensure claimer is in the normalized room
                     socket.join(sId);
 
+<<<<<<< HEAD
+                // Auto-pause game for 10 seconds to display winner popup and fanfare
+                await triggerAutoPause(sessionId, io, 10);
+
+                // Sequential 6-Second Pause Logic for Popups
+                if (!pauseQueues[sessionId]) pauseQueues[sessionId] = 0;
+                pauseQueues[sessionId]++;
+
+                if (pauseQueues[sessionId] === 1) {
+                    const processPauseQueue = async () => {
+                        while (pauseQueues[sessionId] > 0) {
+                            try {
+                                await pauseGame(sessionId, io);
+                            } catch (e) {
+                                // Ignore if already paused
+                            }
+                            
+                            let countdown = 6;
+                            io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                            
+                            const intervalId = setInterval(() => {
+                                countdown--;
+                                if (countdown > 0) {
+                                    io.to(sessionId).emit('pause_countdown_tick', { countdown });
+                                } else {
+                                    clearInterval(intervalId);
+                                }
+                            }, 1000);
+
+                            await new Promise(r => setTimeout(r, 6000));
+                            
+                            pauseQueues[sessionId]--;
+                        }
+                        
+                        // Finished all queued pauses
+                        try {
+                            const checkGame = await GameSession.findById(sessionId);
+                            if (checkGame && checkGame.gameStatus === 'PAUSED') {
+                                await resumeGame(sessionId, io);
+                            }
+                        } catch (e) {
+                            console.error('Failed to auto-resume:', e);
+                        }
+=======
                     const claimPayload = {
                         success: true,
                         message: `🎉 ${ticket.playerName || 'Player'} (${ticketCode}) won ${prize.name}!`,
@@ -317,6 +453,7 @@ io.on('connection', (socket) => {
                         winnerName: ticket.playerName || 'Player', 
                         prizeItem: prize.prizeItem || null,
                         sponsor: prize.sponsor || null
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
                     };
 
                     // Log room membership so we can verify every client is targeted
@@ -442,10 +579,6 @@ io.on('connection', (socket) => {
             });
         }
         console.log(`Client disconnected: ${socket.id}`);
-    });
-
-    socket.on('speech_finished', ({ sessionId }) => {
-        triggerCountdown(sessionId, io);
     });
 });
 

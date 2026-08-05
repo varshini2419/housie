@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
+import GameStatusTimer from '../components/GameStatusTimer';
 
 const Admin = () => {
   const [token, setToken] = useState(localStorage.getItem('adminToken'));
@@ -55,9 +56,17 @@ const Admin = () => {
   const [activityFeed, setActivityFeed] = useState([]);
   const [pauseCountdown, setPauseCountdown] = useState(0);
   const [nextDrawCountdown, setNextDrawCountdown] = useState(null);
+  const [timerData, setTimerData] = useState({});
   const socketRef = useRef(null);
 
   const { isVoiceEnabled, toggleVoice, announceNumber, unlockAudio } = useSpeech();
+  const isVoiceEnabledRef = useRef(isVoiceEnabled);
+
+  useEffect(() => {
+    isVoiceEnabledRef.current = isVoiceEnabled;
+  }, [isVoiceEnabled]);
+
+
 
   useEffect(() => {
     if (token) {
@@ -94,7 +103,9 @@ const Admin = () => {
 
       socketRef.current.on('number_drawn', ({ number, drawnNumbers, remainingNumbers }) => {
         setAdminStats(prev => prev ? { ...prev, currentNumber: number, drawnNumbers, remainingNumbers } : prev);
-        announceNumber(number);
+        if (isVoiceEnabledRef.current) {
+          announceNumber(number);
+        }
       });
 
       socketRef.current.on('game_started', () => {
@@ -110,8 +121,11 @@ const Admin = () => {
         setPauseCountdown(countdown);
       });
 
-      socketRef.current.on('countdown_update', ({ countdown }) => {
-        setNextDrawCountdown(countdown);
+      socketRef.current.on('countdown_update', (data) => {
+        if (data && data.countdown !== null && data.countdown !== undefined) {
+          setNextDrawCountdown(data.countdown);
+          setTimerData(data);
+        }
       });
 
       socketRef.current.on('game_resumed', () => {
@@ -141,15 +155,24 @@ const Admin = () => {
       });
 
       const handleSpeechFinished = (e) => {
-        if (socketRef.current) {
-          socketRef.current.emit('speech_finished', { sessionId: liveSession._id });
-        }
+        // Master server timer manages sequence automatically
       };
       window.addEventListener('speech_finished', handleSpeechFinished);
 
       return () => {
         window.removeEventListener('speech_finished', handleSpeechFinished);
-        if (socketRef.current) socketRef.current.disconnect();
+        if (socketRef.current) {
+          socketRef.current.off('game_sync');
+          socketRef.current.off('player_count_update');
+          socketRef.current.off('number_drawn');
+          socketRef.current.off('game_started');
+          socketRef.current.off('game_paused');
+          socketRef.current.off('game_resumed');
+          socketRef.current.off('game_ended');
+          socketRef.current.off('player_joined_status');
+          socketRef.current.off('claim_result');
+          socketRef.current.disconnect();
+        }
       };
     }
   }, [viewMode, liveSession?._id]);
@@ -784,12 +807,9 @@ const Admin = () => {
               <div className="glass-panel-secondary p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-bold text-brand-text-muted mb-2 uppercase tracking-widest">Current Drawn</p>
                 <p className="text-5xl font-black tracking-tight">{adminStats.currentNumber || '-'}</p>
-                {adminStats?.gameStatus === 'LIVE' && (
-                  <div className="mt-4 text-xs font-bold text-brand-text-sec bg-brand-card px-4 py-1.5 rounded-full flex items-center justify-center gap-2 animate-pulse border border-brand-border shadow-sm w-max">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    Next draw in: {nextDrawCountdown !== null ? nextDrawCountdown : 5}s
-                  </div>
-                )}
+                <div className="mt-4">
+                  <GameStatusTimer gameState={adminStats?.gameStatus} nextDrawCountdown={nextDrawCountdown} pauseCountdown={pauseCountdown} timerData={timerData} isMobile={false} />
+                </div>
               </div>
               
               <div className="glass-panel p-6 rounded-3xl border border-brand-border flex flex-col items-center justify-center text-center shadow-premium">
@@ -842,21 +862,23 @@ const Admin = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 glass-panel p-6 sm:p-8">
-              <h2 className="text-xs text-brand-text-muted mb-6 font-bold uppercase tracking-wider">Master Draw History</h2>
-              <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
-                {Array.from({length: 90}, (_, i) => i + 1).map(num => {
-                  const isDrawn = adminStats?.drawnNumbers?.includes(num);
-                  return (
-                    <div 
-                      key={num}
-                      className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                        board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
-                      `}
-                    >
-                      {num}
-                    </div>
-                  );
-                })}
+              <h2 className="text-xs text-brand-text-muted mb-4 font-bold uppercase tracking-wider">Master Draw History</h2>
+              <div className="premium-inner-board p-4">
+                <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+                  {Array.from({length: 90}, (_, i) => i + 1).map(num => {
+                    const isDrawn = adminStats?.drawnNumbers?.includes(num);
+                    return (
+                      <div 
+                        key={num}
+                        className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
+                          board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
+                        `}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

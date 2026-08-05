@@ -38,6 +38,9 @@ const generateNumber = async (game, io) => {
         drawnNumbers: state.drawnNumbers
     });
 
+<<<<<<< HEAD
+    // Emit number_drawn immediately for instant socket delivery & countdown timer sync
+=======
     if (state.drawnNumbers.length % 5 === 0) {
         await DrawHistory.findOneAndUpdate(
             { sessionId: game._id },
@@ -46,12 +49,27 @@ const generateNumber = async (game, io) => {
         );
     }
 
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     io.to(sId).emit('number_drawn', {
         number: nextNum,
         drawnNumbers: state.drawnNumbers,
         remainingNumbers: state.availableNumbers.length,
         tickId: state.tickId
     });
+
+    // Save state to database asynchronously without blocking interval or socket timing
+    GameSession.findByIdAndUpdate(game._id, {
+        currentNumber: nextNum,
+        drawnNumbers: state.drawnNumbers
+    }).catch(err => console.error('Error updating GameSession:', err));
+
+    if (state.drawnNumbers.length % 5 === 0) {
+        DrawHistory.findOneAndUpdate(
+            { sessionId: game._id },
+            { numbersCalled: state.drawnNumbers },
+            { upsert: true }
+        ).catch(err => console.error('Error updating DrawHistory:', err));
+    }
 
     const updatedGame = await GameSession.findById(game._id);
 
@@ -62,16 +80,31 @@ const generateNumber = async (game, io) => {
         { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
         { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
     ];
-    
-    const sessionPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
 
-    io.to(sId).emit('admin_stats', {
-        totalJoined: await Ticket.countDocuments({ sessionId: game._id }),
-        onlineCount: state.onlinePlayers.size,
-        remainingNumbers: state.availableNumbers.length,
-        prizes: sessionPrizes
-    });
+    const rawPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;
+    const sessionPrizes = rawPrizes.map(p => ({
+        ...(p.toObject ? p.toObject() : p),
+        status: p.status === 'COMPLETED' ? 'COMPLETED' : 'AVAILABLE'
+    }));
 
+<<<<<<< HEAD
+    Ticket.countDocuments({ sessionId: game._id }).then(totalJoined => {
+        io.to(sId).emit('admin_stats', {
+            totalJoined,
+            onlineCount: state.onlinePlayers.size,
+            remainingNumbers: state.availableNumbers.length,
+            prizes: sessionPrizes
+        });
+    }).catch(err => console.error('Error in admin_stats:', err));
+
+    // Broadcast initial countdown state (SPEECH_WAIT: speech speaking + 2s pause)
+    io.to(sId).emit('countdown_update', { countdown: 5, phase: 'SPEECH_WAIT', subPhase: 'SPEAKING', pauseRemaining: 2 });
+
+    state.phase = 'SPEECH_WAIT';
+    state.tickCountdown = 4; // 2s for voice announcement + 2s post-speech wait = 4s total
+
+=======
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     return true;
 };
 
@@ -89,6 +122,25 @@ const serverTick = async (sessionId, io) => {
         return;
     }
 
+<<<<<<< HEAD
+    if (state.phase === 'SPEECH_WAIT') {
+        state.tickCountdown--;
+        const pauseSecs = Math.max(0, state.tickCountdown - 2);
+        const subPhase = state.tickCountdown > 2 ? 'SPEAKING' : 'PAUSE';
+        io.to(sId).emit('countdown_update', { countdown: 5, phase: 'SPEECH_WAIT', subPhase, pauseRemaining: pauseSecs });
+        
+        if (state.tickCountdown <= 0) {
+            state.phase = 'COUNTDOWN';
+            state.tickCountdown = DRAW_COUNTDOWN_SECONDS; // 5
+            console.log(`[SCHEDULER] Speech & 2s Pause complete. Starting 5s Countdown (5,4,3,2,1,0).`);
+            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown, phase: 'COUNTDOWN' });
+        }
+    } else if (state.phase === 'COUNTDOWN') {
+        if (state.tickCountdown < 0) {
+            console.log(`[SCHEDULER] Countdown reached 0. Generating Next Number...`);
+            const continues = await generateNumber(game, io);
+            if (!continues) return; // Game ended
+=======
     if (state.phase === 'COUNTDOWN' || state.phase === 'SPEECH_WAIT') {
         io.to(sId).emit('countdown_update', { countdown: state.tickCountdown });
         
@@ -107,7 +159,10 @@ const serverTick = async (sessionId, io) => {
             } else {
                 return; // Game ended
             }
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
         } else {
+            io.to(sId).emit('countdown_update', { countdown: state.tickCountdown, phase: 'COUNTDOWN' });
+            console.log(`[SCHEDULER] Countdown: ${state.tickCountdown}`);
             state.tickCountdown--;
         }
     }
@@ -186,15 +241,7 @@ const ensureActiveGame = async (sessionId, io) => {
 };
 
 const triggerCountdown = (sessionId, io) => {
-    if (!sessionId) return;
-    const sIdStr = sessionId.toString();
-    const state = activeGames[sIdStr];
-    if (state && state.phase === 'SPEECH_WAIT') {
-        state.phase = 'COUNTDOWN';
-        state.tickCountdown = DRAW_COUNTDOWN_SECONDS;
-        console.log(`[SCHEDULER] Voice Finished (Triggered by client). Starting Countdown.`);
-        if (io) io.to(sIdStr).emit('countdown_update', { countdown: state.tickCountdown });
-    }
+    // Master server timer is fully authoritative. Client speech_finished no longer forces timer jumps across players.
 };
 
 const startGame = async (sessionId, io) => {
@@ -227,7 +274,64 @@ const startGame = async (sessionId, io) => {
     return game;
 };
 
+<<<<<<< HEAD
+const autoPauseTimers = {};
+
+const triggerAutoPause = async (sessionId, io, durationSeconds = 10) => {
+    if (!sessionId) return;
+    const sIdStr = sessionId.toString();
+    const game = await GameSession.findById(sessionId);
+    if (!game || game.gameStatus !== 'LIVE') return;
+
+    // Pause the game status in DB
+    game.gameStatus = 'PAUSED';
+    await game.save();
+
+    const state = activeGames[sIdStr];
+    if (state && state.timerId) {
+        clearTimeout(state.timerId);
+        state.timerId = null;
+    }
+
+    if (autoPauseTimers[sIdStr]) {
+        clearInterval(autoPauseTimers[sIdStr]);
+    }
+
+    let remainingPause = durationSeconds;
+    console.log(`[SCHEDULER] Auto-pausing game for ${durationSeconds}s due to valid prize claim.`);
+    io.to(sIdStr).emit('game_paused', { status: 'PAUSED', countdown: remainingPause });
+
+    autoPauseTimers[sIdStr] = setInterval(async () => {
+        remainingPause--;
+        if (remainingPause > 0) {
+            io.to(sIdStr).emit('pause_countdown_tick', { countdown: remainingPause });
+        } else {
+            clearInterval(autoPauseTimers[sIdStr]);
+            delete autoPauseTimers[sIdStr];
+
+            // Auto Resume game after 10 seconds
+            const g = await GameSession.findById(sessionId);
+            if (g && g.gameStatus === 'PAUSED') {
+                g.gameStatus = 'LIVE';
+                await g.save();
+
+                console.log(`[SCHEDULER] 10s auto-pause complete. Resuming game to LIVE.`);
+                io.to(sIdStr).emit('game_resumed', { status: 'LIVE' });
+
+                if (activeGames[sIdStr]) {
+                    activeGames[sIdStr].phase = 'COUNTDOWN';
+                    activeGames[sIdStr].tickCountdown = DRAW_COUNTDOWN_SECONDS;
+                    activeGames[sIdStr].timerId = setTimeout(() => serverTick(sessionId, io), 1000);
+                }
+            }
+        }
+    }, 1000);
+};
+
+const pauseGame = async (sessionId, io) => {
+=======
 const pauseGame = async (sessionId, io, payload = { status: 'PAUSED' }) => {
+>>>>>>> 61e3f49a7d34f4323746ab5aa80b62dd42bdc59c
     const game = await GameSession.findById(sessionId);
     if (!game || game.gameStatus !== 'LIVE') throw new Error('Game is not LIVE');
 
@@ -334,5 +438,6 @@ module.exports = {
     resumeGame,
     endGame,
     deleteGame,
-    triggerCountdown
+    triggerCountdown,
+    triggerAutoPause
 };

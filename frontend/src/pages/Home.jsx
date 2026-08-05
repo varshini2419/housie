@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Phone, Lock, ArrowRight, ShieldCheck, Gamepad2, HelpCircle } from 'lucide-react';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
-import ThemeToggle from '../components/ThemeToggle';
+import AuthLayout from '../components/auth/AuthLayout';
+import FloatingInput from '../components/auth/FloatingInput';
+import CustomSessionSelect from '../components/auth/CustomSessionSelect';
 
 const Home = () => {
   const { unlockAudio } = useSpeech();
@@ -11,6 +15,7 @@ const Home = () => {
     sessionId: '',
     mobile: ''
   });
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -35,17 +40,27 @@ const Home = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+  };
+
+  const handleSessionChange = (sessionId) => {
+    setFormData(prev => ({ ...prev, sessionId }));
+    if (error) setError('');
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     unlockAudio();
-    
-    if (!formData.sessionId || !formData.mobile) {
-      setError('Please select a session and enter your mobile number.');
+
+    if (!formData.sessionId) {
+      setError('Please select an active session.');
       return;
     }
-    
+    if (!formData.mobile) {
+      setError('Please enter your mobile number or ticket code.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
@@ -54,15 +69,15 @@ const Home = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            sessionId: formData.sessionId, 
-            mobile: formData.mobile 
+          sessionId: formData.sessionId, 
+          mobile: formData.mobile 
         })
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to login');
+        throw new Error(data.message || 'Failed to sign in. Please check your details.');
       }
 
       setSession(data.session);
@@ -76,85 +91,138 @@ const Home = () => {
     }
   };
 
+  // Validation status helpers
+  const isMobileValid = formData.mobile.trim().length >= 4;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <AuthLayout>
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full auth-glass-card p-7 sm:p-8 relative overflow-hidden"
+      >
+        {/* Top Decorative Gradient Line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-1 bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-pink-500 rounded-b-full shadow-sm" />
 
-      <div className="absolute top-8 right-8 z-20">
-        <ThemeToggle />
-      </div>
+        {/* Animated App Logo Area */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] p-0.5 shadow-lg shadow-indigo-500/25 mb-3 flex items-center justify-center cursor-pointer"
+          >
+            <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center">
+              <Gamepad2 className="w-7 h-7 text-[#6366F1]" />
+            </div>
+          </motion.div>
 
-      <div className="text-center mb-10 z-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4">
-          ✨ Live Multiplayer Tambola
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] dark:text-white">
+            Welcome Back
+          </h1>
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400 mt-1">
+            Sign in to continue to your game
+          </p>
         </div>
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          JOIN GAME
-        </h1>
-      </div>
 
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
-        
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Select Session
-            </label>
-            <select
-              name="sessionId"
-              value={formData.sessionId}
-              onChange={handleChange}
-              className="w-full premium-input appearance-none cursor-pointer"
+        {/* Global Error Notice */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              className="bg-red-500/10 border border-red-500/20 text-[#EF4444] px-4 py-3 rounded-xl mb-5 text-sm font-medium flex items-center gap-2"
             >
-              <option value="" className="bg-brand-card">-- Choose Active Session --</option>
-              {sessions.map(session => (
-                <option key={session._id} value={session._id} className="bg-brand-card text-brand-text">
-                  {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Mobile Number (Password)
+              <ShieldCheck className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          {/* Custom Session Dropdown */}
+          <CustomSessionSelect
+            sessions={sessions}
+            value={formData.sessionId}
+            onChange={handleSessionChange}
+            label="Choose Active Session"
+          />
+
+          {/* Mobile Number / Ticket Input */}
+          <FloatingInput
+            id="mobile"
+            name="mobile"
+            type="text"
+            label="Mobile Number / Password"
+            value={formData.mobile}
+            onChange={handleChange}
+            icon={Phone}
+            isValid={isMobileValid}
+            required
+            autoComplete="username"
+          />
+
+          {/* Remember Me & Help Links */}
+          <div className="flex items-center justify-between text-xs font-medium pt-1 px-1">
+            <label className="flex items-center gap-2 cursor-pointer text-[#64748B] dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-[#6366F1] focus:ring-[#6366F1]/30 cursor-pointer accent-[#6366F1]"
+              />
+              <span>Remember me</span>
             </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Your Registered Mobile" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+
+            <button
+              type="button"
+              onClick={() => alert('Contact your host or admin to retrieve your ticket details!')}
+              className="text-[#6366F1] dark:text-indigo-400 hover:text-[#4F46E5] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Need help?</span>
+            </button>
           </div>
 
-          <button 
+          {/* Full Width Primary CTA Button */}
+          <motion.button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
+            whileHover={{ y: -2, scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full h-[54px] rounded-[16px] bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white font-semibold text-[16px] shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-3"
           >
-            {loading ? 'Logging In...' : 'JOIN NOW'}
-          </button>
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Signing In...</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span>Sign In</span>
+                <ArrowRight className="w-4 h-4" />
+              </span>
+            )}
+          </motion.button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-brand-border">
-          <p className="text-sm text-brand-text-muted mb-2">Not yet registered?</p>
-          <Link to="/register" className="text-sm font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider">
-            Register Here
-          </Link>
+        {/* Register / Login Switch Link */}
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+          <p className="text-sm font-medium text-[#64748B] dark:text-slate-400">
+            Don't have an account?{' '}
+            <Link
+              to="/register"
+              className="text-[#8B5CF6] dark:text-purple-400 font-semibold hover:underline transition-all inline-flex items-center gap-1 group ml-1"
+            >
+              <span>Register</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </p>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </AuthLayout>
   );
 };
 
