@@ -6,59 +6,46 @@ const useSpeech = () => {
     return saved !== null ? JSON.parse(saved) : true;
   });
   
+  // Use a ref so socket listeners never have a stale closure
   const isVoiceEnabled = useRef(isVoiceEnabledState);
-
-  // Synchronize ref with state
-  useEffect(() => {
-    isVoiceEnabled.current = isVoiceEnabledState;
-    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
-  }, [isVoiceEnabledState]);
   
   const [voicesLoaded, setVoicesLoaded] = useState(false);
   const speechQueue = useRef([]);
   const isSpeaking = useRef(false);
   const initialized = useRef(false);
   const currentSpokenNumber = useRef(null);
-  const lastAnnouncedNumber = useRef(null);
-  const timeoutRefs = useRef([]);
-  const activeUtterances = useRef(new Set());
+  const lastAnnouncedNumber = useRef(null); // CRITICAL: Global tracker to prevent duplicate announcements
+  const timeoutRefs = useRef([]); // To track and clear failsafe timeouts
+  const activeUtterances = useRef(new Set()); // CRITICAL: Prevent Garbage Collection of utterances
 
-  // Unlock iOS/Safari/Chrome SpeechSynthesis on user interaction
+  // Unlock iOS Safari SpeechSynthesis on first user interaction
   const unlockAudio = useCallback(() => {
-    if (!window.speechSynthesis) return;
-    try {
-      window.speechSynthesis.resume();
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-      if (!initialized.current) {
-        console.log('[Voice Engine] Unlocking Audio context');
-        window.speechSynthesis.cancel();
-        initialized.current = true;
-      }
-    } catch (e) {
-      console.warn('[Voice Engine] Audio unlock error:', e);
-    }
+    if (initialized.current || !window.speechSynthesis) return;
+    console.log('[Voice Engine] Unlocking Audio context (iOS/Safari compat)');
+    // Speak a space instead of empty string to avoid Safari lockups
+    const utterance = new SpeechSynthesisUtterance(' '); 
+    utterance.volume = 0; // Silent unlock
+    window.speechSynthesis.speak(utterance);
+    initialized.current = true;
   }, []);
 
-  // Initialize and load voices robustly
+  // Initialize and load voices robustly (especially for Safari/iOS)
   useEffect(() => {
     const loadVoices = () => {
-      if (!window.speechSynthesis) return;
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         setVoicesLoaded(true);
-        console.log('[Voice Engine] Loaded voices:', voices.length);
+        console.log('[Voice Engine] Voices loaded successfully', voices.length);
       }
     };
-    
+
     const handleFirstInteraction = () => {
       console.log('[Voice Engine] First user interaction detected, unlocking audio');
       unlockAudio();
     };
     
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      window.speechSynthesis.cancel(); // Clear any zombie native queues from previous page loads
       loadVoices();
       if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -68,22 +55,28 @@ const useSpeech = () => {
     }
     
     return () => {
+       // Cleanup timeouts on unmount
        timeoutRefs.current.forEach(clearTimeout);
        window.removeEventListener('pointerdown', handleFirstInteraction);
        window.removeEventListener('keydown', handleFirstInteraction);
     };
   }, [unlockAudio]);
 
+  // Save preference
+  useEffect(() => {
+    localStorage.setItem('voiceEnabled', JSON.stringify(isVoiceEnabledState));
+  }, [isVoiceEnabledState]);
+
+
+  // Ensure unlock on toggle if not already unlocked
   const toggleVoice = () => {
     unlockAudio();
-    const next = !isVoiceEnabledState;
-    setIsVoiceEnabledState(next);
+    const next = !isVoiceEnabled.current;
     isVoiceEnabled.current = next;
+    setIsVoiceEnabledState(next);
     
     if (!next && window.speechSynthesis) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) {}
+      window.speechSynthesis.cancel();
       speechQueue.current = [];
       isSpeaking.current = false;
       currentSpokenNumber.current = null;
@@ -92,193 +85,186 @@ const useSpeech = () => {
   };
 
   const getBestVoice = () => {
-    if (!window.speechSynthesis) return null;
     const voices = window.speechSynthesis.getVoices();
-    if (!voices || voices.length === 0) return null;
-
-    const enVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-    const candidateVoices = enVoices.length > 0 ? enVoices : voices;
-
-    const localVoice = candidateVoices.find(v => v.localService && (
-      v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Premium')
-    ));
-    if (localVoice) return localVoice;
-
-    const anyLocal = candidateVoices.find(v => v.localService);
-    if (anyLocal) return anyLocal;
-
-    const preferred = candidateVoices.find(v => (
-      v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Premium')
-    ));
-    if (preferred) return preferred;
-
-    return candidateVoices[0];
+    return voices.find(v => v.lang.startsWith('en-') && (v.name.includes('Google') || v.name.includes('Premium'))) 
+      || voices.find(v => v.lang.startsWith('en-'));
   };
 
   const speakUtterance = (text) => {
     return new Promise((resolve) => {
-      if (!window.speechSynthesis) {
-        resolve();
-        return;
-      }
-
-      console.log(`[VOICE ENGINE] Speaking text: "${text}"`);
-      
-      try {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-      } catch (e) {}
-
+      console.log(`[VOICE TRACE] Creating utterance for text: "${text}"`);
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.92;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
       
       const preferredVoice = getBestVoice();
       if (preferredVoice) {
-        utterance.voice = preferredVoice;
+          console.log(`[VOICE TRACE] Selected voice: ${preferredVoice.name}`);
+          utterance.voice = preferredVoice;
+      } else {
+          console.log(`[VOICE TRACE] No preferred voice found, using default`);
       }
 
       let finished = false;
       let failsafeId = null;
-      let resumeInterval = null;
       
-      activeUtterances.current.add(utterance);
+      activeUtterances.current.add(utterance); // Keep alive to prevent GC bug where onend never fires
       
       const finish = () => {
-        activeUtterances.current.delete(utterance);
-        if (finished) return;
-        finished = true;
-        
-        if (failsafeId) {
-          clearTimeout(failsafeId);
-          timeoutRefs.current = timeoutRefs.current.filter(id => id !== failsafeId);
-        }
-
-        if (resumeInterval) {
-          clearInterval(resumeInterval);
-        }
-        
-        resolve();
+          activeUtterances.current.delete(utterance); // Release for GC
+          if (finished) return;
+          finished = true;
+          
+          if (failsafeId) {
+              clearTimeout(failsafeId);
+              timeoutRefs.current = timeoutRefs.current.filter(id => id !== failsafeId);
+          }
+          
+          resolve();
       };
 
       utterance.onstart = () => {
-        console.log(`[VOICE ENGINE] Started: "${text}"`);
+          console.log(`[VOICE TRACE] onstart fired for text: "${text}"`);
       };
 
       utterance.onend = () => {
-        console.log(`[VOICE ENGINE] Ended: "${text}"`);
-        finish();
+          console.log(`[VOICE TRACE] onend fired for text: "${text}"`);
+          finish();
       };
       
       utterance.onerror = (e) => {
-        console.warn(`[VOICE ENGINE] Speech error for "${text}":`, e);
-        finish();
+          console.error(`[VOICE TRACE] onerror fired for text: "${text}"`, e);
+          finish();
       };
 
-      resumeInterval = setInterval(() => {
-        if (!finished && window.speechSynthesis) {
-          if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-          }
-        }
-      }, 200);
-
-      try {
-        window.speechSynthesis.speak(utterance);
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-      } catch (err) {
-        console.error('[VOICE ENGINE] Error executing speak():', err);
-        finish();
-      }
+      console.log(`[VOICE TRACE] Calling window.speechSynthesis.speak() for text: "${text}"`);
+      window.speechSynthesis.speak(utterance);
       
+      // Failsafe for stuck speech engine
       failsafeId = setTimeout(() => {
-        if (!finished) {
-          console.warn('[VOICE ENGINE] Utterance failsafe timeout triggered for:', text);
-          finish();
-        }
-      }, 3000);
+          if (!finished) {
+              console.warn('[Voice Engine] Utterance failsafe triggered for text:', text);
+              // Aggressively unlock the stuck engine
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+              window.speechSynthesis.cancel();
+              finish();
+          }
+      }, 5000);
       
       timeoutRefs.current.push(failsafeId);
     });
   };
 
+  const delay = (ms) => {
+      return new Promise(resolve => {
+          const id = setTimeout(() => {
+              timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+              resolve();
+          }, ms);
+          timeoutRefs.current.push(id);
+      });
+  };
+
   const processQueue = useCallback(async () => {
+    console.log(`[VOICE TRACE] processQueue started`);
     if (!isVoiceEnabled.current || !window.speechSynthesis || speechQueue.current.length === 0) {
+      console.log(`[VOICE TRACE] processQueue returned early. enabled: ${isVoiceEnabled.current}, queue: ${speechQueue.current.length}`);
       isSpeaking.current = false;
       return;
     }
 
     if (isSpeaking.current) {
-      return;
+      console.log(`[VOICE TRACE] processQueue blocked by isSpeaking.current = true`);
+      return; // Prevent concurrent processing
     }
     
     isSpeaking.current = true;
+    window.speechSynthesis.cancel(); // Ensure no zombie native queues
+    
     const item = speechQueue.current.shift();
     
-    let number = null;
     if (typeof item === 'object' && item.type === 'winner') {
-      try {
-        await speakUtterance(item.text);
-      } catch (err) {
-        console.error('[VOICE ENGINE] Winner announcement error:', err);
-      } finally {
+        try {
+            await speakUtterance(item.text);
+        } catch (err) {
+            console.error('[Voice Engine] Winner announcement error:', err);
+        }
         isSpeaking.current = false;
         if (speechQueue.current.length > 0) processQueue();
-      }
-      return;
+        return;
     }
 
-    number = item;
+    const number = item;
     currentSpokenNumber.current = number;
-
-    window.dispatchEvent(new CustomEvent('speech_started', { detail: { number } }));
+    
+    console.log(`[VOICE TRACE] Number shifted from queue: ${number}`);
 
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
     try {
-      const num = Number(number);
-      if (!isNaN(num)) {
-        if (num < 10) {
-          await speakUtterance(`Single number ${num}, ${num}`);
+        if (number < 10) {
+            // Single digit: Speak once
+            await speakUtterance(String(number));
         } else {
-          const digits = String(num).split('').map(d => digitWords[parseInt(d)]).join(' ');
-          await speakUtterance(`${digits}, ${num}`);
+            // Two digits: "one one" -> "eleven" immediately
+            const digits = String(number).split('').map(d => digitWords[parseInt(d)]).join(' ');
+            await speakUtterance(digits);
+            
+            if (isVoiceEnabled.current) {
+                await speakUtterance(String(number));
+            }
         }
-      }
     } catch (err) {
-      console.error('[VOICE ENGINE] Speech execution error:', err);
-    } finally {
-      window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
-      isSpeaking.current = false;
-      currentSpokenNumber.current = null;
-      
-      if (speechQueue.current.length > 0) {
+        console.error('[Voice Engine] Queue processing error:', err);
+    }
+
+    isSpeaking.current = false;
+    currentSpokenNumber.current = null;
+
+    // Check if more items exist
+    if (speechQueue.current.length > 0) {
         processQueue();
-      }
     }
   }, []);
 
   const announceNumber = useCallback((number) => {
+    console.log(`[VOICE TRACE] announceNumber called for: ${number}`);
+    
+    // START COUNTDOWN INSTANTLY!
+    // We want the countdown to start the moment the number arrives, concurrently with voice
     window.dispatchEvent(new CustomEvent('speech_finished', { detail: { number } }));
 
     if (!isVoiceEnabled.current || !window.speechSynthesis) {
-      return;
+        console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
+        return;
     }
 
-    const numStr = String(number);
-    if (speechQueue.current.some(item => String(item) === numStr) || String(currentSpokenNumber.current) === numStr) {
-      return;
+    // STRICT GLOBAL DEDUPLICATION: Never announce the same number consecutively
+    if (lastAnnouncedNumber.current === number) {
+        console.log(`[VOICE TRACE] Blocked duplicate incoming number globally: ${number}`);
+        return;
     }
     
-    lastAnnouncedNumber.current = number;
+    // STRICT Deduplication: Prevent multiple identical queue entries or re-queuing the currently speaking number
+    if (speechQueue.current.includes(number) || currentSpokenNumber.current === number) {
+        console.log(`[VOICE TRACE] Skipped duplicate number in queue: ${number}`);
+        return;
+    }
+    
+    lastAnnouncedNumber.current = number; // Update global tracker
+    
+    console.log(`[VOICE TRACE] Queued number: ${number}`);
     speechQueue.current.push(number);
     
     if (!isSpeaking.current) {
-      processQueue();
+      console.log(`[VOICE TRACE] Scheduling processQueue (queue length: ${speechQueue.current.length})`);
+      const id = setTimeout(() => {
+          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+          processQueue();
+      }, 50);
+      timeoutRefs.current.push(id);
     }
   }, [processQueue]);
 
@@ -289,21 +275,14 @@ const useSpeech = () => {
     
     if (!isSpeaking.current) {
       const id = setTimeout(() => {
-        timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
-        processQueue();
+          timeoutRefs.current = timeoutRefs.current.filter(ref => ref !== id);
+          processQueue();
       }, 50);
       timeoutRefs.current.push(id);
     }
   }, [processQueue]);
 
-  return { 
-    isVoiceEnabled: isVoiceEnabledState, 
-    toggleVoice, 
-    announceNumber, 
-    speak: announceNumber,
-    announceWinner, 
-    unlockAudio 
-  };
+  return { isVoiceEnabled: isVoiceEnabledState, toggleVoice, announceNumber, announceWinner, unlockAudio };
 };
 
 export default useSpeech;

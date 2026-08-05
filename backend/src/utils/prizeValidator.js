@@ -1,34 +1,19 @@
-const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []) => {
-    if (!ticketMatrix || !Array.isArray(ticketMatrix) || ticketMatrix.length < 3) {
-        return false;
-    }
-    if (!drawnNumbers || !Array.isArray(drawnNumbers)) {
-        return false;
-    }
-
+const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers) => {
     const getRowNumbers = (rowIdx) => {
-        if (!ticketMatrix[rowIdx]) return [];
         return ticketMatrix[rowIdx].filter(n => n !== 0);
     };
 
-    // A number is valid if it has been drawn by the game engine
-    const isDrawn = (n) => drawnNumbers.includes(n);
-
-    const allDrawn = (numbers) => {
-        return numbers.length > 0 && numbers.every(n => isDrawn(n));
+    const allDrawnAndMarked = (numbers) => {
+        return numbers.every(n => drawnNumbers.includes(n) && markedNumbers.includes(n));
     };
 
-    const normalized = (prizeType || '').toString().replace(/\s+/g, '').toLowerCase();
-
-    switch (normalized) {
-        case 'jaldi5':
-        case 'early5':
-        case 'earlyfive': {
+    switch (prizeType) {
+        case 'Jaldi5': {
             let matchedCount = 0;
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 9; c++) {
                     const num = ticketMatrix[r][c];
-                    if (num !== 0 && isDrawn(num)) {
+                    if (num !== 0 && drawnNumbers.includes(num) && markedNumbers.includes(num)) {
                         matchedCount++;
                     }
                 }
@@ -36,67 +21,43 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers = []
             // Early Five: first player with at least 5 marked drawn numbers (not exactly 5)
             return matchedCount >= 5;
         }
-        case 'earlyseven':
-        case 'jaldi7': {
+        case 'EarlySeven': {
             let matchedCount = 0;
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 9; c++) {
                     const num = ticketMatrix[r][c];
-                    if (num !== 0 && isDrawn(num)) {
+                    if (num !== 0 && drawnNumbers.includes(num) && markedNumbers.includes(num)) {
                         matchedCount++;
                     }
                 }
             }
             return matchedCount >= 7;
         }
-        case 'fourcorners': {
+        case 'FourCorners': {
             const top = getRowNumbers(0);
             const bottom = getRowNumbers(2);
             if (top.length < 2 || bottom.length < 2) return false;
             const corners = [top[0], top[top.length - 1], bottom[0], bottom[bottom.length - 1]];
-            return allDrawn(corners);
+            return allDrawnAndMarked(corners);
         }
-        case 'firstline':
-        case 'topline':
-        case 'line1': {
-            return allDrawn(getRowNumbers(0));
+        case 'FirstLine':
+        case 'TopLine': {
+            return allDrawnAndMarked(getRowNumbers(0));
         }
-        case 'secondline':
-        case 'middleline':
-        case 'line2': {
-            return allDrawn(getRowNumbers(1));
+        case 'SecondLine':
+        case 'MiddleLine': {
+            return allDrawnAndMarked(getRowNumbers(1));
         }
-        case 'thirdline':
-        case 'bottomline':
-        case 'lastline':
-        case 'line3': {
-            return allDrawn(getRowNumbers(2));
+        case 'ThirdLine':
+        case 'BottomLine': {
+            return allDrawnAndMarked(getRowNumbers(2));
         }
-        case 'fullhouse':
-        case 'housie': {
+        case 'FullHouse': {
             const allNumbers = [...getRowNumbers(0), ...getRowNumbers(1), ...getRowNumbers(2)];
-            return allDrawn(allNumbers);
+            return allDrawnAndMarked(allNumbers);
         }
-        default: {
-            // Flexible fallback for custom or unmapped prize names
-            if (normalized.includes('jaldi5') || normalized.includes('early5')) {
-                let count = 0;
-                for (let r = 0; r < 3; r++) {
-                    for (let c = 0; c < 9; c++) {
-                        if (ticketMatrix[r][c] !== 0 && isDrawn(ticketMatrix[r][c])) count++;
-                    }
-                }
-                return count >= 5;
-            }
-            if (normalized.includes('first') || normalized.includes('top')) return allDrawn(getRowNumbers(0));
-            if (normalized.includes('second') || normalized.includes('middle')) return allDrawn(getRowNumbers(1));
-            if (normalized.includes('third') || normalized.includes('bottom') || normalized.includes('last')) return allDrawn(getRowNumbers(2));
-            if (normalized.includes('full') || normalized.includes('housie')) {
-                const allNums = [...getRowNumbers(0), ...getRowNumbers(1), ...getRowNumbers(2)];
-                return allDrawn(allNums);
-            }
+        default:
             return false;
-        }
     }
 };
 

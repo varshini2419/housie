@@ -1,72 +1,78 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const GameStatusTimer = ({ gameState, nextDrawCountdown, countdown = 5, pauseCountdown = 0, isSpeaking = false, timerData = {}, isMobile = false }) => {
-  const effectiveCountdown = (nextDrawCountdown !== null && nextDrawCountdown !== undefined) ? nextDrawCountdown : countdown;
+const GameStatusTimer = ({ gameState, countdown = 5, pauseCountdown = 0, isMobile = false }) => {
+  const wrapperClasses = "flex items-center gap-3";
+  const timerTextClasses = "text-sm font-bold text-[#4F8EF7] min-w-[28px] tabular-nums text-center inline-block";
 
-  if (gameState === 'LIVE') {
-    const phase = timerData?.phase || (effectiveCountdown < 5 ? 'COUNTDOWN' : 'SPEECH_WAIT');
-    const subPhase = timerData?.subPhase || (isSpeaking ? 'SPEAKING' : 'PAUSE');
+  return (
+    <AnimatePresence mode="wait">
+      {gameState === 'LIVE' && (
+        <motion.div 
+          key="live"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className={wrapperClasses}
+        >
+          <div className="flex items-center gap-2 bg-[#00C16E]/10 border border-[#00C16E]/20 px-3 py-1.5 rounded-full">
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-2.5 h-2.5 rounded-full bg-[#00C16E] shadow-[0_0_8px_#00C16E]"
+            />
+            <span className="text-xs font-bold text-[#00a85e] uppercase tracking-wider">Running</span>
+          </div>
+          <span className="text-[#6B7280]/30 shrink-0">|</span>
+          <div className="flex items-center gap-1.5 bg-[#4F8EF7]/5 px-3 py-1.5 rounded-full border border-[#4F8EF7]/10">
+            <span className="text-xs font-semibold text-[#6B7280]">⏳ Timer:</span>
+            <span className={timerTextClasses}>{countdown}s</span>
+          </div>
+        </motion.div>
+      )}
 
-    if (phase === 'SPEECH_WAIT') {
-      if (subPhase === 'SPEAKING' || isSpeaking) {
-        return (
-          <span className="text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap text-indigo-600 dark:text-indigo-400 animate-pulse">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
-            <span>🔊 Announcing Number...</span>
-          </span>
-        );
-      } else {
-        const pRemaining = timerData?.pauseRemaining !== undefined ? timerData.pauseRemaining : 2;
-        return (
-          <span className="text-xs sm:text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap text-amber-600 dark:text-amber-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-            <span>⏳ Waiting {pRemaining > 0 ? `${pRemaining}s` : '1s'}...</span>
-          </span>
-        );
-      }
-    }
+      {gameState === 'PAUSED' && (
+        <motion.div 
+          key="paused"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className={wrapperClasses}
+        >
+          <div className="flex items-center gap-2 bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-3 py-1.5 rounded-full">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shadow-[0_0_8px_#F59E0B]" />
+            <span className="text-xs font-bold text-[#d97706] uppercase tracking-wider">Paused</span>
+          </div>
+          <span className="text-[#6B7280]/30 shrink-0">|</span>
+          <div className="flex items-center gap-1.5 bg-[#F59E0B]/5 px-3 py-1.5 rounded-full border border-[#F59E0B]/10">
+             <span className="text-xs font-semibold text-[#d97706] min-w-[70px] tabular-nums">
+               {pauseCountdown > 0 ? `Wait ${pauseCountdown}s` : '⏸ Waiting...'}
+             </span>
+          </div>
+        </motion.div>
+      )}
 
-    const timerColorClass = effectiveCountdown <= 2 
-      ? 'text-emerald-600 dark:text-emerald-400 animate-pulse font-black' 
-      : (effectiveCountdown <= 4 ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-indigo-600 dark:text-indigo-400 font-bold');
+      {gameState === 'WAITING' && (
+        <motion.div 
+          key="waiting"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex items-center gap-2 bg-[#6B7280]/10 border border-[#6B7280]/20 px-4 py-1.5 rounded-full"
+        >
+          <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Waiting for Host</span>
+        </motion.div>
+      )}
 
-    return (
-      <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Next draw in:</span>
-        <span className={`font-mono text-sm sm:text-base tabular-nums bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-800 shadow-xs ${timerColorClass}`}>
-          {effectiveCountdown}s
-        </span>
-      </div>
-    );
-  } else if (gameState === 'PAUSED') {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 shrink-0 bg-amber-100/90 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-300 dark:border-amber-800 shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-          <span>Game Paused</span>
-        </span>
-        <span className="text-xs sm:text-sm font-bold tabular-nums text-slate-600 dark:text-slate-400">
-          {pauseCountdown > 0 ? `Resuming in ${pauseCountdown}s` : 'Claim Verification'}
-        </span>
-      </div>
-    );
-  } else if (gameState === 'WAITING') {
-    return (
-      <span className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2 whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 px-3.5 py-1 rounded-full border border-amber-200 dark:border-amber-800 shadow-xs">
-        <span className="animate-spin">⏳</span>
-        <span>Waiting for Host to start...</span>
-      </span>
-    );
-  } else {
-    return (
-      <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2 whitespace-nowrap bg-slate-100 dark:bg-slate-900 px-3.5 py-1 rounded-full border border-slate-300 dark:border-slate-800 shadow-xs">
-        <span>🏁</span>
-        <span>{isMobile ? 'Game Ended' : 'Game Session Completed'}</span>
-      </span>
-    );
-  }
+      {gameState === 'COMPLETED' && (
+        <motion.div 
+          key="completed"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="flex items-center gap-2 bg-[#4F8EF7]/10 border border-[#4F8EF7]/20 px-4 py-1.5 rounded-full"
+        >
+          <span className="text-xs font-bold text-[#4F8EF7] uppercase tracking-wider">Game Over</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 export default React.memo(GameStatusTimer);
