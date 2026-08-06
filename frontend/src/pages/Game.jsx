@@ -350,9 +350,18 @@ const Game = () => {
           const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
           
           let btnClass = "claim-btn-missed";
-          if (isWon && wonByMe) btnClass = "claim-btn-won";
+          if (isWon && wonByMe) btnClass = "claim-btn-mywon";
+          else if (isWon) btnClass = "claim-btn-otherwon";
           else if (!isWon && !isLocked && gameState === 'LIVE') btnClass = "claim-btn-active";
           else if (isLocked || (!isWon && gameState !== 'LIVE')) btnClass = "claim-btn-locked";
+
+          const textColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
+            ? 'text-white/90'
+            : 'text-[#6B7280]';
+
+          const sponsorColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
+            ? 'text-white/80'
+            : 'text-[#9CA3AF]';
 
           return (
             <motion.button 
@@ -363,11 +372,11 @@ const Game = () => {
               className={`flex-grow sm:flex-grow-0 sm:min-w-[120px] p-2.5 rounded-2xl flex flex-col items-center justify-center text-center whitespace-normal select-none touch-manipulation ${btnClass}`}
             >
               <span className="text-xs font-bold">🏆 {prize.name}</span>
-              <span className={`text-[10px] font-medium leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-white/90' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-white/90' : 'text-[#6B7280]')}`}>
+              <span className={`text-[10px] font-medium leading-tight mt-0.5 break-words ${textColorClass}`}>
                 🎁 {prize.prizeItem || 'Prize to be announced'}
               </span>
               {prize.sponsor && (
-                <span className={`text-[9px] font-bold leading-tight mt-0.5 break-words ${isWon && wonByMe ? 'text-white/80' : (!isWon && !isLocked && gameState === 'LIVE' ? 'text-white/80' : 'text-[#9CA3AF]')}`}>
+                <span className={`text-[9px] font-bold leading-tight mt-0.5 break-words ${sponsorColorClass}`}>
                   🤝 {prize.sponsor}
                 </span>
               )}
@@ -471,7 +480,7 @@ const Game = () => {
         {/* Glass Header */}
         <div className="sticky top-4 mx-8 z-50 h-16 glass-nav rounded-[2rem] flex justify-between items-center px-6">
           <div className="flex items-center gap-3">
-            <span className="font-extrabold text-[#1B2430] text-lg tracking-tight">Tambola</span>
+            <span className="font-extrabold text-[#1B2430] text-lg tracking-tight">Housie</span>
             <span className="px-3 py-1 rounded-full bg-[#4F8EF7]/10 border border-[#4F8EF7]/20 text-[#4F8EF7] text-xs font-bold">
               #{ticket.ticketCode}
             </span>
@@ -618,7 +627,7 @@ const Game = () => {
         {/* Mobile Sticky Glass Header */}
         <div className="sticky top-0 z-50 glass-nav px-5 py-4 flex justify-between items-center w-full rounded-b-3xl">
           <div className="flex items-center gap-3">
-            <span className="font-black text-[#1B2430] text-xl tracking-tight">Tambola</span>
+            <span className="font-black text-[#1B2430] text-xl tracking-tight">Housie</span>
             <span className="px-2.5 py-1 rounded-full bg-[#4F8EF7]/10 text-[#4F8EF7] text-[10px] font-bold">
               #{ticket.ticketCode}
             </span>
