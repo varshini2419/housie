@@ -470,7 +470,7 @@ const Admin = () => {
             <form onSubmit={handleCreateGame} className="space-y-5">
               <div>
                 <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Session Title</label>
-                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full premium-input" placeholder="E.G. Friday Evening Tambola" />
+                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full premium-input" placeholder="E.G. Friday Evening Housie" />
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
