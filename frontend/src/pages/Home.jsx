@@ -54,8 +54,8 @@ const Home = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            sessionId: formData.sessionId, 
-            mobile: formData.mobile 
+          sessionId: formData.sessionId, 
+          mobile: formData.mobile 
         })
       });
 
@@ -77,80 +77,103 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <div className="relative min-h-screen overflow-hidden auth-page px-4 py-10 text-[#0F172A]">
+      <div className="pointer-events-none absolute -top-32 -left-28 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute -bottom-36 -right-24 w-80 h-80 bg-blue-200/15 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/90 to-transparent"></div>
 
-      <div className="absolute top-8 right-8 z-20">
+      <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-10 z-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4">
-          ✨ Live Multiplayer Tambola
-        </div>
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          JOIN GAME
-        </h1>
+      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center text-center">
+        <div className="auth-badge mb-5">✨ Live Multiplayer Housie</div>
+        <h1 className="auth-headline">JOIN GAME</h1>
+        <p className="auth-subtitle">
+          Access your active session and join the live game with your registered mobile number.
+        </p>
       </div>
 
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
-        
+      <div className="relative z-10 mx-auto mt-12 w-full max-w-xl auth-card glass-panel p-8 sm:p-10">
+        <div className="auth-card-line" aria-hidden="true" />
+
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
+          <div className="auth-error mb-6 text-center">
             {error}
           </div>
         )}
-        
-        <form onSubmit={handleLogin} className="space-y-4">
+
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="sessionId" className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">
               Select Session
             </label>
-            <select
-              name="sessionId"
-              value={formData.sessionId}
-              onChange={handleChange}
-              className="w-full premium-input appearance-none cursor-pointer"
-            >
-              <option value="" className="bg-brand-card">-- Choose Active Session --</option>
-              {sessions.map(session => (
-                <option key={session._id} value={session._id} className="bg-brand-card text-brand-text">
-                  {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
-              Mobile Number (Password)
-            </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Your Registered Mobile" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+            <div className="input-icon-wrapper">
+              <span className="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M5 12h14" />
+                  <path d="M7 18h10" />
+                </svg>
+              </span>
+              <select
+                id="sessionId"
+                name="sessionId"
+                value={formData.sessionId}
+                onChange={handleChange}
+                className="auth-select pl-14 pr-12"
+              >
+                <option value="">-- Choose Active Session --</option>
+                {sessions.map(session => (
+                  <option key={session._id} value={session._id}>
+                    {session.sessionName} ({new Date(session.startTime).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+              <span className="input-icon input-icon-right" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            </div>
           </div>
 
-          <button 
+          <div>
+            <label htmlFor="mobile" className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">
+              Mobile Number (Password)
+            </label>
+            <div className="input-icon-wrapper">
+              <span className="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.12.81.32 1.6.6 2.36a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.72-1.06a2 2 0 0 1 2.11-.45c.76.28 1.55.48 2.36.6A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </span>
+              <input
+                id="mobile"
+                type="tel"
+                name="mobile"
+                value={formData.mobile}
+                onChange={handleChange}
+                placeholder="Your Registered Mobile"
+                className="auth-input pl-14"
+              />
+            </div>
+          </div>
+
+          <button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
+            className="auth-btn-primary text-lg"
           >
             {loading ? 'Logging In...' : 'JOIN NOW'}
           </button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-brand-border">
-          <p className="text-sm text-brand-text-muted mb-2">Not yet registered?</p>
-          <Link to="/register" className="text-sm font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider">
-            Register Here
+        <div className="mt-8 text-center">
+          <div className="auth-divider mb-6" />
+          <p className="auth-caption mb-3">Not yet registered?</p>
+          <Link to="/register" className="auth-link">
+            REGISTER HERE
           </Link>
         </div>
       </div>
