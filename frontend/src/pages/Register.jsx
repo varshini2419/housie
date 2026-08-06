@@ -51,85 +51,114 @@ const Register = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-      {/* Ambient background glow orbs */}
-      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
-      <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl mix-blend-screen dark:mix-blend-color-dodge"></div>
+    <div className="relative min-h-screen overflow-hidden auth-page px-4 py-10 text-[#0F172A]">
+      <div className="pointer-events-none absolute -top-28 -left-24 w-80 h-80 bg-blue-500/15 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute -bottom-32 -right-24 w-96 h-96 bg-blue-200/15 rounded-full blur-3xl"></div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/90 to-transparent"></div>
 
-      <div className="absolute top-8 right-8 z-20">
+      <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-10 z-10">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 tracking-tight">
-          Player Registration
-        </h1>
+      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center text-center">
+        <div className="auth-badge mb-5">✨ Live Multiplayer Housie</div>
+        <h1 className="auth-headline">PLAYER REGISTRATION</h1>
+        <p className="auth-subtitle">
+          Create your account to join games instantly and play from any device.
+        </p>
       </div>
 
-      <div className="glass-panel p-8 w-full max-w-md relative z-10 transition-all duration-300">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-b-full"></div>
+      <div className="relative z-10 mx-auto mt-12 w-full max-w-xl auth-card glass-panel p-8 sm:p-10">
+        <div className="auth-card-line" aria-hidden="true" />
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center animate-shake">
+          <div className="auth-error mb-6 text-center">
             {error}
           </div>
         )}
-        
-        <form onSubmit={handleRegister} className="space-y-4">
+
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="fullName" className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">
               Full Name
             </label>
-            <input 
-              type="text" 
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="e.g. Rahul Kumar" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+            <div className="input-icon-wrapper">
+              <span className="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <input
+                id="fullName"
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="e.g. Rahul Kumar"
+                className="auth-input pl-14"
+              />
+            </div>
           </div>
-          
+
           <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">
               Email
             </label>
-            <input 
-              type="email" 
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. rahul@gmail.com" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+            <div className="input-icon-wrapper">
+              <span className="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16v16H4z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </span>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="e.g. rahul@gmail.com"
+                className="auth-input pl-14"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">
+            <label htmlFor="mobile" className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">
               Mobile Number
             </label>
-            <input 
-              type="tel" 
-              name="mobile"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="e.g. 9876543210" 
-              className="w-full premium-input text-lg tracking-wide"
-            />
+            <div className="input-icon-wrapper">
+              <span className="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18A2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.12.81.32 1.6.6 2.36a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.72-1.06a2 2 0 0 1 2.11-.45c.76.28 1.55.48 2.36.6A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </span>
+              <input
+                id="mobile"
+                type="tel"
+                name="mobile"
+                value={formData.mobile}
+                onChange={handleChange}
+                placeholder="e.g. 9876543210"
+                className="auth-input pl-14"
+              />
+            </div>
           </div>
 
-          <button 
+          <button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 premium-btn-primary text-lg"
+            className="auth-btn-primary text-lg"
           >
             {loading ? 'Registering...' : 'REGISTER'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm font-semibold text-blue-500 hover:text-blue-600 transition-colors">
-            Already registered? Login Here
+        <div className="mt-8 text-center">
+          <div className="auth-divider mb-6" />
+          <Link to="/" className="auth-link">
+            ALREADY REGISTERED? LOGIN HERE
           </Link>
         </div>
       </div>
