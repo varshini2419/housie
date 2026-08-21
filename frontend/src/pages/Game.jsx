@@ -440,20 +440,10 @@ const Game = () => {
         {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';
-<<<<<<< Updated upstream
-          const wonByMe = isWon && prize.winnerTicket === ticket.ticketCode;
-          
-          let btnClass = "claim-btn-missed";
-          if (isWon && wonByMe) btnClass = "claim-btn-mywon";
-          else if (isWon) btnClass = "claim-btn-otherwon";
-          else if (!isWon && !isLocked && gameState === 'LIVE') btnClass = "claim-btn-active";
-          else if (isLocked || (!isWon && gameState !== 'LIVE')) btnClass = "claim-btn-locked";
-=======
           const wonByMe = isWon && (prize.winnerTicket === ticket?.ticketCode || prize.winner === ticket?.playerName);
           const canClaim = !isWon && !isLocked && gameState === 'LIVE';
 
           const theme = prizeThemes[idx % prizeThemes.length];
->>>>>>> Stashed changes
 
           const textColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
             ? 'text-white/90'
@@ -473,16 +463,6 @@ const Game = () => {
                 canClaim ? 'cursor-pointer ring-2 ring-blue-400/40 shadow-sm' : ''
               } ${isWon ? 'opacity-95' : isLocked ? 'opacity-65' : ''}`}
             >
-<<<<<<< Updated upstream
-              <span className="text-xs font-bold">🏆 {prize.name}</span>
-              <span className={`text-[10px] font-medium leading-tight mt-0.5 break-words ${textColorClass}`}>
-                🎁 {prize.prizeItem || 'Prize to be announced'}
-              </span>
-              {prize.sponsor && (
-                <span className={`text-[9px] font-bold leading-tight mt-0.5 break-words ${sponsorColorClass}`}>
-                  🤝 {prize.sponsor}
-                </span>
-=======
               {/* TOP TICK MARK BADGES: */}
               {isWon && wonByMe && (
                 <div 
@@ -491,7 +471,6 @@ const Game = () => {
                 >
                   <Check className="w-3 h-3 stroke-[3.5]" />
                 </div>
->>>>>>> Stashed changes
               )}
 
               {isWon && !wonByMe && (
