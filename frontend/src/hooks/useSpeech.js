@@ -204,18 +204,7 @@ const useSpeech = () => {
     const digitWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 
     try {
-        if (number < 10) {
-            // Single digit: Speak once
-            await speakUtterance(String(number));
-        } else {
-            // Two digits: "one one" -> "eleven" immediately
-            const digits = String(number).split('').map(d => digitWords[parseInt(d)]).join(' ');
-            await speakUtterance(digits);
-            
-            if (isVoiceEnabled.current) {
-                await speakUtterance(String(number));
-            }
-        }
+        await speakUtterance(`Number ${number}`);
     } catch (err) {
         console.error('[Voice Engine] Queue processing error:', err);
     }
@@ -240,6 +229,11 @@ const useSpeech = () => {
         console.log(`[VOICE TRACE] announceNumber skipped. Enabled: ${isVoiceEnabled.current}`);
         return;
     }
+
+    // Clear stale queued items and stop previous speech when a new number is drawn
+    window.speechSynthesis.cancel();
+    speechQueue.current = [];
+    isSpeaking.current = false;
 
     // STRICT GLOBAL DEDUPLICATION: Never announce the same number consecutively
     if (lastAnnouncedNumber.current === number) {
