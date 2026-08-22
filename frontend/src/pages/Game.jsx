@@ -436,7 +436,7 @@ const Game = () => {
       </div>
 
       {/* Grid of Ultra-Compact Side-by-Side Prize Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5 w-full relative z-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2 sm:gap-2.5 w-full relative z-10">
         {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';

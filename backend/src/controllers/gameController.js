@@ -21,10 +21,13 @@ exports.createSession = async (req, res) => {
 
     const defaultPrizes = [
         { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true },
-        { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true },
-        { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true },
-        { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true },
-        { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true }
+        { id: 'p2', name: 'Four Corners', type: 'FourCorners', sequence: 1, enabled: true },
+        { id: 'p3', name: 'Six Corners', type: 'SixCorners', sequence: 1, enabled: true },
+        { id: 'p4', name: 'Middle Number', type: 'MiddleNumber', sequence: 1, enabled: true },
+        { id: 'p5', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true },
+        { id: 'p6', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true },
+        { id: 'p7', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true },
+        { id: 'p8', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true }
     ];
 
     const sessionPrizes = prizes && prizes.length > 0 ? prizes : defaultPrizes;

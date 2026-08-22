@@ -57,10 +57,13 @@ const generateNumber = async (game, io) => {
 
     const defaultPrizes = [
         { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, status: state.winners['Jaldi 5'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Jaldi 5']?.playerName || null, winnerTicket: state.winners['Jaldi 5']?.ticketCode || null, prizeItem: null },
-        { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
-        { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
-        { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
-        { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
+        { id: 'p2', name: 'Four Corners', type: 'FourCorners', sequence: 1, status: state.winners['Four Corners'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Four Corners']?.playerName || null, winnerTicket: state.winners['Four Corners']?.ticketCode || null, prizeItem: null },
+        { id: 'p3', name: 'Six Corners', type: 'SixCorners', sequence: 1, status: state.winners['Six Corners'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Six Corners']?.playerName || null, winnerTicket: state.winners['Six Corners']?.ticketCode || null, prizeItem: null },
+        { id: 'p4', name: 'Middle Number', type: 'MiddleNumber', sequence: 1, status: state.winners['Middle Number'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Middle Number']?.playerName || null, winnerTicket: state.winners['Middle Number']?.ticketCode || null, prizeItem: null },
+        { id: 'p5', name: 'First Line', type: 'FirstLine', sequence: 1, status: state.winners['First Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['First Line']?.playerName || null, winnerTicket: state.winners['First Line']?.ticketCode || null, prizeItem: null },
+        { id: 'p6', name: 'Second Line', type: 'SecondLine', sequence: 1, status: state.winners['Second Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Second Line']?.playerName || null, winnerTicket: state.winners['Second Line']?.ticketCode || null, prizeItem: null },
+        { id: 'p7', name: 'Third Line', type: 'ThirdLine', sequence: 1, status: state.winners['Third Line'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Third Line']?.playerName || null, winnerTicket: state.winners['Third Line']?.ticketCode || null, prizeItem: null },
+        { id: 'p8', name: 'Full House', type: 'FullHouse', sequence: 1, status: state.winners['Full House'] ? 'COMPLETED' : 'AVAILABLE', winner: state.winners['Full House']?.playerName || null, winnerTicket: state.winners['Full House']?.ticketCode || null, prizeItem: null }
     ];
     
     const sessionPrizes = updatedGame && updatedGame.prizes && updatedGame.prizes.length > 0 ? updatedGame.prizes : defaultPrizes;

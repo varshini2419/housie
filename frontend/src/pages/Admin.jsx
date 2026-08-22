@@ -15,10 +15,13 @@ const Admin = () => {
   const [startingRegisterNumber, setStartingRegisterNumber] = useState('');
   const [prizes, setPrizes] = useState([
     { id: 'p1', name: 'Jaldi 5', type: 'Jaldi5', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
-    { id: 'p2', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
-    { id: 'p3', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
-    { id: 'p4', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
-    { id: 'p5', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, prizeItem: '', sponsor: '' }
+    { id: 'p2', name: 'Four Corners', type: 'FourCorners', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p3', name: 'Six Corners', type: 'SixCorners', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p4', name: 'Middle Number', type: 'MiddleNumber', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p5', name: 'First Line', type: 'FirstLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p6', name: 'Second Line', type: 'SecondLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p7', name: 'Third Line', type: 'ThirdLine', sequence: 1, enabled: true, prizeItem: '', sponsor: '' },
+    { id: 'p8', name: 'Full House', type: 'FullHouse', sequence: 1, enabled: true, prizeItem: '', sponsor: '' }
   ]);
   const [customPrizeName, setCustomPrizeName] = useState('');
   const [customPrizeItem, setCustomPrizeItem] = useState('');
@@ -581,6 +584,9 @@ const Admin = () => {
                     <input type="text" value={customPrizeSponsor} onChange={e => setCustomPrizeSponsor(e.target.value)} placeholder="Sponsor (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
                     <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
                       <option value="Jaldi5">Jaldi 5</option>
+                      <option value="FourCorners">Four Corners</option>
+                      <option value="SixCorners">Six Corners</option>
+                      <option value="MiddleNumber">Middle Number</option>
                       <option value="FirstLine">First Line</option>
                       <option value="SecondLine">Second Line</option>
                       <option value="ThirdLine">Third Line</option>

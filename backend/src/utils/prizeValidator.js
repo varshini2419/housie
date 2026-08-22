@@ -33,12 +33,34 @@ const validateClaim = (prizeType, ticketMatrix, drawnNumbers, markedNumbers) => 
             }
             return matchedCount >= 7;
         }
-        case 'FourCorners': {
+        case 'FourCorners':
+        case 'Four Corners': {
             const top = getRowNumbers(0);
             const bottom = getRowNumbers(2);
             if (top.length < 2 || bottom.length < 2) return false;
             const corners = [top[0], top[top.length - 1], bottom[0], bottom[bottom.length - 1]];
             return allDrawnAndMarked(corners);
+        }
+        case 'SixCorners':
+        case 'Six Corners':
+        case '6 Corners': {
+            const top = getRowNumbers(0);
+            const middle = getRowNumbers(1);
+            const bottom = getRowNumbers(2);
+            if (top.length < 2 || middle.length < 2 || bottom.length < 2) return false;
+            const corners = [
+                top[0], top[top.length - 1],
+                middle[0], middle[middle.length - 1],
+                bottom[0], bottom[bottom.length - 1]
+            ];
+            return allDrawnAndMarked(corners);
+        }
+        case 'MiddleNumber':
+        case 'Middle Number': {
+            const middleRow = getRowNumbers(1);
+            if (middleRow.length < 3) return false;
+            const middleNum = middleRow[2]; // 3rd number in second row
+            return allDrawnAndMarked([middleNum]);
         }
         case 'FirstLine':
         case 'TopLine': {
