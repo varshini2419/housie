@@ -55,6 +55,7 @@ const Game = () => {
   const [onlineCount, setOnlineCount] = useState(1);
   const [totalJoined, setTotalJoined] = useState(1);
   const [prizes, setPrizes] = useState([]);
+  const [logos, setLogos] = useState(['', '', '']);
   const [toastMsg, setToastMsg] = useState(null);
   const [nextDrawCountdown, setNextDrawCountdown] = useState(5);
   const [pauseCountdown, setPauseCountdown] = useState(0);
@@ -136,6 +137,9 @@ const Game = () => {
       setCurrentNumber(data.currentNumber);
       setDrawnNumbers(data.drawnNumbers);
       setPrizes(data.prizes);
+      if (data.logos) {
+        setLogos(data.logos);
+      }
       if (data.markedNumbers) {
         setMarkedNumbers(data.markedNumbers);
       }
@@ -907,7 +911,7 @@ const Game = () => {
               className="glass-panel p-8 flex flex-col items-center justify-center relative overflow-hidden"
             >
               <div className="relative z-10">
-                <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="desktop" />
+                <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="desktop" logos={logos} />
               </div>
               <p className="mt-6 text-[#6B7280] font-bold text-sm tracking-widest uppercase">
                 {currentNumber ? `Number ${currentNumber}` : 'Waiting...'}
@@ -1013,7 +1017,7 @@ const Game = () => {
             {/* Mobile Hero: Current Number */}
             <div className="flex flex-col items-center justify-center relative">
               <div className="relative z-10">
-                <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="mobile" />
+                <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="mobile" logos={logos} />
               </div>
               
               <div className="mt-6">

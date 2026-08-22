@@ -141,6 +141,7 @@ io.on('connection', (socket) => {
                 currentNumber: activeGames[sId].drawnNumbers.slice(-1)[0] || null,
                 drawnNumbers: activeGames[sId].drawnNumbers,
                 prizes: sessionPrizes,
+                logos: game?.logos || ['', '', ''],
                 markedNumbers: markedNums,
                 remainingNumbers: activeGames[sId].availableNumbers.length,
                 tickId: activeGames[sId].tickId
@@ -340,6 +341,7 @@ io.on('connection', (socket) => {
                         currentNumber: activeGames[sId].drawnNumbers.slice(-1)[0] || null,
                         drawnNumbers: activeGames[sId].drawnNumbers,
                         prizes: sessionPrizes,
+                        logos: game?.logos || ['', '', ''],
                         remainingNumbers: activeGames[sId].availableNumbers.length
                     });
 
