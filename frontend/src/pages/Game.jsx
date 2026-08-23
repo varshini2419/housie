@@ -440,22 +440,28 @@ const Game = () => {
       </div>
 
       {/* Grid of Ultra-Compact Side-by-Side Prize Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2 sm:gap-2.5 w-full relative z-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5 w-full relative z-10">
         {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';
           const wonByMe = isWon && (prize.winnerTicket === ticket?.ticketCode || prize.winner === ticket?.playerName);
           const canClaim = !isWon && !isLocked && gameState === 'LIVE';
 
-          const theme = prizeThemes[idx % prizeThemes.length];
+          let bgColor = 'bg-[#2563EB]';
+          let textColor = 'text-white';
+          let iconBg = 'bg-white/20';
 
-          const textColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
-            ? 'text-white/90'
-            : 'text-[#6B7280]';
-
-          const sponsorColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
-            ? 'text-white/80'
-            : 'text-[#9CA3AF]';
+          if (isWon) {
+            if (wonByMe) {
+              bgColor = 'bg-[#FBBF24]';
+              textColor = 'text-[#0F172A]';
+              iconBg = 'bg-black/10';
+            } else {
+              bgColor = 'bg-[#10B981]';
+              textColor = 'text-white';
+              iconBg = 'bg-black/20';
+            }
+          }
 
           return (
             <motion.div
@@ -463,77 +469,55 @@ const Game = () => {
               whileHover={canClaim ? { scale: 1.04, y: -1.5 } : {}}
               whileTap={canClaim ? { scale: 0.96 } : {}}
               onClick={() => canClaim && claimPrize(prize.id)}
-              className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border ${theme.border} bg-gradient-to-br ${theme.cardBg} shadow-xs transition-all duration-300 select-none flex flex-col justify-between ${
-                canClaim ? 'cursor-pointer ring-2 ring-blue-400/40 shadow-sm' : ''
-              } ${isWon ? 'opacity-95' : isLocked ? 'opacity-65' : ''}`}
+              className={`relative overflow-hidden rounded-[1.5rem] px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm transition-all duration-300 select-none flex flex-col gap-1.5 justify-center ${bgColor} ${textColor} ${
+                canClaim ? 'cursor-pointer ring-2 ring-blue-400/50 shadow-md' : ''
+              } ${!isWon && isLocked ? 'opacity-70 grayscale-[20%]' : ''}`}
             >
-              {/* TOP TICK MARK BADGES: */}
-              {isWon && wonByMe && (
-                <div 
-                  title="You won this prize!" 
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-300 border border-white shadow-xs flex items-center justify-center text-white z-30"
-                >
-                  <Check className="w-3 h-3 stroke-[3.5]" />
+              {/* Row 1: Prize Name */}
+              <div className="flex items-center gap-2.5 relative z-10 w-full">
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+                  <span className="text-xs sm:text-sm">🏆</span>
                 </div>
-              )}
-
-              {isWon && !wonByMe && (
-                <div 
-                  title={`Won by ${prize.winner || 'another player'}`} 
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-[#10B981] to-[#059669] border border-white shadow-xs flex items-center justify-center text-white z-30"
-                >
-                  <Check className="w-3 h-3 stroke-[3.5]" />
-                </div>
-              )}
-
-              {/* Bottom Decorative Wave */}
-              <svg className={`absolute bottom-0 left-0 right-0 w-full h-6 ${theme.waveColor} opacity-60 pointer-events-none`} viewBox="0 0 100 30" preserveAspectRatio="none">
-                <path d="M0,30 Q30,10 60,20 T100,0 L100,30 Z" fill="currentColor"/>
-              </svg>
-
-              <div>
-                {/* Header Row */}
-                <div className="flex items-center gap-1.5 mb-1.5 relative z-10">
-                  <div className={`w-6 h-6 rounded-full ${theme.iconBg} shadow-2xs flex items-center justify-center text-white text-[11px] shrink-0`}>
-                    🏆
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className={`text-[11px] sm:text-xs font-black ${theme.textColor} leading-tight tracking-tight truncate`}>
-                      {prize.name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-bold text-[#475569] relative z-10 mb-1">
-                  <div className="flex items-center gap-1 truncate">
-                    <span className="text-[10px]">🎁</span>
-                    <span className="truncate">{prize.prizeItem || 'Prize'}</span>
-                  </div>
-                  {prize.sponsor && (
-                    <div className="flex items-center gap-1 text-[#64748B] truncate">
-                      <span className="text-[10px]">💛</span>
-                      <span className="truncate">{prize.sponsor}</span>
-                    </div>
-                  )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-black leading-tight tracking-tight truncate">
+                    {prize.name}
+                  </h3>
                 </div>
               </div>
 
-              {/* Action / Winner Status */}
-              <div className="mt-1.5 pt-1 border-t border-black/5 relative z-10 flex justify-center items-center">
-                {canClaim && (
-                  <span className="text-[8.5px] sm:text-[9px] font-black text-[#2563EB] bg-white/95 px-2 py-0.5 rounded-full shadow-2xs border border-blue-200 uppercase tracking-wider text-center">
-                    Claim 🎯
+              {/* Row 2: Condition */}
+              <div className="flex items-center gap-2.5 relative z-10 w-full">
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+                  <span className="text-xs sm:text-sm">🎁</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[11px] sm:text-xs font-semibold opacity-95 truncate block">
+                    {prize.prizeItem || 'Prize'}
                   </span>
-                )}
-                {isWon && (
-                  <span className="text-[8.5px] sm:text-[9px] font-extrabold text-[#0F172A] bg-white/95 px-2 py-0.5 rounded-full shadow-2xs border border-slate-200/80 truncate max-w-full text-center">
-                    👑 {prize.winner || 'Won'}
+                </div>
+              </div>
+
+              {/* Row 3: Sponsor */}
+              <div className="flex items-center gap-2.5 relative z-10 w-full">
+                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+                  <span className="text-xs sm:text-sm">🤝</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[11px] sm:text-xs font-semibold opacity-95 truncate block">
+                    {prize.sponsor || '-'}
                   </span>
-                )}
-                {!isWon && !canClaim && (
-                  <span className="text-[8.5px] sm:text-[9px] font-bold text-[#94A3B8] italic">
-                    {isLocked ? 'Locked 🔒' : 'Wait...'}
+                </div>
+              </div>
+
+              {/* Winner Area (Maintains height even if empty) */}
+              <div className="mt-0.5 relative z-10 w-full text-center">
+                {isWon ? (
+                  <span className="text-[11px] sm:text-xs font-black truncate block px-2">
+                    {prize.winner}
+                  </span>
+                ) : (
+                  <span className="text-[11px] sm:text-xs block invisible px-2">
+                    Placeholder
                   </span>
                 )}
               </div>
