@@ -9,34 +9,31 @@ import GameStatusTimer from '../components/GameStatusTimer';
 import RollingDice from '../components/RollingDice';
 import { Check, Ticket, Clock, ChevronRight } from 'lucide-react';
 
-const MemoizedNumberChip = React.memo(({ num, isMarked, isPending, canMark, onMark }) => {
+const MemoizedNumberChip = React.memo(({ num, isMarked, isPending, canMark, onMark, cIndex }) => {
+  const isEvenCol = cIndex % 2 === 0;
+  const baseBg = isEvenCol ? 'bg-[#E8F1FF]' : 'bg-white';
+
   if (num === 0) {
-    return <div className="aspect-square w-full" />;
+    return <div className={`w-full h-full min-h-[3rem] border-r border-b border-blue-300 ${baseBg}`} />;
   }
 
   return (
-    <motion.div 
+    <div 
       onClick={() => onMark(num)}
-      whileHover={canMark ? { scale: 1.1, y: -2 } : {}}
-      whileTap={canMark ? { scale: 0.95 } : {}}
-      className={`aspect-square w-full rounded-full flex items-center justify-center font-black text-sm sm:text-lg relative select-none transition-all duration-300
-        ${!isMarked && !isPending ? 'bg-white text-[#0F172A] shadow-[0_4px_10px_rgba(0,0,0,0.06)] border border-white/80' : ''}
-        ${isMarked ? 'bg-gradient-to-br from-[#00C16E] to-[#00a85e] text-white border-none shadow-md z-10' : ''}
-        ${isPending ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white border-none shadow-md z-10 animate-pulse' : ''}
-        ${canMark && !isPending ? 'cursor-pointer ring-2 ring-[#00C16E] shadow-[0_0_12px_rgba(0,193,110,0.3)]' : ''}
+      className={`w-full h-full min-h-[3rem] border-r border-b border-blue-300 flex items-center justify-center font-bold text-lg sm:text-2xl lg:text-3xl relative select-none transition-colors duration-200
+        ${!isMarked && !isPending ? `${baseBg} text-[#0F172A] ${canMark ? 'hover:bg-blue-100 cursor-pointer' : ''}` : ''}
+        ${isMarked ? 'bg-[#10B981] text-white z-10' : ''}
+        ${isPending ? 'bg-amber-400 text-amber-900 z-10 animate-pulse' : ''}
+        ${canMark && !isPending ? 'cursor-pointer' : ''}
       `}
     >
       <span>{num}</span>
       {isMarked && (
-        <motion.div 
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 rounded-full bg-white border border-[#00C16E] shadow-sm flex items-center justify-center text-[#00a85e] z-20"
-        >
-          <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
-        </motion.div>
+        <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 text-white pointer-events-none flex items-center justify-center">
+          <Check className="w-3 h-3 sm:w-4 sm:h-4 stroke-[4]" />
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 });
 
@@ -312,67 +309,94 @@ const Game = () => {
 
   // Generate Ticket Grid matching exact reference UI
   const renderTicket = (isDesktop = true) => (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
-      className={`p-5 sm:p-7 w-full mx-auto relative overflow-hidden rounded-[2.5rem] bg-white/95 border border-white/90 shadow-[0_20px_50px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,1)] ${gameState === 'LIVE' ? 'ring-2 ring-emerald-400/30' : ''}`}
-    >
-      {/* Top Header Row */}
-      <div className="flex justify-between items-center mb-6 relative z-10">
-        <div className="flex items-center gap-3.5">
-          {/* Circular 3D Purple Ticket Badge Icon */}
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#7C3AED] via-[#8B5CF6] to-[#A78BFA] shadow-[0_8px_22px_rgba(124,58,237,0.35)] flex items-center justify-center text-white shrink-0">
-            <Ticket className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2] fill-white/20" />
-          </div>
-          <div>
-            <h2 className="text-base sm:text-xl font-black text-[#0F172A] tracking-wider uppercase leading-none">
-              Your Ticket
-            </h2>
-            <p className="text-xs sm:text-sm font-semibold text-[#64748B] mt-1">
-              Mark the numbers as they are called!
-            </p>
-          </div>
+    <div className={`w-full max-w-[800px] mx-auto bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-blue-100/50 ${gameState === 'LIVE' ? 'ring-2 ring-emerald-400/20' : ''}`}>
+      
+      {/* Header */}
+      <div className="flex flex-row justify-between items-start sm:items-center mb-4 sm:mb-5 gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#0F172A] uppercase tracking-tight leading-none mb-1.5">
+            Your Ticket
+          </h2>
+          <p className="text-xs sm:text-sm font-bold text-[#2563EB]">
+            Press the numbers that are generated and check your matches!
+          </p>
         </div>
-
+        
         {/* Active Pill Badge */}
-        <div className="px-4 py-1.5 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#047857] text-xs font-black tracking-wider flex items-center gap-2 shadow-xs">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse"></span>
+        <div className="px-3 sm:px-4 py-1.5 rounded-full bg-[#ECFDF5] text-[#047857] text-xs sm:text-sm font-bold tracking-wider flex items-center gap-2 shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
           <span>ACTIVE</span>
         </div>
       </div>
-      
-      {/* Inner Ticket Inset Card with Soft Lavender Gradient */}
-      <div className="p-3.5 sm:p-5 rounded-[2rem] bg-gradient-to-br from-[#F3F0FF] via-[#F5F3FF] to-[#EDE9FE] border border-[#DDD6FE]/70 shadow-[inset_0_2px_6px_rgba(124,58,237,0.03)] relative overflow-hidden z-10">
-        {/* Background Waves & Sparkles */}
-        <svg className="absolute bottom-0 right-0 w-56 h-28 text-purple-200/40 pointer-events-none" viewBox="0 0 100 50" preserveAspectRatio="none">
-          <path d="M0,50 Q30,15 60,30 T100,5 L100,50 Z" fill="currentColor"/>
-        </svg>
-        <span className="absolute top-6 left-10 text-purple-300/70 text-base select-none pointer-events-none">✦</span>
-        <span className="absolute bottom-6 right-28 text-purple-300/70 text-lg select-none pointer-events-none">✦</span>
 
-        <div className="grid grid-cols-9 gap-1.5 sm:gap-3 w-full relative z-10">
-          {(ticket?.ticketMatrix || []).map((row, rIndex) => (
-            row.map((num, cIndex) => {
-              const marked = num !== 0 && isMarked(num);
-              const pending = num !== 0 && pendingMarks.includes(num);
-              const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
-              
-              return (
-                <MemoizedNumberChip
-                  key={`${isDesktop ? 'd' : 'm'}-r${rIndex}-c${cIndex}`}
-                  num={num}
-                  isMarked={marked}
-                  isPending={pending}
-                  canMark={canMark}
-                  onMark={handleMarkNumber}
-                />
-              );
-            })
-          ))}
+      {/* Decorative Divider */}
+      <div className="w-full flex items-center justify-center gap-2 mb-6">
+        <div className="h-[1px] flex-1 bg-blue-200"></div>
+        <div className="w-1.5 h-1.5 rotate-45 bg-[#2563EB]"></div>
+        <div className="w-2 h-2 rotate-45 bg-[#2563EB]"></div>
+        <div className="w-1.5 h-1.5 rotate-45 bg-[#2563EB]"></div>
+        <div className="h-[1px] flex-1 bg-blue-200"></div>
+      </div>
+
+      {/* Ticket Frame */}
+      <div className="relative w-full bg-[#2563EB] rounded-2xl p-2 sm:p-3 overflow-hidden shadow-sm mb-6">
+        {/* Side perforations */}
+        <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-evenly -translate-x-1/2 pointer-events-none z-0">
+          {[1,2,3,4,5].map(i => <div key={`l-${i}`} className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full"></div>)}
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-evenly translate-x-1/2 pointer-events-none z-0">
+          {[1,2,3,4,5].map(i => <div key={`r-${i}`} className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full"></div>)}
+        </div>
+
+        {/* Inner dashed border */}
+        <div className="w-full h-full border-2 border-dashed border-white/40 rounded-xl p-1.5 sm:p-2 lg:p-3 relative z-10">
+          {/* Seamless 3x9 Grid */}
+          <div className="grid grid-cols-9 gap-0 w-full bg-white border-t border-l border-blue-300 shadow-inner">
+            {(ticket?.ticketMatrix || []).map((row, rIndex) => (
+              row.map((num, cIndex) => {
+                const marked = num !== 0 && isMarked(num);
+                const pending = num !== 0 && pendingMarks.includes(num);
+                const canMark = num !== 0 && isDrawn(num) && !marked && gameState === 'LIVE';
+                
+                return (
+                  <MemoizedNumberChip
+                    key={`${isDesktop ? 'd' : 'm'}-r${rIndex}-c${cIndex}`}
+                    num={num}
+                    isMarked={marked}
+                    isPending={pending}
+                    canMark={canMark}
+                    onMark={handleMarkNumber}
+                    cIndex={cIndex}
+                  />
+                );
+              })
+            ))}
+          </div>
         </div>
       </div>
-    </motion.div>
+
+      {/* Bottom Instructions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 px-1 sm:px-2">
+        <div className="flex items-center gap-3.5">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-[#2563EB] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+          <p className="text-xs sm:text-[13px] font-bold text-[#0F172A] leading-tight">
+            Press the numbers<br/><span className="text-[#64748B] font-semibold">as they are generated</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3.5">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-[#2563EB] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <p className="text-xs sm:text-[13px] font-bold text-[#0F172A] leading-tight">
+            Check your ticket<br/><span className="text-[#64748B] font-semibold">and claim your prize!</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3.5">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-[#2563EB] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+          <p className="text-xs sm:text-[13px] font-bold text-[#0F172A] leading-tight">
+            Stay active and<br/><span className="text-[#64748B] font-semibold">enjoy the game!</span>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 
   // Color themes array for prize cards matching reference image
@@ -884,33 +908,38 @@ const Game = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto w-full px-8 pt-8 grid grid-cols-12 gap-6">
+        <div className="max-w-7xl mx-auto w-full px-8 pt-8 flex flex-col gap-6">
           
-          {/* Left Column - Hero & Ticket */}
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+          {/* Top Row - Hero & Ticket */}
+          <div className="grid grid-cols-12 gap-6 w-full">
             
             {/* Hero Number */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="glass-panel p-8 flex flex-col items-center justify-center relative overflow-hidden"
-            >
-              <div className="relative z-10">
-                <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="desktop" logos={logos} />
-              </div>
-              <p className="mt-6 text-[#6B7280] font-bold text-sm tracking-widest uppercase">
-                {currentNumber ? `Number ${currentNumber}` : 'Waiting...'}
-              </p>
-              
-              <div className="mt-6">
-                <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
-              </div>
-            </motion.div>
+            <div className="col-span-12 lg:col-span-4 flex flex-col">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                className="glass-panel p-8 flex flex-col items-center justify-center relative overflow-hidden h-full"
+              >
+                <div className="relative z-10">
+                  <RollingDice finalNumber={currentNumber} isLive={gameState === "LIVE"} size="desktop" logos={logos} />
+                </div>
+                <p className="mt-6 text-[#6B7280] font-bold text-sm tracking-widest uppercase">
+                  {currentNumber ? `Number ${currentNumber}` : 'Waiting...'}
+                </p>
+                
+                <div className="mt-6">
+                  <GameStatusTimer gameState={gameState} countdown={nextDrawCountdown} pauseCountdown={pauseCountdown} isMobile={false} />
+                </div>
+              </motion.div>
+            </div>
 
-            {renderTicket(true)}
+            {/* Ticket Area */}
+            <div className="col-span-12 lg:col-span-8 flex flex-col justify-center">
+              {renderTicket(true)}
+            </div>
           </div>
 
-          {/* Right Column - Prizes & Boards */}
-          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+          {/* Bottom Section - Prizes & Boards */}
+          <div className="flex flex-col gap-6 w-full mt-2">
             {renderRecentNumbers()}
             {renderPrizes()}
 
