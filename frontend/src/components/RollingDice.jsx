@@ -17,15 +17,6 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
   // 3D rotation angles
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
 
-  // Intermediate side face numbers for 3-side roll animation
-  const [faceNumbers, setFaceNumbers] = useState({
-    left: 42,
-    back: 17,
-    right: 88,
-    top: 63,
-    bottom: 29
-  });
-
   // Face contents: Front gets the number, sides get logos if present
   const logoTop = logos[0] || '';
   const logoBottom = logos[1] || '';
@@ -66,19 +57,10 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
     setIsRolling(true);
     setIsLanded(false);
 
-    // Generate 3 fresh random numbers for the 3 sides for each generation
-    setFaceNumbers({
-      left: Math.floor(Math.random() * 90) + 1,
-      back: Math.floor(Math.random() * 90) + 1,
-      right: Math.floor(Math.random() * 90) + 1,
-      top: Math.floor(Math.random() * 90) + 1,
-      bottom: Math.floor(Math.random() * 90) + 1,
-    });
-
     rollCountRef.current += 1;
     const count = rollCountRef.current;
 
-    // Rotate across 3 sides (Left -> Back -> Right -> 4th Side Front face showing final number)
+    // Ultra-slow, smooth 3D rotation across 3 sides over 4.8 seconds
     const targetX = 0;
     const targetY = count * 360;
     const targetZ = 0;
@@ -90,8 +72,8 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
       setDisplayedNumber(targetNumber);
       setIsLanded(true);
 
-      setTimeout(() => setIsLanded(false), 500);
-    }, 750);
+      setTimeout(() => setIsLanded(false), 600);
+    }, 4800);
 
     return () => {
       clearTimeout(finishTimeout);
@@ -99,9 +81,9 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
   };
 
   // Render individual face of 3D cube with sharp, crisp physical cube edges
-  const renderFace = (faceKey, transformStyle, logoContent, numValue) => {
-    const isLogoFace = faceKey !== 'front';
-    const hasLogo = isLogoFace && typeof logoContent === 'string' && logoContent.trim() !== '';
+  const renderFace = (faceKey, transformStyle, logoContent) => {
+    const isFrontFace = faceKey === 'front';
+    const hasLogo = !isFrontFace && typeof logoContent === 'string' && logoContent.trim() !== '';
 
     return (
       <div
@@ -125,11 +107,13 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"></span>
              </div>
 
-             {/* Center Content / Number */}
+             {/* Center Content: ONLY FRONT FACE (4th side) SHOWS THE GENERATED NUMBER */}
              <div className="flex-1 flex w-full items-center justify-center -mt-1 z-10 relative overflow-hidden">
-               <span className={`${fontClass} font-black text-[#0F172A] tracking-tighter leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)]`}>
-                 {numValue !== null && numValue !== undefined ? numValue : '-'}
-               </span>
+               {isFrontFace ? (
+                 <span className={`${fontClass} font-black text-[#0F172A] tracking-tighter leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)]`}>
+                   {finalNumber !== null && finalNumber !== undefined ? finalNumber : '-'}
+                 </span>
+               ) : null}
              </div>
 
              {/* Bottom Subtitle / Branding Pill Badge */}
@@ -198,9 +182,9 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
           scale: isLanded ? [1, 1.12, 0.94, 1] : 1
         }}
         transition={{
-          rotateX: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
-          rotateY: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
-          rotateZ: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+          rotateX: { duration: 4.8, ease: [0.25, 1, 0.5, 1] },
+          rotateY: { duration: 4.8, ease: [0.25, 1, 0.5, 1] },
+          rotateZ: { duration: 4.8, ease: [0.25, 1, 0.5, 1] },
           scale: { duration: 0.4, ease: "easeInOut" }
         }}
         className={`relative dice-cube-container ${
@@ -212,13 +196,13 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
           transformStyle: 'preserve-3d'
         }}
       >
-        {/* 6 Cube Faces */}
-        {renderFace('front', `rotateY(0deg) translateZ(${halfSize}px)`, '', finalNumber || '-')}
-        {renderFace('back', `rotateY(180deg) translateZ(${halfSize}px)`, logoBack, faceNumbers.back)}
-        {renderFace('right', `rotateY(90deg) translateZ(${halfSize}px)`, logoRight, faceNumbers.right)}
-        {renderFace('left', `rotateY(-90deg) translateZ(${halfSize}px)`, logoLeft, faceNumbers.left)}
-        {renderFace('top', `rotateX(90deg) translateZ(${halfSize}px)`, logoTop, faceNumbers.top)}
-        {renderFace('bottom', `rotateX(-90deg) translateZ(${halfSize}px)`, logoBottom, faceNumbers.bottom)}
+        {/* 6 Cube Faces - ONLY FRONT FACE (4th side) SHOWS THE GENERATED NUMBER */}
+        {renderFace('front', `rotateY(0deg) translateZ(${halfSize}px)`, '')}
+        {renderFace('back', `rotateY(180deg) translateZ(${halfSize}px)`, logoBack)}
+        {renderFace('right', `rotateY(90deg) translateZ(${halfSize}px)`, logoRight)}
+        {renderFace('left', `rotateY(-90deg) translateZ(${halfSize}px)`, logoLeft)}
+        {renderFace('top', `rotateX(90deg) translateZ(${halfSize}px)`, logoTop)}
+        {renderFace('bottom', `rotateX(-90deg) translateZ(${halfSize}px)`, logoBottom)}
       </motion.div>
     </div>
   );
