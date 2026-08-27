@@ -448,237 +448,315 @@ const Admin = () => {
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-6xl mx-auto min-h-screen bg-brand-bg text-brand-text relative">
-      {/* Top Header */}
-      <div className="glass-panel p-6 flex justify-between items-center mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
-          Admin Dashboard
-        </h1>
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
-          <button 
-            onClick={handleLogout} 
-            className="px-4 py-2 rounded-2xl border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-all font-semibold text-sm cursor-pointer shadow-sm rounded-xl"
-          >
-            Logout 🚪
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-[#FFFBEB] via-[#F8FAFC] to-[#F3E8FF] p-4 sm:p-8 font-sans text-slate-800 relative">
+      <div className="max-w-7xl mx-auto bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_rgba(147,51,234,0.06)] border border-purple-100/80">
+        
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-6 border-b border-purple-100/60 gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-200 via-amber-100 to-yellow-50 border border-amber-300/60 shadow-xs flex items-center justify-center text-xl shrink-0">
+              👑
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+                Admin Dashboard
+              </h1>
+              <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-0.5">
+                Manage your housie sessions with ease ✨
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button 
+              onClick={handleLogout} 
+              className="border border-red-200 bg-white text-red-500 hover:bg-red-50 font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 shadow-2xs cursor-pointer transition-all"
+            >
+              <span>Logout</span>
+              <span className="text-base">🚪</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {viewMode === 'dashboard' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Create Session Card */}
-          <div className="glass-panel p-6 sm:p-8 relative">
-            <div className="absolute top-0 left-8 right-8 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-b-full"></div>
-
-            <h2 className="text-xl font-bold mb-6 text-brand-text flex items-center gap-2">
-              <span>➕</span> Create New Session
-            </h2>
-
-            {error && <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 text-sm font-medium">{error}</div>}
-            {successMsg && <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-2xl mb-6 text-sm font-medium">{successMsg}</div>}
-            
-            <form onSubmit={handleCreateGame} className="space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Session Title</label>
-                <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full premium-input" placeholder="E.G. Friday Evening Housie" />
+        {/* Dashboard View */}
+        {viewMode === 'dashboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Create Session Form Card */}
+            <div className="bg-[#FAFAFD] border border-purple-100/80 rounded-[2rem] p-6 sm:p-7 shadow-xs relative">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center font-black text-base shadow-xs shrink-0">
+                  ➕
+                </div>
+                <h2 className="text-lg font-black text-[#0F172A]">
+                  Create New Session
+                </h2>
               </div>
+
+              {error && <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl mb-6 text-sm font-medium">{error}</div>}
+              {successMsg && <div className="bg-emerald-50 border border-emerald-200 text-emerald-600 p-4 rounded-2xl mb-6 text-sm font-medium">{successMsg}</div>}
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form onSubmit={handleCreateGame} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Total Players</label>
-                  <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full premium-input" placeholder="10" />
+                  <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider mb-2">SESSION TITLE</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">📄</span>
+                    <input type="text" required value={sessionName} onChange={e => setSessionName(e.target.value)} className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 pl-10 text-sm font-semibold text-[#0F172A] placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-2xs" placeholder="E.g. Friday Evening Housie" />
+                  </div>
                 </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider mb-2">TOTAL PLAYERS</label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">👥</span>
+                      <input type="number" min="1" max="1000" required value={totalPlayers} onChange={e => setTotalPlayers(e.target.value)} className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 pl-10 text-sm font-semibold text-[#0F172A] placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-2xs" placeholder="10" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider mb-2">START TIME</label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">📅</span>
+                      <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 pl-10 text-xs font-semibold text-[#0F172A] focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-2xs cursor-pointer" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ticket Code Generation segmented control */}
                 <div>
-                  <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Start Time</label>
-                  <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full premium-input cursor-pointer" />
+                  <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider mb-2">TICKET CODE GENERATION</label>
+                  <div className="bg-slate-100/80 p-1 rounded-2xl border border-slate-200/60 grid grid-cols-2 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTicketCodeMode('RANDOM')}
+                      className={`py-2 px-3 rounded-xl font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${ticketCodeMode === 'RANDOM' ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      <span>🎲</span> Random Codes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTicketCodeMode('PATTERN')}
+                      className={`py-2 px-3 rounded-xl font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${ticketCodeMode === 'PATTERN' ? 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      <span>⚆</span> Custom Pattern
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Segmented control for mode */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Ticket Code Generation</label>
-                <div className="grid grid-cols-2 gap-2 bg-brand-bg p-1.5 rounded-2xl border border-brand-border">
-                  <button
-                    type="button"
-                    onClick={() => setTicketCodeMode('RANDOM')}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${ticketCodeMode === 'RANDOM' ? 'bg-brand-card text-brand-emerald shadow-sm border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
-                  >
-                    Random Codes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTicketCodeMode('PATTERN')}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${ticketCodeMode === 'PATTERN' ? 'bg-brand-card text-brand-emerald shadow-sm border border-brand-border' : 'text-brand-text-muted hover:text-brand-text'}`}
-                  >
-                    Custom Pattern
-                  </button>
-                </div>
-              </div>
-
-              {ticketCodeMode === 'PATTERN' && (
-                <div>
-                  <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Starting Register Code</label>
-                  <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full premium-input font-mono" placeholder="E.G. A1 OR 24B91A0701" />
-                </div>
-              )}
-
-              {/* Logo Configuration */}
-              <div className="space-y-3 border-t border-brand-border pt-4">
-                <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Dice Logos (Image URLs)</label>
-                <div className="flex flex-col gap-2.5">
-                  <input type="text" value={logo1} onChange={e => setLogo1(e.target.value)} placeholder="Logo 1 URL (e.g. https://example.com/logo1.png)" className="w-full premium-input text-xs" />
-                  <input type="text" value={logo2} onChange={e => setLogo2(e.target.value)} placeholder="Logo 2 URL" className="w-full premium-input text-xs" />
-                  <input type="text" value={logo3} onChange={e => setLogo3(e.target.value)} placeholder="Logo 3 URL" className="w-full premium-input text-xs" />
-                </div>
-                {/* Simple Preview */}
-                {(logo1 || logo2 || logo3) && (
-                  <div className="flex gap-2 p-2 bg-brand-bg border border-brand-border rounded-xl">
-                    {logo1 && <img src={logo1} alt="Logo 1" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
-                    {logo2 && <img src={logo2} alt="Logo 2" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
-                    {logo3 && <img src={logo3} alt="Logo 3" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
+                {ticketCodeMode === 'PATTERN' && (
+                  <div>
+                    <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider mb-2">STARTING REGISTER CODE</label>
+                    <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 text-sm font-mono font-semibold text-[#0F172A] placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all shadow-2xs" placeholder="E.G. A1 OR 24B91A0701" />
                   </div>
                 )}
-              </div>
 
-              {/* Prize Configuration */}
-              <div className="space-y-3 border-t border-brand-border pt-4">
-                <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Configured Prizes</label>
-                <div className="flex flex-col gap-3 max-h-[22rem] overflow-y-auto pr-1">
-                  {prizes.map((prize, idx) => (
-                    <div key={prize.id} className="flex flex-col gap-2.5 glass-panel-secondary p-3.5 rounded-xl border border-brand-border hover:border-emerald-500/30 transition-all">
-                      <div className="flex items-center justify-between w-full">
-                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                {/* Logo Configuration */}
+                <div className="space-y-2.5 border-t border-purple-100/80 pt-4">
+                  <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider">DICE LOGOS (IMAGE URLS)</label>
+                  <div className="flex flex-col gap-2">
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🖼️</span>
+                      <input type="text" value={logo1} onChange={e => setLogo1(e.target.value)} placeholder="Logo 1 URL (e.g. https://example.com/logo1.png)" className="w-full bg-white border border-slate-200/90 rounded-2xl p-3 pl-10 text-xs font-medium text-[#0F172A] placeholder-slate-400 focus:border-purple-500 outline-none" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🖼️</span>
+                      <input type="text" value={logo2} onChange={e => setLogo2(e.target.value)} placeholder="Logo 2 URL" className="w-full bg-white border border-slate-200/90 rounded-2xl p-3 pl-10 text-xs font-medium text-[#0F172A] placeholder-slate-400 focus:border-purple-500 outline-none" />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🖼️</span>
+                      <input type="text" value={logo3} onChange={e => setLogo3(e.target.value)} placeholder="Logo 3 URL" className="w-full bg-white border border-slate-200/90 rounded-2xl p-3 pl-10 text-xs font-medium text-[#0F172A] placeholder-slate-400 focus:border-purple-500 outline-none" />
+                    </div>
+                  </div>
+                  {(logo1 || logo2 || logo3) && (
+                    <div className="flex gap-2 p-2 bg-white border border-slate-200 rounded-xl">
+                      {logo1 && <img src={logo1} alt="Logo 1" className="w-8 h-8 object-contain rounded bg-slate-50" onError={(e) => e.target.style.display='none'} />}
+                      {logo2 && <img src={logo2} alt="Logo 2" className="w-8 h-8 object-contain rounded bg-slate-50" onError={(e) => e.target.style.display='none'} />}
+                      {logo3 && <img src={logo3} alt="Logo 3" className="w-8 h-8 object-contain rounded bg-slate-50" onError={(e) => e.target.style.display='none'} />}
+                    </div>
+                  )}
+                </div>
+
+                {/* Prize Configuration */}
+                <div className="space-y-3 border-t border-purple-100/80 pt-4">
+                  <label className="block text-[11px] font-black text-purple-900/60 uppercase tracking-wider">CONFIGURED PRIZES</label>
+                  <div className="flex flex-col gap-2.5 max-h-[22rem] overflow-y-auto pr-1">
+                    {prizes.map((prize, idx) => (
+                      <div key={prize.id} className="flex flex-col gap-2 bg-[#ECFDF5] border border-[#A7F3D0] rounded-2xl p-3 shadow-2xs">
+                        <div className="flex items-center justify-between w-full">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={prize.enabled} 
+                              onChange={(e) => {
+                                const newPrizes = [...prizes];
+                                newPrizes[idx].enabled = e.target.checked;
+                                setPrizes(newPrizes);
+                              }} 
+                              className="accent-emerald-600 rounded cursor-pointer w-4 h-4" 
+                            />
+                            <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                              <span>🏆</span> {prize.name}
+                            </span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-[#A7F3D0]/60 text-[#047857] text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">AVAILABLE</span>
+                            <button 
+                              type="button" 
+                              onClick={() => setPrizes(prev => prev.filter(p => p.id !== prize.id))}
+                              className="text-red-400 hover:text-red-600 transition-colors p-1 text-xs font-bold cursor-pointer"
+                              title="Delete prize"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 w-full pt-1 border-t border-emerald-200/60">
                           <input 
-                            type="checkbox" 
-                            checked={prize.enabled} 
+                            type="text" 
+                            value={prize.prizeItem || ''} 
                             onChange={(e) => {
                               const newPrizes = [...prizes];
-                              newPrizes[idx].enabled = e.target.checked;
+                              newPrizes[idx].prizeItem = e.target.value;
                               setPrizes(newPrizes);
                             }} 
-                            className="accent-emerald-500 rounded cursor-pointer w-4 h-4" 
+                            placeholder="Add Prize Item (e.g. Gold Coin)" 
+                            className="flex-1 p-2 rounded-xl bg-white border border-emerald-200 text-slate-800 text-xs outline-none focus:border-emerald-500" 
                           />
-                          <span className="text-sm font-bold text-brand-text-sec">{prize.name}</span>
-                        </label>
-                        <button 
-                          type="button" 
-                          onClick={() => setPrizes(prev => prev.filter(p => p.id !== prize.id))}
-                          className="text-red-500 hover:text-red-600 transition-colors p-1.5 text-xs font-bold cursor-pointer rounded hover:bg-red-500/10 ml-auto"
-                          title="Delete prize"
-                        >
-                          ✕
-                        </button>
+                          <input 
+                            type="text" 
+                            value={prize.sponsor || ''} 
+                            onChange={(e) => {
+                              const newPrizes = [...prizes];
+                              newPrizes[idx].sponsor = e.target.value;
+                              setPrizes(newPrizes);
+                            }} 
+                            placeholder="Sponsor (Optional)" 
+                            className="flex-1 p-2 rounded-xl bg-white border border-emerald-200 text-slate-800 text-xs outline-none focus:border-emerald-500" 
+                          />
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 flex flex-col gap-2.5 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs outline-none focus:border-purple-500" />
+                      <input type="text" value={customPrizeItem} onChange={e => setCustomPrizeItem(e.target.value)} placeholder="Prize Item (Optional)" className="flex-1 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs outline-none focus:border-purple-500" />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input type="text" value={customPrizeSponsor} onChange={e => setCustomPrizeSponsor(e.target.value)} placeholder="Sponsor (Optional)" className="flex-1 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs outline-none focus:border-purple-500" />
+                      <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs outline-none cursor-pointer">
+                        <option value="Jaldi5">Jaldi 5</option>
+                        <option value="FourCorners">Four Corners</option>
+                        <option value="SixCorners">Six Corners</option>
+                        <option value="MiddleNumber">Middle Number</option>
+                        <option value="FirstLine">First Line</option>
+                        <option value="SecondLine">Second Line</option>
+                        <option value="ThirdLine">Third Line</option>
+                        <option value="FullHouse">Full House</option>
+                      </select>
+                      <button type="button" onClick={() => {
+                        if(!customPrizeName.trim()) return;
+                        const sameType = prizes.filter(p => p.type === customPrizeType);
+                        const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
+                        setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true, prizeItem: customPrizeItem, sponsor: customPrizeSponsor }]);
+                        setCustomPrizeName('');
+                        setCustomPrizeItem('');
+                        setCustomPrizeSponsor('');
+                      }} className="bg-purple-600 hover:bg-purple-700 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white transition-all shadow-xs cursor-pointer whitespace-nowrap">Add Prize</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <button type="submit" className="w-full bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-purple-600 hover:to-indigo-600 text-white font-black py-3.5 rounded-2xl transition-all shadow-md shadow-purple-500/20 cursor-pointer text-base flex items-center justify-center gap-2">
+                  <span>Create Game Session</span>
+                  <span>✨</span>
+                </button>
+              </form>
+            </div>
+
+            {/* All Sessions Card */}
+            <div className="bg-[#FAFAFD] border border-purple-100/80 rounded-[2rem] p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center font-black text-base shadow-xs shrink-0">
+                    📋
+                  </div>
+                  <h2 className="text-lg font-black text-[#0F172A]">
+                    All Sessions ({activeSessions.length})
+                  </h2>
+                </div>
+
+                {sessionError && <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl mb-6 text-sm">{sessionError}</div>}
+                
+                {isLoadingSessions ? (
+                  <p className="text-slate-500 font-semibold text-center py-8">Loading active sessions...</p>
+                ) : (
+                  <div className="space-y-3.5 max-h-[640px] overflow-y-auto pr-1">
+                    {(Array.isArray(activeSessions) ? activeSessions : []).map(session => {
+                      const isPaused = session.gameStatus === 'PAUSED';
+                      const isCompleted = session.gameStatus === 'COMPLETED';
+                      const isLive = session.gameStatus === 'LIVE';
                       
-                      <div className="flex items-center gap-2.5 w-full pl-6">
-                        <span className="text-lg opacity-80">🎁</span>
-                        <input 
-                          type="text" 
-                          value={prize.prizeItem || ''} 
-                          onChange={(e) => {
-                            const newPrizes = [...prizes];
-                            newPrizes[idx].prizeItem = e.target.value;
-                            setPrizes(newPrizes);
-                          }} 
-                          placeholder="Add Prize Item" 
-                          className="flex-1 p-2.5 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
-                        />
-                        <span className="text-lg opacity-80 ml-2">🤝</span>
-                        <input 
-                          type="text" 
-                          value={prize.sponsor || ''} 
-                          onChange={(e) => {
-                            const newPrizes = [...prizes];
-                            newPrizes[idx].sponsor = e.target.value;
-                            setPrizes(newPrizes);
-                          }} 
-                          placeholder="Sponsor (e.g. NutriDelight)" 
-                          className="flex-1 p-2.5 rounded-lg bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" 
-                        />
+                      const leftBorder = isPaused ? 'border-l-amber-400' : isCompleted ? 'border-l-emerald-400' : isLive ? 'border-l-blue-400' : 'border-l-purple-400';
+                      const avatarBg = isPaused ? 'bg-amber-50 border-amber-200/60' : isCompleted ? 'bg-emerald-50 border-emerald-200/60' : isLive ? 'bg-blue-50 border-blue-200/60' : 'bg-purple-50 border-purple-200/60';
+                      const avatarIcon = isPaused ? '☀️' : isCompleted ? '🏔️' : isLive ? '🗓️' : '🌙';
+                      const badgeStyle = isPaused ? 'bg-amber-100 text-amber-700' : isCompleted ? 'bg-emerald-100 text-emerald-700' : isLive ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700';
+
+                      return (
+                        <div key={session._id} className={`p-4 bg-white rounded-2xl border-l-4 ${leftBorder} border-y border-r border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md transition-all`}>
+                          <div className="flex items-center gap-3.5">
+                            <div className={`w-10 h-10 rounded-2xl ${avatarBg} border flex items-center justify-center text-lg shrink-0`}>
+                              {avatarIcon}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <h3 className="font-black text-[#0F172A] text-base">{session.sessionName}</h3>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeStyle}`}>
+                                  {session.gameStatus}
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                                <span>📅 Starts:</span>
+                                <strong className="text-slate-700">{new Date(session.startTime).toLocaleString()}</strong>
+                              </p>
+                              <p className="text-xs font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
+                                <span>🎟️ Tickets Allocated:</span>
+                                <strong className="text-purple-700 font-extrabold">{session.totalPlayers}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                            <button onClick={() => viewSessionTickets(session)} className="flex-1 sm:flex-none border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-all">
+                              <span>🎟️</span> Tickets
+                            </button>
+                            <button onClick={() => monitorSession(session)} className="flex-1 sm:flex-none bg-[#F3E8FF] border border-[#DDD6FE] text-[#7C3AED] hover:bg-[#EDE9FE] font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-all">
+                              <span>⚙️</span> Manage
+                            </button>
+                            <button onClick={() => handleDeleteSession(session._id, session.sessionName)} className="flex-1 sm:flex-none bg-[#FFE4E6] border border-[#FECDD3] text-[#E11D48] hover:bg-[#FCE7F3] font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-all">
+                              <span>🗑️</span> Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(Array.isArray(activeSessions) ? activeSessions : []).length === 0 && (
+                      <div className="text-center py-12 text-slate-400 font-semibold italic">
+                        No active sessions found. Create one using the form.
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="glass-panel-secondary p-4 border border-brand-border flex flex-col gap-3 mt-3">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input type="text" value={customPrizeName} onChange={e => setCustomPrizeName(e.target.value)} placeholder="Custom Prize Name" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
-                    <input type="text" value={customPrizeItem} onChange={e => setCustomPrizeItem(e.target.value)} placeholder="Prize Item (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input type="text" value={customPrizeSponsor} onChange={e => setCustomPrizeSponsor(e.target.value)} placeholder="Sponsor (Optional)" className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none focus:ring-2 focus:ring-brand-blue" />
-                    <select value={customPrizeType} onChange={e => setCustomPrizeType(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-brand-input border border-brand-input-border text-brand-text text-xs outline-none cursor-pointer">
-                      <option value="Jaldi5">Jaldi 5</option>
-                      <option value="FourCorners">Four Corners</option>
-                      <option value="SixCorners">Six Corners</option>
-                      <option value="MiddleNumber">Middle Number</option>
-                      <option value="FirstLine">First Line</option>
-                      <option value="SecondLine">Second Line</option>
-                      <option value="ThirdLine">Third Line</option>
-                      <option value="FullHouse">Full House</option>
-                    </select>
-                    <button type="button" onClick={() => {
-                      if(!customPrizeName.trim()) return;
-                      const sameType = prizes.filter(p => p.type === customPrizeType);
-                      const sequence = sameType.length > 0 ? Math.max(...sameType.map(p => p.sequence)) + 1 : 1;
-                      setPrizes([...prizes, { id: 'cp' + Date.now(), name: customPrizeName, type: customPrizeType, sequence, enabled: true, prizeItem: customPrizeItem, sponsor: customPrizeSponsor }]);
-                      setCustomPrizeName('');
-                      setCustomPrizeItem('');
-                      setCustomPrizeSponsor('');
-                    }} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-sm cursor-pointer whitespace-nowrap">Add Prize</button>
-                  </div>
-                </div>
-              </div>
-              
-              <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-2xl transition-all shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer text-base">
-                Create Game Session ✨
-              </button>
-            </form>
-          </div>
-
-          {/* All Sessions Card */}
-          <div className="glass-panel p-6 sm:p-8">
-            <h2 className="text-xl font-bold mb-6 text-brand-text flex items-center gap-2">
-              <span>📋</span> All Sessions ({activeSessions.length})
-            </h2>
-
-            {sessionError && <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 text-sm">{sessionError}</div>}
-            
-            {isLoadingSessions ? (
-              <p className="text-brand-text-muted text-center py-8">Loading active sessions...</p>
-            ) : (
-              <div className="space-y-4 max-h-[620px] overflow-y-auto pr-1">
-                {(Array.isArray(activeSessions) ? activeSessions : []).map(session => (
-                  <div key={session._id} className="p-5 bg-brand-bg rounded-2xl border-l-4 border-l-emerald-500 border-y border-r border-brand-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-all">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-extrabold text-brand-text text-base">{session.sessionName}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${session.gameStatus === 'LIVE' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : session.gameStatus === 'PAUSED' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'}`}>
-                          {session.gameStatus}
-                        </span>
-                      </div>
-                      <p className="text-xs text-brand-text-muted mb-1">Starts: <strong>{new Date(session.startTime).toLocaleString()}</strong></p>
-                      <p className="text-xs text-brand-text-muted">Tickets Allocated: <strong className="text-brand-text">{session.totalPlayers}</strong></p>
-                    </div>
-
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <button onClick={() => viewSessionTickets(session)} className="flex-1 sm:flex-none bg-brand-card hover:bg-brand-bg border border-brand-border text-brand-text px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm">Tickets</button>
-                      <button onClick={() => monitorSession(session)} className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:shadow-md">Manage</button>
-                      <button onClick={() => handleDeleteSession(session._id, session.sessionName)} className="flex-1 sm:flex-none bg-red-600/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer">Delete</button>
-                    </div>
-                  </div>
-                ))}
-                {(Array.isArray(activeSessions) ? activeSessions : []).length === 0 && (
-                  <div className="text-center py-12 text-brand-text-muted italic">
-                    No active sessions found. Create one using the form.
+                    )}
                   </div>
                 )}
               </div>
-            )}
+
+              <button type="button" onClick={() => fetchActiveSessions()} className="w-full mt-4 bg-[#F3E8FF] hover:bg-[#EDE9FE] text-[#7C3AED] font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                <span>📑</span> View All Sessions ➔
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Tickets View */}
       {viewMode === 'tickets' && (
@@ -953,6 +1031,7 @@ const Admin = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
