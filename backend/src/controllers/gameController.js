@@ -4,7 +4,7 @@ const { generateBatch } = require('../utils/ticketGenerator');
 const { startGame, pauseGame, resumeGame, endGame, deleteGame } = require('../utils/gameEngine');
 
 exports.createSession = async (req, res) => {
-    const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber, prizes } = req.body;
+    const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber, prizes, logos } = req.body;
 
     if (!sessionName || !startTime || !totalPlayers) {
         return res.status(400).json({ message: 'Missing required fields' });
@@ -44,6 +44,8 @@ exports.createSession = async (req, res) => {
     const generatedSessionId = req.body.sessionId || Math.random().toString(36).substring(2, 8).toUpperCase();
     const generatedPassword = req.body.password || Math.floor(1000 + Math.random() * 9000).toString();
 
+    const sessionLogos = Array.isArray(logos) && logos.length === 3 ? logos : ['', '', ''];
+
     try {
         const newSession = new GameSession({
             sessionId: generatedSessionId,
@@ -52,7 +54,8 @@ exports.createSession = async (req, res) => {
             startTime,
             totalPlayers,
             gameStatus: 'WAITING',
-            prizes: initializedPrizes
+            prizes: initializedPrizes,
+            logos: sessionLogos
         });
 
         const savedSession = await newSession.save();

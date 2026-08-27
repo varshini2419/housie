@@ -28,6 +28,7 @@ const GameSessionSchema = new mongoose.Schema({
         countdown: { type: Number },
         currentWinner: { type: Object }
     },
+    logos: { type: [String], default: ['', '', ''] },
     stateVersion: { type: Number, default: 0 }
 }, { timestamps: true });
 

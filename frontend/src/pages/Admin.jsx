@@ -28,6 +28,10 @@ const Admin = () => {
   const [customPrizeSponsor, setCustomPrizeSponsor] = useState('');
   const [customPrizeType, setCustomPrizeType] = useState('Jaldi5');
 
+  const [logo1, setLogo1] = useState('');
+  const [logo2, setLogo2] = useState('');
+  const [logo3, setLogo3] = useState('');
+
   const [activeSessions, setActiveSessions] = useState([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [sessionError, setSessionError] = useState('');
@@ -229,7 +233,8 @@ const Admin = () => {
           startTime,
           ticketCodeMode,
           startingRegisterNumber: ticketCodeMode === 'PATTERN' ? startingRegisterNumber : undefined,
-          prizes: prizes.filter(p => p.enabled)
+          prizes: prizes.filter(p => p.enabled),
+          logos: [logo1, logo2, logo3]
         })
       });
 
@@ -240,6 +245,9 @@ const Admin = () => {
       setSuccessMsg(`Session created successfully! Session ID: ${data.session.sessionId}`);
       setSessionName('');
       setStartTime('');
+      setLogo1('');
+      setLogo2('');
+      setLogo3('');
       fetchActiveSessions();
     } catch (err) {
       setError(err.message);
@@ -514,6 +522,24 @@ const Admin = () => {
                   <input type="text" required value={startingRegisterNumber} onChange={e => setStartingRegisterNumber(e.target.value)} className="w-full premium-input font-mono" placeholder="E.G. A1 OR 24B91A0701" />
                 </div>
               )}
+
+              {/* Logo Configuration */}
+              <div className="space-y-3 border-t border-brand-border pt-4">
+                <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider ml-1">Dice Logos (Image URLs)</label>
+                <div className="flex flex-col gap-2.5">
+                  <input type="text" value={logo1} onChange={e => setLogo1(e.target.value)} placeholder="Logo 1 URL (e.g. https://example.com/logo1.png)" className="w-full premium-input text-xs" />
+                  <input type="text" value={logo2} onChange={e => setLogo2(e.target.value)} placeholder="Logo 2 URL" className="w-full premium-input text-xs" />
+                  <input type="text" value={logo3} onChange={e => setLogo3(e.target.value)} placeholder="Logo 3 URL" className="w-full premium-input text-xs" />
+                </div>
+                {/* Simple Preview */}
+                {(logo1 || logo2 || logo3) && (
+                  <div className="flex gap-2 p-2 bg-brand-bg border border-brand-border rounded-xl">
+                    {logo1 && <img src={logo1} alt="Logo 1" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
+                    {logo2 && <img src={logo2} alt="Logo 2" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
+                    {logo3 && <img src={logo3} alt="Logo 3" className="w-10 h-10 object-contain rounded bg-white/5" onError={(e) => e.target.style.display='none'} />}
+                  </div>
+                )}
+              </div>
 
               {/* Prize Configuration */}
               <div className="space-y-3 border-t border-brand-border pt-4">
