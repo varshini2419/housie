@@ -65,15 +65,27 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
     rollCountRef.current += 1;
     const count = rollCountRef.current;
 
-    // Gentle, ultra-slow 360-degree 3D rotation (1 single turn over 2.2s)
+    // Fast 360-degree 3D rotation across 3 sides over 750ms
     const targetX = count * 360;
     const targetY = count * 360;
     const targetZ = 0;
 
     setRotation({ x: targetX, y: targetY, z: targetZ });
 
-    // Generate random 1-90 intermediate numbers at a very slow 260ms pace for side faces
+    let sideRollsCount = 0;
+    // Set 1st side numbers immediately
+    setFaceNumbers({
+      back: Math.floor(Math.random() * 90) + 1,
+      top: Math.floor(Math.random() * 90) + 1,
+      bottom: Math.floor(Math.random() * 90) + 1,
+      left: Math.floor(Math.random() * 90) + 1,
+      right: Math.floor(Math.random() * 90) + 1,
+    });
+    sideRollsCount = 1;
+
+    // Roll through 2nd and 3rd sides at 230ms intervals
     const interval = setInterval(() => {
+      sideRollsCount += 1;
       setFaceNumbers({
         back: Math.floor(Math.random() * 90) + 1,
         top: Math.floor(Math.random() * 90) + 1,
@@ -81,9 +93,13 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
         left: Math.floor(Math.random() * 90) + 1,
         right: Math.floor(Math.random() * 90) + 1,
       });
-    }, 260);
 
-    // At 2200ms finish rotation, set landed state and trigger bounce & confetti
+      if (sideRollsCount >= 3) {
+        clearInterval(interval);
+      }
+    }, 230);
+
+    // At 750ms finish rotation after rolling 3 sides, land and show target number
     const finishTimeout = setTimeout(() => {
       clearInterval(interval);
       setIsRolling(false);
@@ -91,8 +107,8 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
       setIsLanded(true);
 
       // Reset landed animation flag after bounce finishes
-      setTimeout(() => setIsLanded(false), 600);
-    }, 2200);
+      setTimeout(() => setIsLanded(false), 500);
+    }, 750);
 
     return () => {
       clearInterval(interval);
@@ -183,9 +199,9 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
           scale: isLanded ? [1, 1.12, 0.94, 1] : 1
         }}
         transition={{
-          rotateX: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-          rotateY: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-          rotateZ: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
+          rotateX: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+          rotateY: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+          rotateZ: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
           scale: { duration: 0.4, ease: "easeInOut" }
         }}
         className={`relative dice-cube-container ${

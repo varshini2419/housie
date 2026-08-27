@@ -371,51 +371,8 @@ const Game = () => {
     </motion.div>
   );
 
-  // Color themes array for prize cards matching reference image
-  const prizeThemes = [
-    {
-      cardBg: "from-[#EFF6FF] via-[#F8FAFC] to-[#DBEAFE]",
-      border: "border-[#BFDBFE]/80",
-      waveColor: "text-[#3B82F6]",
-      iconBg: "bg-gradient-to-tr from-[#2563EB] to-[#60A5FA]",
-      dotColor: "bg-[#3B82F6]",
-      textColor: "text-[#1E3A8A]",
-    },
-    {
-      cardBg: "from-[#ECFDF5] via-[#F8FAFC] to-[#D1FAE5]",
-      border: "border-[#A7F3D0]/80",
-      waveColor: "text-[#10B981]",
-      iconBg: "bg-gradient-to-tr from-[#059669] to-[#34D399]",
-      dotColor: "bg-[#10B981]",
-      textColor: "text-[#064E3B]",
-    },
-    {
-      cardBg: "from-[#F5F3FF] via-[#F8FAFC] to-[#EDE9FE]",
-      border: "border-[#DDD6FE]/80",
-      waveColor: "text-[#8B5CF6]",
-      iconBg: "bg-gradient-to-tr from-[#7C3AED] to-[#A78BFA]",
-      dotColor: "bg-[#8B5CF6]",
-      textColor: "text-[#4C1D95]",
-    },
-    {
-      cardBg: "from-[#FFFBEB] via-[#F8FAFC] to-[#FEF3C7]",
-      border: "border-[#FDE68A]/80",
-      waveColor: "text-[#F59E0B]",
-      iconBg: "bg-gradient-to-tr from-[#D97706] to-[#FBBF24]",
-      dotColor: "bg-[#F59E0B]",
-      textColor: "text-[#78350F]",
-    },
-    {
-      cardBg: "from-[#FFF1F2] via-[#F8FAFC] to-[#FFE4E6]",
-      border: "border-[#FECDD3]/80",
-      waveColor: "text-[#F43F5E]",
-      iconBg: "bg-gradient-to-tr from-[#E11D48] to-[#FB7185]",
-      dotColor: "bg-[#F43F5E]",
-      textColor: "text-[#881337]",
-    },
-  ];
 
-  // Generate Prizes matching reference UI (Ultra-compact side-by-side cards)
+  // Generate Prizes matching reference UI (Compact buttons with prize name only)
   const renderPrizes = () => (
     <div className="w-full mx-auto relative overflow-hidden rounded-3xl bg-white/95 border border-white/90 p-3.5 sm:p-5 shadow-[0_15px_35px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,1)] mt-4 sm:mt-0">
       {/* Header */}
@@ -435,105 +392,39 @@ const Game = () => {
         </div>
       </div>
 
-      {/* Grid of Ultra-Compact Side-by-Side Prize Cards */}
+      {/* Grid of Compact Prize Buttons (Name Only) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2 sm:gap-2.5 w-full relative z-10">
-        {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
+        {(prizes || []).filter(p => p.enabled !== false).map((prize) => {
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';
           const wonByMe = isWon && (prize.winnerTicket === ticket?.ticketCode || prize.winner === ticket?.playerName);
           const canClaim = !isWon && !isLocked && gameState === 'LIVE';
 
-          const theme = prizeThemes[idx % prizeThemes.length];
-
-          const textColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
-            ? 'text-white/90'
-            : 'text-[#6B7280]';
-
-          const sponsorColorClass = isWon || (!isWon && !isLocked && gameState === 'LIVE')
-            ? 'text-white/80'
-            : 'text-[#9CA3AF]';
-
           return (
-            <motion.div
+            <motion.button
               key={prize.id}
-              whileHover={canClaim ? { scale: 1.04, y: -1.5 } : {}}
+              whileHover={canClaim ? { scale: 1.04, y: -1 } : {}}
               whileTap={canClaim ? { scale: 0.96 } : {}}
               onClick={() => canClaim && claimPrize(prize.id)}
-              className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border ${theme.border} bg-gradient-to-br ${theme.cardBg} shadow-xs transition-all duration-300 select-none flex flex-col justify-between ${
-                canClaim ? 'cursor-pointer ring-2 ring-blue-400/40 shadow-sm' : ''
-              } ${isWon ? 'opacity-95' : isLocked ? 'opacity-65' : ''}`}
+              disabled={!canClaim}
+              title={isWon ? `Won by ${prize.winner || 'another player'}` : prize.name}
+              className={`relative overflow-hidden rounded-xl px-3 py-2.5 sm:px-3.5 sm:py-2.5 border transition-all duration-200 select-none flex items-center justify-center text-center font-black text-xs sm:text-sm ${
+                canClaim
+                  ? 'bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] text-white border-blue-400/40 shadow-xs cursor-pointer hover:shadow-md hover:from-blue-600 hover:to-indigo-600 ring-2 ring-blue-400/30'
+                  : isWon
+                  ? wonByMe
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-amber-400/40 opacity-95 cursor-default'
+                    : 'bg-emerald-600 text-white border-emerald-500/30 opacity-90 cursor-default'
+                  : 'bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed'
+              }`}
             >
-              {/* TOP TICK MARK BADGES: */}
-              {isWon && wonByMe && (
-                <div 
-                  title="You won this prize!" 
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-300 border border-white shadow-xs flex items-center justify-center text-white z-30"
-                >
-                  <Check className="w-3 h-3 stroke-[3.5]" />
-                </div>
+              <span className="truncate">{prize.name}</span>
+              {isWon && (
+                <span className="ml-1 text-[10px] bg-white/20 px-1 rounded-full text-white font-bold" title="Won">
+                  ✓
+                </span>
               )}
-
-              {isWon && !wonByMe && (
-                <div 
-                  title={`Won by ${prize.winner || 'another player'}`} 
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-[#10B981] to-[#059669] border border-white shadow-xs flex items-center justify-center text-white z-30"
-                >
-                  <Check className="w-3 h-3 stroke-[3.5]" />
-                </div>
-              )}
-
-              {/* Bottom Decorative Wave */}
-              <svg className={`absolute bottom-0 left-0 right-0 w-full h-6 ${theme.waveColor} opacity-60 pointer-events-none`} viewBox="0 0 100 30" preserveAspectRatio="none">
-                <path d="M0,30 Q30,10 60,20 T100,0 L100,30 Z" fill="currentColor"/>
-              </svg>
-
-              <div>
-                {/* Header Row */}
-                <div className="flex items-center gap-1.5 mb-1.5 relative z-10">
-                  <div className={`w-6 h-6 rounded-full ${theme.iconBg} shadow-2xs flex items-center justify-center text-white text-[11px] shrink-0`}>
-                    🏆
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className={`text-[11px] sm:text-xs font-black ${theme.textColor} leading-tight tracking-tight truncate`}>
-                      {prize.name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="flex flex-col gap-0.5 text-[9px] sm:text-[10px] font-bold text-[#475569] relative z-10 mb-1">
-                  <div className="flex items-center gap-1 truncate">
-                    <span className="text-[10px]">🎁</span>
-                    <span className="truncate">{prize.prizeItem || 'Prize'}</span>
-                  </div>
-                  {prize.sponsor && (
-                    <div className="flex items-center gap-1 text-[#64748B] truncate">
-                      <span className="text-[10px]">💛</span>
-                      <span className="truncate">{prize.sponsor}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action / Winner Status */}
-              <div className="mt-1.5 pt-1 border-t border-black/5 relative z-10 flex justify-center items-center">
-                {canClaim && (
-                  <span className="text-[8.5px] sm:text-[9px] font-black text-[#2563EB] bg-white/95 px-2 py-0.5 rounded-full shadow-2xs border border-blue-200 uppercase tracking-wider text-center">
-                    Claim 🎯
-                  </span>
-                )}
-                {isWon && (
-                  <span className="text-[8.5px] sm:text-[9px] font-extrabold text-[#0F172A] bg-white/95 px-2 py-0.5 rounded-full shadow-2xs border border-slate-200/80 truncate max-w-full text-center">
-                    👑 {prize.winner || 'Won'}
-                  </span>
-                )}
-                {!isWon && !canClaim && (
-                  <span className="text-[8.5px] sm:text-[9px] font-bold text-[#94A3B8] italic">
-                    {isLocked ? 'Locked 🔒' : 'Wait...'}
-                  </span>
-                )}
-              </div>
-            </motion.div>
+            </motion.button>
           );
         })}
       </div>
