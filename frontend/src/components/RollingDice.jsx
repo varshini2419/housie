@@ -60,87 +60,20 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
     rollCountRef.current += 1;
     const count = rollCountRef.current;
 
-<<<<<<< HEAD
-    // Fast 360-degree 3D rotation across 3 sides over 750ms
-    const targetX = count * 360;
+    // Rotate across 3 side faces (Right -> Back -> Left -> Front face showing final number)
+    const targetX = 0;
     const targetY = count * 360;
     const targetZ = 0;
-=======
-    // Continuous soft 3D face rotation sequence
-    // Front -> Top -> Bottom -> Right -> Left -> Back -> Front
-    const baseX = -(count - 1) * 360;
-    const baseY = (count - 1) * 360;
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
 
-    const targetX = [
-      baseX + 0, baseX + 0,        // Front (pause)
-      baseX - 90, baseX - 90,      // Top (pause)
-      baseX - 270, baseX - 270,    // Bottom (pause)
-      baseX - 360, baseX - 360,    // Right Side (pause)
-      baseX - 360, baseX - 360,    // Left Side (pause)
-      baseX - 360, baseX - 360,    // Back (pause)
-      baseX - 360, baseX - 360     // Front (pause)
-    ];
+    setRotation({ x: targetX, y: targetY, z: targetZ });
 
-<<<<<<< HEAD
-    let sideRollsCount = 0;
-    // Set 1st side numbers immediately
-    setFaceNumbers({
-      back: Math.floor(Math.random() * 90) + 1,
-      top: Math.floor(Math.random() * 90) + 1,
-      bottom: Math.floor(Math.random() * 90) + 1,
-      left: Math.floor(Math.random() * 90) + 1,
-      right: Math.floor(Math.random() * 90) + 1,
-    });
-    sideRollsCount = 1;
-
-    // Roll through 2nd and 3rd sides at 230ms intervals
-    const interval = setInterval(() => {
-      sideRollsCount += 1;
-      setFaceNumbers({
-        back: Math.floor(Math.random() * 90) + 1,
-        top: Math.floor(Math.random() * 90) + 1,
-        bottom: Math.floor(Math.random() * 90) + 1,
-        left: Math.floor(Math.random() * 90) + 1,
-        right: Math.floor(Math.random() * 90) + 1,
-      });
-
-      if (sideRollsCount >= 3) {
-        clearInterval(interval);
-      }
-    }, 230);
-
-    // At 750ms finish rotation after rolling 3 sides, land and show target number
-=======
-    const targetY = [
-      baseY + 0, baseY + 0,        // Front (pause)
-      baseY + 0, baseY + 0,        // Top (pause)
-      baseY + 0, baseY + 0,        // Bottom (pause)
-      baseY - 90, baseY - 90,      // Right Side (pause)
-      baseY + 90, baseY + 90,      // Left Side (pause)
-      baseY + 180, baseY + 180,    // Back (pause)
-      baseY + 360, baseY + 360     // Front (pause)
-    ];
-
-    setRotation({ x: targetX, y: targetY, z: 0 });
-
-    // No longer setting random face numbers, using statically assigned logos
-
-    // At 4900ms finish rotation, set landed state and trigger bounce & confetti
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
     const finishTimeout = setTimeout(() => {
       setIsRolling(false);
       setDisplayedNumber(targetNumber);
       setIsLanded(true);
 
-      // Reset landed animation flag after bounce finishes
-<<<<<<< HEAD
       setTimeout(() => setIsLanded(false), 500);
     }, 750);
-=======
-      setTimeout(() => setIsLanded(false), 600);
-    }, 4900);
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
 
     return () => {
       clearTimeout(finishTimeout);
@@ -251,23 +184,9 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
           scale: isLanded ? [1, 1.12, 0.94, 1] : 1
         }}
         transition={{
-<<<<<<< HEAD
           rotateX: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
           rotateY: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
           rotateZ: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
-=======
-          rotateX: { 
-            duration: 4.9, 
-            times: [0, 0.163, 0.229, 0.314, 0.380, 0.465, 0.531, 0.616, 0.682, 0.767, 0.833, 0.918, 0.984, 1], 
-            ease: ["linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear"]
-          },
-          rotateY: { 
-            duration: 4.9, 
-            times: [0, 0.163, 0.229, 0.314, 0.380, 0.465, 0.531, 0.616, 0.682, 0.767, 0.833, 0.918, 0.984, 1], 
-            ease: ["linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear", "easeInOut", "linear"]
-          },
-          rotateZ: { duration: 4.9 },
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
           scale: { duration: 0.4, ease: "easeInOut" }
         }}
         className={`relative dice-cube-container ${

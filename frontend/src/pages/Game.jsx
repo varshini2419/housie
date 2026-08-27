@@ -400,6 +400,50 @@ const Game = () => {
   );
 
 
+  // Color themes array for prize cards
+  const prizeThemes = [
+    {
+      cardBg: "from-[#EFF6FF] via-[#F8FAFC] to-[#DBEAFE]",
+      border: "border-[#BFDBFE]/80",
+      waveColor: "text-[#3B82F6]",
+      iconBg: "bg-gradient-to-tr from-[#2563EB] to-[#60A5FA]",
+      dotColor: "bg-[#3B82F6]",
+      textColor: "text-[#1E3A8A]",
+    },
+    {
+      cardBg: "from-[#ECFDF5] via-[#F8FAFC] to-[#D1FAE5]",
+      border: "border-[#A7F3D0]/80",
+      waveColor: "text-[#10B981]",
+      iconBg: "bg-gradient-to-tr from-[#059669] to-[#34D399]",
+      dotColor: "bg-[#10B981]",
+      textColor: "text-[#064E3B]",
+    },
+    {
+      cardBg: "from-[#F5F3FF] via-[#F8FAFC] to-[#EDE9FE]",
+      border: "border-[#DDD6FE]/80",
+      waveColor: "text-[#8B5CF6]",
+      iconBg: "bg-gradient-to-tr from-[#7C3AED] to-[#A78BFA]",
+      dotColor: "bg-[#8B5CF6]",
+      textColor: "text-[#4C1D95]",
+    },
+    {
+      cardBg: "from-[#FFFBEB] via-[#F8FAFC] to-[#FEF3C7]",
+      border: "border-[#FDE68A]/80",
+      waveColor: "text-[#F59E0B]",
+      iconBg: "bg-gradient-to-tr from-[#D97706] to-[#FBBF24]",
+      dotColor: "bg-[#F59E0B]",
+      textColor: "text-[#78350F]",
+    },
+    {
+      cardBg: "from-[#FFF1F2] via-[#F8FAFC] to-[#FFE4E6]",
+      border: "border-[#FECDD3]/80",
+      waveColor: "text-[#F43F5E]",
+      iconBg: "bg-gradient-to-tr from-[#E11D48] to-[#FB7185]",
+      dotColor: "bg-[#F43F5E]",
+      textColor: "text-[#881337]",
+    },
+  ];
+
   // Generate Prizes matching reference UI (Compact buttons with prize name only)
   const renderPrizes = () => (
     <div className="w-full mx-auto relative overflow-hidden rounded-3xl bg-white/95 border border-white/90 p-3.5 sm:p-5 shadow-[0_15px_35px_rgba(15,23,42,0.06),inset_0_1px_2px_rgba(255,255,255,1)] mt-4 sm:mt-0">
@@ -420,46 +464,20 @@ const Game = () => {
         </div>
       </div>
 
-<<<<<<< HEAD
       {/* Grid of Compact Prize Buttons (Name Only) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2 sm:gap-2.5 w-full relative z-10">
         {(prizes || []).filter(p => p.enabled !== false).map((prize) => {
-=======
-      {/* Grid of Ultra-Compact Side-by-Side Prize Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5 w-full relative z-10">
-        {(prizes || []).filter(p => p.enabled !== false).map((prize, idx) => {
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
           const isWon = prize.status === 'COMPLETED';
           const isLocked = prize.status === 'LOCKED';
           const wonByMe = isWon && (prize.winnerTicket === ticket?.ticketCode || prize.winner === ticket?.playerName);
           const canClaim = !isWon && !isLocked && gameState === 'LIVE';
 
-<<<<<<< HEAD
-=======
-          let bgColor = 'bg-[#2563EB]';
-          let textColor = 'text-white';
-          let iconBg = 'bg-white/20';
-
-          if (isWon) {
-            if (wonByMe) {
-              bgColor = 'bg-[#FBBF24]';
-              textColor = 'text-[#0F172A]';
-              iconBg = 'bg-black/10';
-            } else {
-              bgColor = 'bg-[#10B981]';
-              textColor = 'text-white';
-              iconBg = 'bg-black/20';
-            }
-          }
-
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
           return (
             <motion.button
               key={prize.id}
               whileHover={canClaim ? { scale: 1.04, y: -1 } : {}}
               whileTap={canClaim ? { scale: 0.96 } : {}}
               onClick={() => canClaim && claimPrize(prize.id)}
-<<<<<<< HEAD
               disabled={!canClaim}
               title={isWon ? `Won by ${prize.winner || 'another player'}` : prize.name}
               className={`relative overflow-hidden rounded-xl px-3 py-2.5 sm:px-3.5 sm:py-2.5 border transition-all duration-200 select-none flex items-center justify-center text-center font-black text-xs sm:text-sm ${
@@ -479,61 +497,6 @@ const Game = () => {
                 </span>
               )}
             </motion.button>
-=======
-              className={`relative overflow-hidden rounded-[1.5rem] px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm transition-all duration-300 select-none flex flex-col gap-1.5 justify-center ${bgColor} ${textColor} ${
-                canClaim ? 'cursor-pointer ring-2 ring-blue-400/50 shadow-md' : ''
-              } ${!isWon && isLocked ? 'opacity-70 grayscale-[20%]' : ''}`}
-            >
-              {/* Row 1: Prize Name */}
-              <div className="flex items-center gap-2.5 relative z-10 w-full">
-                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                  <span className="text-xs sm:text-sm">🏆</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-xs sm:text-sm font-black leading-tight tracking-tight truncate">
-                    {prize.name}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Row 2: Condition */}
-              <div className="flex items-center gap-2.5 relative z-10 w-full">
-                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                  <span className="text-xs sm:text-sm">🎁</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-[11px] sm:text-xs font-semibold opacity-95 truncate block">
-                    {prize.prizeItem || 'Prize'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Row 3: Sponsor */}
-              <div className="flex items-center gap-2.5 relative z-10 w-full">
-                <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                  <span className="text-xs sm:text-sm">🤝</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-[11px] sm:text-xs font-semibold opacity-95 truncate block">
-                    {prize.sponsor || '-'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Winner Area (Maintains height even if empty) */}
-              <div className="mt-0.5 relative z-10 w-full text-center">
-                {isWon ? (
-                  <span className="text-[11px] sm:text-xs font-black truncate block px-2">
-                    {prize.winner}
-                  </span>
-                ) : (
-                  <span className="text-[11px] sm:text-xs block invisible px-2">
-                    Placeholder
-                  </span>
-                )}
-              </div>
-            </motion.div>
->>>>>>> 7296de61dc6521e7cc161ace5f39670e263b91e1
           );
         })}
       </div>
