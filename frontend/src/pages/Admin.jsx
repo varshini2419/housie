@@ -685,7 +685,12 @@ const Admin = () => {
         <div className="glass-panel p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-brand-border pb-6 gap-4">
             <div>
-              <button onClick={returnToDashboard} className="text-brand-text-muted hover:text-brand-text text-sm font-semibold transition-colors mb-2 flex items-center gap-1 cursor-pointer">← Back to Dashboard</button>
+              <div className="flex items-center gap-4 mb-2">
+                <button onClick={returnToDashboard} className="text-brand-text-muted hover:text-brand-text text-sm font-semibold transition-colors flex items-center gap-1 cursor-pointer">← Back to Dashboard</button>
+                {liveSession && (
+                  <button onClick={() => setViewMode('monitor')} className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-bold flex items-center gap-1 cursor-pointer">🕹️ Back to Live Monitor</button>
+                )}
+              </div>
               <h2 className="text-2xl font-bold text-brand-text">Session Tickets: <span className="text-brand-emerald">{liveSession?.sessionName}</span></h2>
             </div>
             <div className="flex gap-3">
@@ -782,13 +787,22 @@ const Admin = () => {
               </button>
 
               {adminStats?.gameStatus === 'WAITING' && (
-                <button onClick={() => executeControl('start')} className="premium-btn-success shadow-sm px-6 py-2">Start Game ▶</button>
+                <>
+                  <button onClick={() => executeControl('start')} className="premium-btn-success shadow-sm px-6 py-2">Start Game ▶</button>
+                  <button onClick={() => viewSessionTickets(liveSession)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer hover:shadow-md">Tickets 🎟️</button>
+                </>
               )}
               {adminStats?.gameStatus === 'LIVE' && (
-                <button onClick={() => executeControl('pause')} className="bg-amber-500 hover:bg-amber-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer">Pause Game ⏸</button>
+                <>
+                  <button onClick={() => executeControl('pause')} className="bg-amber-500 hover:bg-amber-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer">Pause Game ⏸</button>
+                  <button onClick={() => viewSessionTickets(liveSession)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer hover:shadow-md">Tickets 🎟️</button>
+                </>
               )}
               {adminStats?.gameStatus === 'PAUSED' && (
-                <button onClick={() => executeControl('resume')} className="premium-btn-success shadow-sm px-6 py-2">Resume Game ▶</button>
+                <>
+                  <button onClick={() => executeControl('resume')} className="premium-btn-success shadow-sm px-6 py-2">Resume Game ▶</button>
+                  <button onClick={() => viewSessionTickets(liveSession)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer hover:shadow-md">Tickets 🎟️</button>
+                </>
               )}
               {(adminStats?.gameStatus === 'LIVE' || adminStats?.gameStatus === 'PAUSED') && (
                 <button onClick={() => { if(window.confirm('Are you sure you want to end this game?')) executeControl('end') }} className="bg-red-500 hover:bg-red-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold transition-all cursor-pointer">End Game 🛑</button>
@@ -796,7 +810,7 @@ const Admin = () => {
               {adminStats?.gameStatus === 'COMPLETED' && (
                 <>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold px-4 py-2 flex items-center gap-2">✓ Game Finished</span>
-                  <button onClick={() => setViewMode('tickets')} className="bg-brand-card hover:bg-brand-bg border border-brand-border text-brand-text px-4 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm cursor-pointer">View Summary</button>
+                  <button onClick={() => viewSessionTickets(liveSession)} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-premium px-6 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm cursor-pointer">Tickets 🎟️</button>
                   <button onClick={() => handleDeleteSession(liveSession._id, liveSession.sessionName)} className="bg-red-600/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white px-4 py-2 rounded-2xl font-bold text-sm transition-all shadow-sm cursor-pointer">Archive Session</button>
                 </>
               )}
@@ -874,16 +888,35 @@ const Admin = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 glass-panel p-6 sm:p-8">
-              <h2 className="text-xs text-brand-text-muted mb-6 font-bold uppercase tracking-wider">Master Draw History</h2>
-              <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div>
+                  <h2 className="text-sm sm:text-base font-black text-brand-text uppercase tracking-wider">Master Draw History (1-90)</h2>
+                  <p className="text-xs text-brand-text-muted font-semibold mt-0.5">Live game board matrix</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <span>✦ Generated:</span>
+                    <span className="text-sm font-black">{adminStats?.drawnNumbers?.length || 0}</span>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                    <span>🕒 Pending:</span>
+                    <span className="text-sm font-black">{90 - (adminStats?.drawnNumbers?.length || 0)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1-90 Grid Matrix (10 Columns x 9 Rows) matching User Interface Number Board */}
+              <div className="grid grid-cols-10 gap-1.5 sm:gap-2.5 w-full my-2 relative z-10">
                 {Array.from({length: 90}, (_, i) => i + 1).map(num => {
                   const isDrawn = adminStats?.drawnNumbers?.includes(num);
                   return (
                     <div 
-                      key={num}
-                      className={`flex items-center justify-center p-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-300
-                        board-cell ${isDrawn ? "drawn animate-draw-pulse" : ""}
-                      `}
+                      key={`admin-num-board-${num}`}
+                      className={`flex items-center justify-center aspect-square rounded-xl sm:rounded-2xl text-xs sm:text-base font-black transition-all duration-300 select-none ${
+                        isDrawn
+                          ? "bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] text-white shadow-[0_4px_12px_rgba(37,99,235,0.35)] border border-blue-400/40"
+                          : "bg-white text-[#334155] shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-slate-100"
+                      }`}
                     >
                       {num}
                     </div>
