@@ -894,13 +894,16 @@ const Admin = () => {
                   <p className="text-xs text-brand-text-muted font-semibold mt-0.5">Live game board matrix</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-                    <span>✦ Generated:</span>
-                    <span className="text-sm font-black">{adminStats?.drawnNumbers?.length || 0}</span>
+                  {/* Generated Stats Card */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50/80 border border-blue-200/80 rounded-2xl px-3.5 py-1.5 sm:px-5 sm:py-2.5 flex flex-col items-center justify-center shadow-2xs">
+                    <span className="text-blue-600 text-[10px] sm:text-xs font-black flex items-center gap-1">✦ Generated</span>
+                    <span className="text-xl sm:text-2xl font-black text-blue-600 leading-tight">{adminStats?.drawnNumbers?.length || 0}</span>
                   </div>
-                  <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                    <span>🕒 Pending:</span>
-                    <span className="text-sm font-black">{90 - (adminStats?.drawnNumbers?.length || 0)}</span>
+
+                  {/* Pending Stats Card */}
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50/80 border border-orange-200/80 rounded-2xl px-3.5 py-1.5 sm:px-5 sm:py-2.5 flex flex-col items-center justify-center shadow-2xs">
+                    <span className="text-orange-600 text-[10px] sm:text-xs font-black flex items-center gap-1">🕒 Pending</span>
+                    <span className="text-xl sm:text-2xl font-black text-orange-600 leading-tight">{90 - (adminStats?.drawnNumbers?.length || 0)}</span>
                   </div>
                 </div>
               </div>
