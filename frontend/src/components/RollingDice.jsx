@@ -14,10 +14,19 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
   const [isRolling, setIsRolling] = useState(false);
   const [isLanded, setIsLanded] = useState(false);
 
-  // Cumulative 3D rotation angles (multiples of 360 ensure front face lands forward)
+  // 3D rotation angles
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
 
-  // Face contents: Front gets the number, sides get the logos
+  // Intermediate side face numbers for 3-side roll animation
+  const [faceNumbers, setFaceNumbers] = useState({
+    left: 42,
+    back: 17,
+    right: 88,
+    top: 63,
+    bottom: 29
+  });
+
+  // Face contents: Front gets the number, sides get logos if present
   const logoTop = logos[0] || '';
   const logoBottom = logos[1] || '';
   const logoRight = logos[2] || '';
@@ -57,10 +66,19 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
     setIsRolling(true);
     setIsLanded(false);
 
+    // Generate 3 fresh random numbers for the 3 sides for each generation
+    setFaceNumbers({
+      left: Math.floor(Math.random() * 90) + 1,
+      back: Math.floor(Math.random() * 90) + 1,
+      right: Math.floor(Math.random() * 90) + 1,
+      top: Math.floor(Math.random() * 90) + 1,
+      bottom: Math.floor(Math.random() * 90) + 1,
+    });
+
     rollCountRef.current += 1;
     const count = rollCountRef.current;
 
-    // Rotate across 3 side faces (Right -> Back -> Left -> Front face showing final number)
+    // Rotate across 3 sides (Left -> Back -> Right -> 4th Side Front face showing final number)
     const targetX = 0;
     const targetY = count * 360;
     const targetZ = 0;
@@ -81,10 +99,9 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
   };
 
   // Render individual face of 3D cube with sharp, crisp physical cube edges
-  const renderFace = (faceKey, transformStyle, content) => {
-    // If it's the front face, content is finalNumber. Otherwise, content is a logo URL.
+  const renderFace = (faceKey, transformStyle, logoContent, numValue) => {
     const isLogoFace = faceKey !== 'front';
-    const hasLogo = isLogoFace && typeof content === 'string' && content.trim() !== '';
+    const hasLogo = isLogoFace && typeof logoContent === 'string' && logoContent.trim() !== '';
 
     return (
       <div
@@ -92,18 +109,15 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
         className="dice-face flex flex-col items-center justify-between p-3 rounded-sm bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white via-slate-50 to-blue-50/30 border-[3.5px] border-white/95 ring-1 ring-blue-500/20 shadow-[inset_0_3px_6px_rgba(255,255,255,1),inset_0_-4px_12px_rgba(15,23,42,0.06),0_16px_36px_rgba(15,23,42,0.12),0_0_20px_rgba(79,142,247,0.15)] select-none overflow-hidden relative"
         style={{ transform: transformStyle }}
       >
-        {/* Full Face Logo Image */}
-        {hasLogo && (
+        {/* Full Face Logo Image if provided */}
+        {hasLogo ? (
            <img 
-             src={content}
+             src={logoContent}
              alt="Face Logo"
              className="absolute inset-0 w-full h-full object-cover rounded-sm bg-white"
              onError={(e) => { e.target.style.display = 'none'; }}
            />
-        )}
-
-        {/* Existing Content - ONLY SHOW IF IT'S THE FRONT FACE (NUMBER FACE) */}
-        {!isLogoFace && (
+        ) : (
            <>
              {/* Top micro-dot pips with glowing gradient */}
              <div className="w-full flex justify-between items-center px-1 pt-0.5 z-10 relative">
@@ -111,10 +125,10 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]"></span>
              </div>
 
-             {/* Center Content */}
+             {/* Center Content / Number */}
              <div className="flex-1 flex w-full items-center justify-center -mt-1 z-10 relative overflow-hidden">
                <span className={`${fontClass} font-black text-[#0F172A] tracking-tighter leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.08)]`}>
-                 {content !== null && content !== undefined ? content : '-'}
+                 {numValue !== null && numValue !== undefined ? numValue : '-'}
                </span>
              </div>
 
@@ -199,12 +213,12 @@ export default function RollingDice({ finalNumber, isLive = false, size = "deskt
         }}
       >
         {/* 6 Cube Faces */}
-        {renderFace('front', `rotateY(0deg) translateZ(${halfSize}px)`, finalNumber || '-')}
-        {renderFace('back', `rotateY(180deg) translateZ(${halfSize}px)`, logoBack)}
-        {renderFace('right', `rotateY(90deg) translateZ(${halfSize}px)`, logoRight)}
-        {renderFace('left', `rotateY(-90deg) translateZ(${halfSize}px)`, logoLeft)}
-        {renderFace('top', `rotateX(90deg) translateZ(${halfSize}px)`, logoTop)}
-        {renderFace('bottom', `rotateX(-90deg) translateZ(${halfSize}px)`, logoBottom)}
+        {renderFace('front', `rotateY(0deg) translateZ(${halfSize}px)`, '', finalNumber || '-')}
+        {renderFace('back', `rotateY(180deg) translateZ(${halfSize}px)`, logoBack, faceNumbers.back)}
+        {renderFace('right', `rotateY(90deg) translateZ(${halfSize}px)`, logoRight, faceNumbers.right)}
+        {renderFace('left', `rotateY(-90deg) translateZ(${halfSize}px)`, logoLeft, faceNumbers.left)}
+        {renderFace('top', `rotateX(90deg) translateZ(${halfSize}px)`, logoTop, faceNumbers.top)}
+        {renderFace('bottom', `rotateX(-90deg) translateZ(${halfSize}px)`, logoBottom, faceNumbers.bottom)}
       </motion.div>
     </div>
   );
