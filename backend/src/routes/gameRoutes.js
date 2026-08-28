@@ -11,6 +11,7 @@ const {
     assignPlayerName,
     toggleTicketActive,
     handleTicketRequest,
+    acceptAllPendingRequests,
     deleteGameSession
 } = require('../controllers/gameController');
 const auth = require('../middlewares/auth');
@@ -18,6 +19,7 @@ const auth = require('../middlewares/auth');
 router.post('/create', auth, createSession);
 router.get('/all', auth, getAllSessions);
 router.get('/:id/tickets', auth, getSessionTickets);
+router.put('/:id/tickets/accept-all', auth, acceptAllPendingRequests);
 router.put('/:id/tickets/:ticketCode/name', auth, assignPlayerName);
 router.put('/:id/tickets/:ticketCode/active', auth, toggleTicketActive);
 router.put('/:id/tickets/:ticketCode/request', auth, handleTicketRequest);

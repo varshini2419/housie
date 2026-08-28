@@ -423,6 +423,37 @@ const Admin = () => {
     }
   };
 
+  const handleAcceptAllRequests = async () => {
+    if (!liveSession?._id) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      
+      // Optimistically update local state for all pending tickets
+      setSessionTickets(prev => prev.map(t => t.requestStatus === 'PENDING' ? {
+        ...t,
+        isActive: true,
+        requestStatus: 'ACCEPTED'
+      } : t));
+
+      const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/tickets/accept-all`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.updatedCount > 0) {
+          fetchSessionTicketsSilent(liveSession._id);
+        }
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const monitorSession = (session) => {
     setLiveSession(session);
     setViewMode('monitor');
@@ -915,7 +946,18 @@ const Admin = () => {
                     <th className="p-4 border-b border-brand-border">Ticket Code</th>
                     <th className="p-4 border-b border-brand-border">Player Name</th>
                     <th className="p-4 border-b border-brand-border">Ticket Status</th>
-                    <th className="p-4 border-b border-brand-border">Access Control</th>
+                    <th className="p-4 border-b border-brand-border">
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span>Access Control</span>
+                        <button
+                          onClick={handleAcceptAllRequests}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1 normal-case tracking-normal"
+                          title="Accept all pending player invitations at once"
+                        >
+                          ✓ Accept All Invitations
+                        </button>
+                      </div>
+                    </th>
                     <th className="p-4 border-b border-brand-border">Actions</th>
                   </tr>
                 </thead>

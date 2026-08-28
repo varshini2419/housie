@@ -225,6 +225,39 @@ exports.handleTicketRequest = async (req, res) => {
     }
 };
 
+exports.acceptAllPendingRequests = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const pendingTickets = await Ticket.find({ sessionId: id, requestStatus: 'PENDING' });
+        if (pendingTickets.length === 0) {
+            return res.json({ message: 'No pending requests to accept', updatedCount: 0 });
+        }
+
+        await Ticket.updateMany(
+            { sessionId: id, requestStatus: 'PENDING' },
+            { $set: { isActive: true, requestStatus: 'ACCEPTED' } }
+        );
+
+        const io = req.app.get('io');
+        if (io) {
+            pendingTickets.forEach(ticket => {
+                io.to(ticket.ticketCode).emit('request_approved', {
+                    ticketCode: ticket.ticketCode,
+                    sessionId: id,
+                    message: 'Your join request has been accepted!'
+                });
+            });
+            io.to(String(id)).emit('request_approved', { sessionId: id });
+        }
+
+        res.json({ message: 'All pending join requests accepted', updatedCount: pendingTickets.length });
+    } catch (err) {
+        console.error('Error accepting all pending requests:', err);
+        res.status(500).json({ message: 'Server error accepting all requests' });
+    }
+};
+
 // Admin Action Controllers
 exports.startGameSession = async (req, res) => {
     try {
