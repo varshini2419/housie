@@ -466,6 +466,8 @@ const Admin = () => {
     setAdminStats(null);
   };
 
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+
   const executeControl = async (action) => {
     try {
       if (action === 'start') unlockAudio();
@@ -527,56 +529,114 @@ const Admin = () => {
 
   if (!token) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4">
-        {/* Background Ambient Orbs */}
-        <div className="pointer-events-none absolute -top-40 -left-40 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
-        <div className="pointer-events-none absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-60"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-brand-bg relative overflow-hidden px-4 py-12">
+        {/* Multi-color Ambient Glowing Orbs */}
+        <div className="pointer-events-none absolute -top-40 -left-40 w-[550px] h-[550px] bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-full blur-[120px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-70"></div>
+        <div className="pointer-events-none absolute -bottom-40 -right-40 w-[550px] h-[550px] bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-full blur-[120px] mix-blend-screen dark:mix-blend-color-dodge z-0 opacity-70"></div>
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[140px] z-0"></div>
 
         <div className="absolute top-8 right-8 z-20">
           <ThemeToggle />
         </div>
 
-        <div className="glass-panel p-8 rounded-3xl shadow-premium-lg w-full max-w-md border border-brand-border relative z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-b-full"></div>
-          
-          <h2 className="text-2xl mb-6 font-extrabold text-center text-brand-text tracking-tight flex items-center justify-center gap-2">
-            <span>🛡️</span> Admin Portal
-          </h2>
+        <div className="relative z-10 w-full max-w-lg">
+          {/* Top Badge */}
+          <div className="flex justify-center mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-emerald-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-300 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              🛡️ EXECUTIVE ADMIN PORTAL
+            </span>
+          </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-3.5 rounded-2xl mb-5 text-sm font-medium text-center">
-              {error}
-            </div>
-          )}
+          <div className="glass-panel p-8 sm:p-10 rounded-[2.5rem] shadow-premium-lg border border-brand-border relative overflow-hidden">
+            {/* Top Multi-color Accent Bar */}
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 via-pink-500 to-emerald-500"></div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Username</label>
-              <input 
-                type="text" 
-                placeholder="Admin username" 
-                value={username} 
-                onChange={e => setUsername(e.target.value)} 
-                className="w-full premium-input" 
-              />
+            {/* Header Icon & Text */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 text-white flex items-center justify-center text-3xl shadow-lg shadow-purple-500/30">
+                🛡️
+              </div>
+              <h2 className="text-3xl font-black text-brand-text tracking-tight mb-2">
+                Admin Sign In
+              </h2>
+              <p className="text-xs text-brand-text-muted font-medium max-w-xs mx-auto">
+                Authenticate with your administrator credentials to access the live host control panel.
+              </p>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-1.5 ml-1">Password</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                className="w-full premium-input" 
-              />
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-6 text-sm font-semibold text-center flex items-center justify-center gap-2">
+                <span>⚠️</span> {error}
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  Username
+                </label>
+                <div className="input-icon-wrapper">
+                  <span className="input-icon text-slate-400" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                  <input 
+                    type="text" 
+                    placeholder="Enter admin username" 
+                    value={username} 
+                    onChange={e => setUsername(e.target.value)} 
+                    className="auth-input pl-14 text-sm font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  Password
+                </label>
+                <div className="input-icon-wrapper">
+                  <span className="input-icon text-slate-400" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                  <input 
+                    type={showAdminPassword ? 'text' : 'password'} 
+                    placeholder="••••••••••••" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    className="auth-input pl-14 pr-12 text-sm font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(prev => !prev)}
+                    className="input-icon input-icon-right text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={showAdminPassword ? 'Hide Password' : 'Show Password'}
+                  >
+                    {showAdminPassword ? '👁️' : '🙈'}
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-extrabold text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center justify-center gap-2 group"
+              >
+                <span>SIGN IN TO DASHBOARD</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-brand-border text-center">
+              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1.5 uppercase tracking-wider">
+                <span>🔒</span> 256-Bit Encrypted Admin Session
+              </p>
             </div>
-            <button 
-              type="submit" 
-              className="w-full mt-2 premium-btn-success w-full mt-2 text-lg"
-            >
-              Sign In to Dashboard →
-            </button>
-          </form>
+          </div>
         </div>
       </div>
     );
