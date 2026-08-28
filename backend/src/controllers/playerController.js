@@ -64,11 +64,11 @@ exports.login = async (req, res) => {
         // Check if player is already assigned a ticket for this session
         let ticket = await Ticket.findOne({ sessionId: session._id, playerId: player._id });
 
-        // If not assigned, assign an available ticket
+        // If not assigned, assign an available ticket that is active
         if (!ticket) {
-            ticket = await Ticket.findOne({ sessionId: session._id, playerId: null });
+            ticket = await Ticket.findOne({ sessionId: session._id, playerId: null, isActive: true });
             if (!ticket) {
-                return res.status(400).json({ message: 'No tickets available for this session.' });
+                return res.status(400).json({ message: 'No active tickets available for this session. Please ask admin to activate your ticket.' });
             }
             
             // Assign the ticket and change its code to the player's mobile number
@@ -78,10 +78,15 @@ exports.login = async (req, res) => {
             ticket.playerStatus = 'PLAYING';
             ticket.joinedAt = new Date();
             await ticket.save();
-        } else if (ticket.playerStatus === 'WAITING' || ticket.playerStatus === 'DISCONNECTED') {
-            ticket.playerStatus = 'PLAYING';
-            ticket.ticketCode = player.mobile; // Ensure ticket code is updated even if they rejoined
-            await ticket.save();
+        } else {
+            if (!ticket.isActive) {
+                return res.status(400).json({ message: 'Your ticket is currently inactive. Please ask admin to activate your ticket.' });
+            }
+            if (ticket.playerStatus === 'WAITING' || ticket.playerStatus === 'DISCONNECTED') {
+                ticket.playerStatus = 'PLAYING';
+                ticket.ticketCode = player.mobile; // Ensure ticket code is updated even if they rejoined
+                await ticket.save();
+            }
         }
 
         const defaultPrizes = [

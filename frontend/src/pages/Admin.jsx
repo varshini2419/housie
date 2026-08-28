@@ -319,6 +319,40 @@ const Admin = () => {
     }
   };
 
+  const handleToggleActive = async (ticketCode, currentIsActive) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      const newIsActive = !currentIsActive;
+      
+      // Optimistically update local state
+      setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, isActive: newIsActive } : t));
+
+      const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/tickets/${ticketCode}/active`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: newIsActive })
+      });
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error('Server returned an invalid response.');
+      }
+      
+      if (!res.ok) {
+        // Revert local state on error
+        setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, isActive: currentIsActive } : t));
+        throw new Error(data.message || 'Failed to update ticket active status');
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const monitorSession = (session) => {
     setLiveSession(session);
     setViewMode('monitor');
@@ -372,15 +406,15 @@ const Admin = () => {
   };
 
   const copyAllTickets = () => {
-    const list = sessionTickets.map((t, idx) => `${idx + 1}. Code: ${t.ticketCode} | Player: ${t.playerName || 'Unassigned'}`).join('\n');
+    const list = sessionTickets.map((t, idx) => `${idx + 1}. Code: ${t.ticketCode} | Player: ${t.playerName || 'Unassigned'} | Active: ${t.isActive ? 'Yes' : 'No'}`).join('\n');
     navigator.clipboard.writeText(list);
     alert('All Ticket details copied to clipboard!');
   };
 
   const exportCSV = () => {
-    const csvRows = ['S.No,Ticket Code,Player Name,Ticket Status,Player Status'];
+    const csvRows = ['S.No,Ticket Code,Player Name,Active Access,Player Status'];
     sessionTickets.forEach((t, idx) => {
-      csvRows.push(`${idx + 1},${t.ticketCode},"${t.playerName || ''}",Active,${t.playerStatus}`);
+      csvRows.push(`${idx + 1},${t.ticketCode},"${t.playerName || ''}",${t.isActive ? 'Active' : 'Inactive'},${t.playerStatus}`);
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -811,7 +845,7 @@ const Admin = () => {
                     <th className="p-4 border-b border-brand-border">Ticket Code</th>
                     <th className="p-4 border-b border-brand-border">Player Name</th>
                     <th className="p-4 border-b border-brand-border">Ticket Status</th>
-                    <th className="p-4 border-b border-brand-border">Player Status</th>
+                    <th className="p-4 border-b border-brand-border">Access Control</th>
                     <th className="p-4 border-b border-brand-border">Actions</th>
                   </tr>
                 </thead>
@@ -831,12 +865,30 @@ const Admin = () => {
                           className="bg-brand-input text-brand-text p-2 rounded-xl border border-brand-input-border focus:border-brand-emerald text-sm outline-none w-full max-w-xs font-medium"
                         />
                       </td>
-                      <td className="p-4 text-brand-text-sec font-medium">Active</td>
+                      <td className="p-4 font-medium">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${ticket.isActive ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
+                          {ticket.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
                       <td className="p-4">
-                        {ticket.playerStatus === 'PLAYING' 
-                          ? <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">Joined</span>
-                          : <span className="px-3 py-1 rounded-full text-xs font-bold bg-brand-bg text-brand-text-muted border border-brand-border">Not Joined</span>
-                        }
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleActive(ticket.ticketCode, ticket.isActive)}
+                            className={`px-4 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all flex items-center gap-1.5 shadow-xs ${
+                              ticket.isActive
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-500 hover:text-white'
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${ticket.isActive ? 'bg-white animate-pulse' : 'bg-slate-400'}`} />
+                            {ticket.isActive ? 'Active' : 'Activate'}
+                          </button>
+                          {ticket.playerStatus === 'PLAYING' && (
+                            <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                              Joined
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <button onClick={() => copyToClipboard(ticket.ticketCode)} className="text-brand-blue hover:underline text-xs font-bold cursor-pointer">Copy Code</button>

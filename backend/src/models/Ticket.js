@@ -8,6 +8,7 @@ const TicketSchema = new mongoose.Schema({
     markedNumbers: { type: [Number], default: [] },
     playerStatus: { type: String, enum: ['WAITING', 'PLAYING', 'DISCONNECTED'], default: 'WAITING' },
     playerName: { type: String, default: '' },
+    isActive: { type: Boolean, default: false },
     joinedAt: { type: Date }
 }, { timestamps: true });
 

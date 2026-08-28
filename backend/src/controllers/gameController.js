@@ -66,7 +66,8 @@ exports.createSession = async (req, res) => {
             sessionId: savedSession._id,
             ticketCode: t.ticketCode,
             ticketMatrix: t.ticketMatrix,
-            playerStatus: 'WAITING'
+            playerStatus: 'WAITING',
+            isActive: false
         }));
 
         await Ticket.insertMany(ticketDocs);
@@ -95,7 +96,7 @@ exports.getAllSessions = async (req, res) => {
 exports.getSessionTickets = async (req, res) => {
     try {
         const tickets = await Ticket.find({ sessionId: req.params.id })
-            .select('ticketCode playerStatus playerName createdAt')
+            .select('ticketCode playerStatus playerName isActive createdAt')
             .sort({ createdAt: 1 });
         res.json(tickets);
     } catch (err) {
@@ -120,6 +121,26 @@ exports.assignPlayerName = async (req, res) => {
     } catch (err) {
         console.error('Error assigning player name:', err);
         res.status(500).json({ message: 'Server error assigning name' });
+    }
+};
+
+exports.toggleTicketActive = async (req, res) => {
+    const { id, ticketCode } = req.params;
+    const { isActive } = req.body;
+
+    try {
+        const ticket = await Ticket.findOne({ sessionId: id, ticketCode });
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        ticket.isActive = typeof isActive === 'boolean' ? isActive : !ticket.isActive;
+        await ticket.save();
+
+        res.json({ message: 'Ticket active status updated', ticket });
+    } catch (err) {
+        console.error('Error updating ticket active status:', err);
+        res.status(500).json({ message: 'Server error updating ticket active status' });
     }
 };
 
