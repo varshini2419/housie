@@ -895,10 +895,10 @@ const Admin = () => {
             </div>
             <input 
               type="text" 
-              placeholder="Search Code..." 
+              placeholder="Search Name or Code..." 
               value={ticketSearch}
               onChange={(e) => setTicketSearch(e.target.value)}
-              className="p-3 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text text-sm outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald w-full sm:w-64 font-mono shadow-sm" 
+              className="p-3 rounded-2xl bg-brand-input border border-brand-input-border text-brand-text text-sm outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-brand-emerald w-full sm:w-64 font-medium shadow-sm" 
             />
           </div>
 
@@ -920,7 +920,13 @@ const Admin = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-border text-sm">
-                  {(Array.isArray(sessionTickets) ? sessionTickets : []).filter(t => t.ticketCode.includes(ticketSearch.toUpperCase())).map((ticket, index) => (
+                  {(Array.isArray(sessionTickets) ? sessionTickets : []).filter(t => {
+                    if (!ticketSearch) return true;
+                    const q = ticketSearch.trim().toLowerCase();
+                    const codeMatch = (t.ticketCode || '').toLowerCase().includes(q);
+                    const nameMatch = (t.playerName || '').toLowerCase().includes(q);
+                    return codeMatch || nameMatch;
+                  }).map((ticket, index) => (
                     <tr key={ticket.ticketCode} className="hover:bg-brand-bg/60 transition-colors">
                       <td className="p-4 text-brand-text-muted font-medium">{index + 1}</td>
                       <td className="p-4 font-mono text-brand-emerald font-extrabold text-base">{ticket.ticketCode}</td>
