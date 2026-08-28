@@ -64,29 +64,44 @@ exports.login = async (req, res) => {
         // Check if player is already assigned a ticket for this session
         let ticket = await Ticket.findOne({ sessionId: session._id, playerId: player._id });
 
-        // If not assigned, assign an available ticket that is active
+        // If not assigned, assign an available ticket
         if (!ticket) {
-            ticket = await Ticket.findOne({ sessionId: session._id, playerId: null, isActive: true });
+            ticket = await Ticket.findOne({ sessionId: session._id, playerId: null });
             if (!ticket) {
-                return res.status(400).json({ message: 'No active tickets available for this session. Please ask admin to activate your ticket.' });
+                return res.status(400).json({ message: 'No tickets available for this session.' });
             }
-            
-            // Assign the ticket and change its code to the player's mobile number
+        }
+
+        // If ticket is not active or not accepted yet, set/update request to PENDING and notify admin
+        if (!ticket.isActive || ticket.requestStatus !== 'ACCEPTED') {
             ticket.playerId = player._id;
             ticket.playerName = player.fullName;
-            ticket.ticketCode = player.mobile; // Replace random code with phone number
-            ticket.playerStatus = 'PLAYING';
-            ticket.joinedAt = new Date();
+            ticket.ticketCode = player.mobile; // Assign player mobile to ticket code
+            ticket.requestStatus = 'PENDING';
             await ticket.save();
-        } else {
-            if (!ticket.isActive) {
-                return res.status(400).json({ message: 'Your ticket is currently inactive. Please ask admin to activate your ticket.' });
+
+            const io = req.app.get('io');
+            if (io) {
+                io.to(String(session._id)).emit('join_request_created', {
+                    ticketCode: ticket.ticketCode,
+                    playerName: player.fullName,
+                    sessionId: session._id
+                });
             }
-            if (ticket.playerStatus === 'WAITING' || ticket.playerStatus === 'DISCONNECTED') {
-                ticket.playerStatus = 'PLAYING';
-                ticket.ticketCode = player.mobile; // Ensure ticket code is updated even if they rejoined
-                await ticket.save();
-            }
+
+            return res.status(200).json({
+                success: false,
+                pendingApproval: true,
+                ticketCode: ticket.ticketCode,
+                sessionId: session._id,
+                message: 'Access request sent to host. Please wait for approval.'
+            });
+        }
+
+        if (ticket.playerStatus === 'WAITING' || ticket.playerStatus === 'DISCONNECTED') {
+            ticket.playerStatus = 'PLAYING';
+            ticket.ticketCode = player.mobile; // Ensure ticket code is updated
+            await ticket.save();
         }
 
         const defaultPrizes = [

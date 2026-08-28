@@ -10,6 +10,7 @@ const {
     endGameSession,
     assignPlayerName,
     toggleTicketActive,
+    handleTicketRequest,
     deleteGameSession
 } = require('../controllers/gameController');
 const auth = require('../middlewares/auth');
@@ -19,6 +20,7 @@ router.get('/all', auth, getAllSessions);
 router.get('/:id/tickets', auth, getSessionTickets);
 router.put('/:id/tickets/:ticketCode/name', auth, assignPlayerName);
 router.put('/:id/tickets/:ticketCode/active', auth, toggleTicketActive);
+router.put('/:id/tickets/:ticketCode/request', auth, handleTicketRequest);
 
 router.post('/:id/start', auth, startGameSession);
 router.post('/:id/pause', auth, pauseGameSession);

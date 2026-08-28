@@ -136,6 +136,14 @@ const Admin = () => {
         }, ...prev.slice(0, 19)]);
       });
 
+      socketRef.current.on('join_request_created', ({ ticketCode, playerName }) => {
+        setActivityFeed(prev => [{
+          time: new Date(),
+          message: `📩 Join Request from ${playerName || 'Player'} (#${ticketCode})`
+        }, ...prev.slice(0, 19)]);
+        setSessionTickets(prev => prev.map(t => (t.ticketCode === ticketCode || t.playerName === playerName) ? { ...t, requestStatus: 'PENDING', playerName: playerName || t.playerName } : t));
+      });
+
       socketRef.current.on('claim_result', ({ success, message, winnerTicket, winnerName, prizeId }) => {
         const msg = success 
           ? `🏆 WINNER! ${winnerName} (#${winnerTicket}) won ${prizeId}` 
@@ -347,6 +355,42 @@ const Admin = () => {
         // Revert local state on error
         setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { ...t, isActive: currentIsActive } : t));
         throw new Error(data.message || 'Failed to update ticket active status');
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleTicketRequestAction = async (ticketCode, action) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000');
+      const isAccept = action === 'ACCEPT';
+      
+      // Optimistically update local state
+      setSessionTickets(prev => prev.map(t => t.ticketCode === ticketCode ? { 
+        ...t, 
+        isActive: isAccept, 
+        requestStatus: isAccept ? 'ACCEPTED' : 'DECLINED' 
+      } : t));
+
+      const res = await fetch(`${apiUrl}/api/game/${liveSession._id}/tickets/${ticketCode}/request`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action })
+      });
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (err) {
+        throw new Error('Server returned an invalid response.');
+      }
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to update request');
       }
     } catch (err) {
       alert(err.message);
@@ -871,10 +915,10 @@ const Admin = () => {
                         </span>
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => handleToggleActive(ticket.ticketCode, ticket.isActive)}
-                            className={`px-4 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all flex items-center gap-1.5 shadow-xs ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all flex items-center gap-1.5 shadow-xs ${
                               ticket.isActive
                                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700'
                                 : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-500 hover:text-white'
@@ -883,6 +927,39 @@ const Admin = () => {
                             <span className={`w-2 h-2 rounded-full ${ticket.isActive ? 'bg-white animate-pulse' : 'bg-slate-400'}`} />
                             {ticket.isActive ? 'Active' : 'Activate'}
                           </button>
+
+                          {/* Accept and Decline Request Buttons */}
+                          {ticket.requestStatus === 'PENDING' && (
+                            <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 p-1 rounded-xl">
+                              <button
+                                onClick={() => handleTicketRequestAction(ticket.ticketCode, 'ACCEPT')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                                title="Accept join request"
+                              >
+                                ✓ Accept
+                              </button>
+                              <button
+                                onClick={() => handleTicketRequestAction(ticket.ticketCode, 'DECLINE')}
+                                className="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                                title="Decline join request"
+                              >
+                                ✕ Decline
+                              </button>
+                            </div>
+                          )}
+
+                          {ticket.requestStatus === 'ACCEPTED' && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                              Accepted
+                            </span>
+                          )}
+
+                          {ticket.requestStatus === 'DECLINED' && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 uppercase tracking-wider">
+                              Declined
+                            </span>
+                          )}
+
                           {ticket.playerStatus === 'PLAYING' && (
                             <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
                               Joined

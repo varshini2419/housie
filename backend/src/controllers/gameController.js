@@ -96,7 +96,7 @@ exports.getAllSessions = async (req, res) => {
 exports.getSessionTickets = async (req, res) => {
     try {
         const tickets = await Ticket.find({ sessionId: req.params.id })
-            .select('ticketCode playerStatus playerName isActive createdAt')
+            .select('ticketCode playerStatus playerName isActive requestStatus createdAt')
             .sort({ createdAt: 1 });
         res.json(tickets);
     } catch (err) {
@@ -166,6 +166,52 @@ exports.toggleTicketActive = async (req, res) => {
     } catch (err) {
         console.error('Error updating ticket active status:', err);
         res.status(500).json({ message: 'Server error updating ticket active status' });
+    }
+};
+
+exports.handleTicketRequest = async (req, res) => {
+    const { id, ticketCode } = req.params;
+    const { action } = req.body;
+
+    try {
+        const ticket = await Ticket.findOne({ sessionId: id, ticketCode });
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        const io = req.app.get('io');
+
+        if (action === 'ACCEPT') {
+            ticket.isActive = true;
+            ticket.requestStatus = 'ACCEPTED';
+            await ticket.save();
+
+            if (io) {
+                io.to(ticketCode).emit('request_approved', {
+                    ticketCode,
+                    message: 'Your join request has been accepted!'
+                });
+            }
+            return res.json({ message: 'Join request accepted', ticket });
+        } else if (action === 'DECLINE') {
+            ticket.isActive = false;
+            ticket.requestStatus = 'DECLINED';
+            ticket.playerStatus = 'WAITING';
+            await ticket.save();
+
+            if (io) {
+                io.to(ticketCode).emit('request_declined', {
+                    ticketCode,
+                    message: 'Your join request was declined by the host.'
+                });
+            }
+            return res.json({ message: 'Join request declined', ticket });
+        } else {
+            return res.status(400).json({ message: 'Invalid action' });
+        }
+    } catch (err) {
+        console.error('Error handling ticket request:', err);
+        res.status(500).json({ message: 'Server error handling ticket request' });
     }
 };
 

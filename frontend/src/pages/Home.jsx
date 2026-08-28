@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import io from 'socket.io-client';
 import useGameStore from '../store/useGameStore';
 import useSpeech from '../hooks/useSpeech';
 import ThemeToggle from '../components/ThemeToggle';
@@ -12,6 +13,7 @@ const Home = () => {
     mobile: ''
   });
   const [error, setError] = useState('');
+  const [pendingMessage, setPendingMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setSession, setTicket } = useGameStore();
@@ -19,6 +21,26 @@ const Home = () => {
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  useEffect(() => {
+    if (!pendingMessage || !formData.mobile) return;
+
+    const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
+    socket.emit('join_game', { sessionId: formData.sessionId, ticketCode: formData.mobile, role: 'player' });
+
+    socket.on('request_approved', () => {
+      handleLoginDirect();
+    });
+
+    socket.on('request_declined', ({ message }) => {
+      setPendingMessage(null);
+      setError(message || 'Your join request was declined by the host.');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [pendingMessage, formData.mobile, formData.sessionId]);
 
   const fetchSessions = async () => {
     try {
@@ -37,18 +59,7 @@ const Home = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    unlockAudio();
-    
-    if (!formData.sessionId || !formData.mobile) {
-      setError('Please select a session and enter your mobile number.');
-      return;
-    }
-    
-    setError('');
-    setLoading(true);
-
+  const handleLoginDirect = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/player/login`, {
         method: 'POST',
@@ -61,10 +72,16 @@ const Home = () => {
 
       const data = await res.json();
 
+      if (data.pendingApproval) {
+        setPendingMessage(data.message || 'Access request sent to host. Waiting for approval...');
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data.message || 'Failed to login');
       }
 
+      setPendingMessage(null);
       setSession(data.session);
       setTicket(data.ticket);
       navigate(`/game/${data.session.id}`);
@@ -74,6 +91,21 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    unlockAudio();
+    
+    if (!formData.sessionId || !formData.mobile) {
+      setError('Please select a session and enter your mobile number.');
+      return;
+    }
+    
+    setError('');
+    setPendingMessage(null);
+    setLoading(true);
+    await handleLoginDirect();
   };
 
   return (
@@ -96,6 +128,12 @@ const Home = () => {
 
       <div className="relative z-10 mx-auto mt-12 w-full max-w-xl auth-card glass-panel p-8 sm:p-10">
         <div className="auth-card-line" aria-hidden="true" />
+
+        {pendingMessage && (
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 p-4 rounded-2xl mb-6 text-sm flex items-center justify-center gap-2 font-bold animate-pulse">
+            <span>⏳</span> {pendingMessage}
+          </div>
+        )}
 
         {error && (
           <div className="auth-error mb-6 text-center">

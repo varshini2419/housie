@@ -9,6 +9,7 @@ const TicketSchema = new mongoose.Schema({
     playerStatus: { type: String, enum: ['WAITING', 'PLAYING', 'DISCONNECTED'], default: 'WAITING' },
     playerName: { type: String, default: '' },
     isActive: { type: Boolean, default: false },
+    requestStatus: { type: String, enum: ['NONE', 'PENDING', 'ACCEPTED', 'DECLINED'], default: 'NONE' },
     joinedAt: { type: Date }
 }, { timestamps: true });
 
