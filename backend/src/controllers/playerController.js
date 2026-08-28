@@ -94,6 +94,11 @@ exports.login = async (req, res) => {
                 pendingApproval: true,
                 ticketCode: ticket.ticketCode,
                 sessionId: session._id,
+                session: {
+                    id: session._id,
+                    sessionId: session.sessionId,
+                    sessionName: session.sessionName
+                },
                 message: 'Access request sent to host. Please wait for approval.'
             });
         }

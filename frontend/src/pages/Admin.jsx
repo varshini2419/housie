@@ -80,8 +80,33 @@ const Admin = () => {
     }
   }, [viewMode, liveSession]);
 
+  const fetchSessionTicketsSilent = async (sessionId) => {
+    if (!sessionId || !token) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000')}/api/game/${sessionId}/tickets`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setSessionTickets(data);
+        }
+      }
+    } catch (err) {
+      // silent
+    }
+  };
+
   useEffect(() => {
-    if (viewMode === 'monitor' && liveSession) {
+    if (viewMode !== 'tickets' || !liveSession?._id) return;
+    const interval = setInterval(() => {
+      fetchSessionTicketsSilent(liveSession._id);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [viewMode, liveSession?._id, token]);
+
+  useEffect(() => {
+    if ((viewMode === 'monitor' || viewMode === 'tickets') && liveSession) {
       socketRef.current = io(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://127.0.0.1:5000'));
 
       socketRef.current.on('connect', () => {
@@ -134,6 +159,7 @@ const Admin = () => {
           time: new Date(),
           message: `Player joined with ticket #${ticketCode}`
         }, ...prev.slice(0, 19)]);
+        if (liveSession?._id) fetchSessionTicketsSilent(liveSession._id);
       });
 
       socketRef.current.on('join_request_created', ({ ticketCode, playerName }) => {
@@ -141,7 +167,7 @@ const Admin = () => {
           time: new Date(),
           message: `📩 Join Request from ${playerName || 'Player'} (#${ticketCode})`
         }, ...prev.slice(0, 19)]);
-        setSessionTickets(prev => prev.map(t => (t.ticketCode === ticketCode || t.playerName === playerName) ? { ...t, requestStatus: 'PENDING', playerName: playerName || t.playerName } : t));
+        if (liveSession?._id) fetchSessionTicketsSilent(liveSession._id);
       });
 
       socketRef.current.on('claim_result', ({ success, message, winnerTicket, winnerName, prizeId }) => {
