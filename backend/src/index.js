@@ -95,20 +95,18 @@ io.on('connection', (socket) => {
         socket.join(sId);
         socket.sessionId = sId;
         socket.ticketCode = ticketCode;
+        if (ticketCode) {
+            socket.join(ticketCode);
+        }
+
         if (role === 'player' && ticketCode) {
             const t = await Ticket.findOne({ ticketCode, sessionId: sId });
-            if (!t || !t.isActive) {
-                socket.emit('ticket_access_revoked', { 
-                    ticketCode, 
-                    message: 'Access denied. Your ticket access was revoked by the host.' 
-                });
-                return;
+            if (t && t.isActive) {
+                if (activeGames[sId]) {
+                    activeGames[sId].onlinePlayers.add(ticketCode);
+                }
+                io.to(sId).emit('player_joined_status', { ticketCode, status: 'PLAYING' });
             }
-            socket.join(ticketCode);
-            if (activeGames[sId]) {
-                activeGames[sId].onlinePlayers.add(ticketCode);
-            }
-            io.to(sId).emit('player_joined_status', { ticketCode, status: 'PLAYING' });
         }
         
         if (activeGames[sId]) {

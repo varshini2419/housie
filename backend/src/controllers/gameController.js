@@ -189,7 +189,12 @@ exports.handleTicketRequest = async (req, res) => {
             if (io) {
                 io.to(ticketCode).emit('request_approved', {
                     ticketCode,
+                    sessionId: id,
                     message: 'Your join request has been accepted!'
+                });
+                io.to(String(id)).emit('request_approved', {
+                    ticketCode,
+                    sessionId: id
                 });
             }
             return res.json({ message: 'Join request accepted', ticket });
@@ -202,7 +207,12 @@ exports.handleTicketRequest = async (req, res) => {
             if (io) {
                 io.to(ticketCode).emit('request_declined', {
                     ticketCode,
+                    sessionId: id,
                     message: 'Your join request was declined by the host.'
+                });
+                io.to(String(id)).emit('request_declined', {
+                    ticketCode,
+                    sessionId: id
                 });
             }
             return res.json({ message: 'Join request declined', ticket });
