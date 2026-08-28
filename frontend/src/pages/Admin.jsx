@@ -936,22 +936,32 @@ const Admin = () => {
                         />
                       </td>
                       <td className="p-4 font-medium">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${ticket.isActive ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
-                          {ticket.isActive ? 'Active' : 'Inactive'}
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${ticket.isActive ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
+                          {ticket.isActive ? 'Active (ON)' : 'Inactive (OFF)'}
                         </span>
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {/* ON/OFF Switch Toggle Button */}
                           <button
                             onClick={() => handleToggleActive(ticket.ticketCode, ticket.isActive)}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all flex items-center gap-1.5 shadow-xs ${
-                              ticket.isActive
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20 hover:from-emerald-600 hover:to-teal-700'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-500 hover:text-white'
+                            className={`relative inline-flex items-center h-7 rounded-full w-16 p-1 cursor-pointer transition-colors duration-300 shadow-sm focus:outline-none ${
+                              ticket.isActive 
+                                ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30' 
+                                : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30'
                             }`}
+                            title={ticket.isActive ? 'Switch OFF to deactivate ticket' : 'Switch ON to activate ticket'}
                           >
-                            <span className={`w-2 h-2 rounded-full ${ticket.isActive ? 'bg-white animate-pulse' : 'bg-slate-400'}`} />
-                            {ticket.isActive ? 'Active' : 'Activate'}
+                            <span
+                              className={`inline-block w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${
+                                ticket.isActive ? 'translate-x-9' : 'translate-x-0'
+                              }`}
+                            />
+                            <span className={`absolute text-[10px] font-black tracking-wider uppercase select-none ${
+                              ticket.isActive ? 'left-2 text-white' : 'right-2 text-white'
+                            }`}>
+                              {ticket.isActive ? 'ON' : 'OFF'}
+                            </span>
                           </button>
 
                           {/* Accept and Decline Request Buttons */}
