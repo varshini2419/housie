@@ -1,7 +1,7 @@
 const GameSession = require('../models/GameSession');
 const Ticket = require('../models/Ticket');
 const { generateBatch } = require('../utils/ticketGenerator');
-const { startGame, pauseGame, resumeGame, endGame, deleteGame } = require('../utils/gameEngine');
+const { startGame, pauseGame, resumeGame, endGame, deleteGame, activeGames } = require('../utils/gameEngine');
 
 exports.createSession = async (req, res) => {
     const { sessionName, startTime, totalPlayers, ticketCodeMode, startingRegisterNumber, prizes, logos } = req.body;
@@ -135,7 +135,32 @@ exports.toggleTicketActive = async (req, res) => {
         }
 
         ticket.isActive = typeof isActive === 'boolean' ? isActive : !ticket.isActive;
+        if (!ticket.isActive) {
+            ticket.playerStatus = 'WAITING';
+        }
         await ticket.save();
+
+        const io = req.app.get('io');
+        if (io && !ticket.isActive) {
+            // Real-time access revocation to player's socket room
+            io.to(ticketCode).emit('ticket_access_revoked', { 
+                ticketCode, 
+                message: 'Access denied. Your ticket access was revoked by the host.' 
+            });
+
+            const sIdStr = String(id);
+            if (activeGames && activeGames[sIdStr]) {
+                activeGames[sIdStr].onlinePlayers.delete(ticketCode);
+                io.to(sIdStr).emit('player_joined_status', { ticketCode, status: 'WAITING' });
+                
+                const game = await GameSession.findById(sIdStr);
+                const totalPlayers = game ? game.totalPlayers : 0;
+                io.to(sIdStr).emit('player_count_update', {
+                    onlineCount: activeGames[sIdStr].onlinePlayers.size,
+                    totalPlayers: totalPlayers
+                });
+            }
+        }
 
         res.json({ message: 'Ticket active status updated', ticket });
     } catch (err) {

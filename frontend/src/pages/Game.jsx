@@ -40,7 +40,7 @@ const MemoizedNumberChip = React.memo(({ num, isMarked, isPending, canMark, onMa
 const Game = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const { session, ticket } = useGameStore();
+  const { session, ticket, setTicket, setSession } = useGameStore();
   const socketRef = useRef(null);
 
   const [gameState, setGameState] = useState('WAITING');
@@ -255,12 +255,19 @@ const Game = () => {
       }
     });
 
+    socketRef.current.on('ticket_access_revoked', ({ message }) => {
+      alert(message || 'Access denied. Your ticket access was revoked by the host.');
+      setTicket(null);
+      setSession(null);
+      navigate('/', { replace: true });
+    });
+
     return () => {
       if (tickZeroFallbackRef.current) clearTimeout(tickZeroFallbackRef.current);
       if (tickWatchdogRef.current) clearTimeout(tickWatchdogRef.current);
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [sessionId, ticket?.ticketCode, navigate, announceWinner]);
+  }, [sessionId, ticket?.ticketCode, navigate, announceWinner, setTicket, setSession]);
 
   const isDrawn = (num) => drawnNumbers.includes(num);
   const isMarked = (num) => markedNumbers.includes(num);

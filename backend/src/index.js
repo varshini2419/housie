@@ -96,6 +96,14 @@ io.on('connection', (socket) => {
         socket.sessionId = sId;
         socket.ticketCode = ticketCode;
         if (role === 'player' && ticketCode) {
+            const t = await Ticket.findOne({ ticketCode, sessionId: sId });
+            if (!t || !t.isActive) {
+                socket.emit('ticket_access_revoked', { 
+                    ticketCode, 
+                    message: 'Access denied. Your ticket access was revoked by the host.' 
+                });
+                return;
+            }
             socket.join(ticketCode);
             if (activeGames[sId]) {
                 activeGames[sId].onlinePlayers.add(ticketCode);
@@ -185,8 +193,17 @@ io.on('connection', (socket) => {
         if (!state.drawnNumbers.includes(number)) return;
 
         try {
+            const ticketCheck = await Ticket.findOne({ ticketCode, sessionId: sId });
+            if (!ticketCheck || !ticketCheck.isActive) {
+                socket.emit('ticket_access_revoked', { 
+                    ticketCode, 
+                    message: 'Access denied. Your ticket access was revoked by the host.' 
+                });
+                return;
+            }
+
             const ticket = await Ticket.findOneAndUpdate(
-                { ticketCode, sessionId: sId },
+                { ticketCode, sessionId: sId, isActive: true },
                 { $addToSet: { markedNumbers: number } },
                 { new: true }
             );
@@ -213,6 +230,19 @@ io.on('connection', (socket) => {
         };
 
         if (!state) return sendError('Game not active');
+
+        try {
+            const ticketCheck = await Ticket.findOne({ ticketCode, sessionId: sId });
+            if (!ticketCheck || !ticketCheck.isActive) {
+                socket.emit('ticket_access_revoked', { 
+                    ticketCode, 
+                    message: 'Access denied. Your ticket access was revoked by the host.' 
+                });
+                return sendError('Access denied. Your ticket access was revoked by the host.');
+            }
+        } catch (err) {
+            return sendError('Error validating ticket access.');
+        }
 
         if (!state.claimLocks) state.claimLocks = {};
         if (state.claimLocks[prizeId]) return sendError('Another player is claiming this prize');
